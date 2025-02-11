@@ -77,6 +77,7 @@ const Intro = () => {
                     </TouchableOpacity>
                 ))}
             </View>
+            
         </View>
   )
 }
