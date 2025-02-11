@@ -1,0 +1,21 @@
+{
+  "migIndex": 1,
+  "data": [
+    {
+      "path": "src/Assets/Fonts/Playfair-re.ttf",
+      "sha1": "96a2e660869a872971935d18105d64eadd693ddb"
+    },
+    {
+      "path": "src/Assets/Fonts/PlayfairDisplay1.ttf",
+      "sha1": "4308eea3f3cecfec12d6589ec458cb9745d815c5"
+    },
+    {
+      "path": "src/Assets/Fonts/PlayfairDisplay2.ttf",
+      "sha1": "2fcb048a917b7607887df262ee3742a50264c764"
+    },
+    {
+      "path": "src/Assets/Fonts/Playfair_me.ttf",
+      "sha1": "8bf13110d20940f886ae02a07ec6068f4028740d"
+    }
+  ]
+}

@@ -1,11 +1,12 @@
 import React from 'react';
 import { SafeAreaView, StyleSheet, Text } from 'react-native';
 import SignIn_Page from './src/Screens/SignIn';
+import Intro from './src/Screens/Intro';
 
 function App() {
   return (
     <SafeAreaView style={styles.container}>
-      <SignIn_Page/>
+      <Intro/>
     </SafeAreaView>
   );
 }
@@ -16,7 +17,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingTop: 40,
+    
   }
 });
 
