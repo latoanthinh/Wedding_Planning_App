@@ -4,6 +4,7 @@ import Intro from '../Screens/Intro'
 import SignIn from '../Screens/SignIn'
 import SignUp from '../Screens/SignUp'
 import Welcome from '../Screens/Welcome'
+import EditProfile from '../Screens/EditProfile'
 
 
 
@@ -30,6 +31,7 @@ const StackNavigation = () => {
         <Stack.Navigator screenOptions={{ headerShown: false }}>
             
             <Stack.Screen name="TabNavigation" component={TabNavigation} />
+            <Stack.Screen name="EditProfile" component={EditProfile} />
            
         </Stack.Navigator>
     )

@@ -35,7 +35,7 @@ const ScreenHom = () => {
 
   return (
     <ScrollView style={{ flex: 1, padding: 20, backgroundColor: '#fff'}}>
-      <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between' , alignItems:'center'}}>
         <Image source={require('../Assets/Images/Sort.png')} />
         <View style={{ flexDirection: 'row' }}>
           <Image source={require('../Assets/Images/notifi.png')} style={{ marginRight: 20 }} />
