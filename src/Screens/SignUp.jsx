@@ -78,7 +78,6 @@ const SignUp = () => {
             <TouchableOpacity style={SignInPageStyles.signInButton}>
                 <Text style={SignInPageStyles.signInButtonText}>Sign up</Text>
             </TouchableOpacity>
-            <View style={{flexDirection:'row',alignItems:'center', justifyContent:'center'}} > 
             <View style={{flexDirection:'row',alignItems:'center', justifyContent:'center', marginTop:15}} > 
                 <Text style={SignInPageStyles.signUpPrompt}>
                     Don't have an account? </Text>
