@@ -1,12 +1,21 @@
-import React, { useState } from "react";
+import React, { useState,useContext } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
 import SignInPageStyles from "../Styles/SignInPageStyles";
 import { useNavigation } from '@react-navigation/native';
+import { AppContext } from '../AppContext';
 
-function SignIn_Page() {
+const SignIn = (props) => {
+    
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isChecked, setIsChecked] = useState(false); // State to track the checkbox status
-    const navigation = useNavigation(); // Hook to access navigation
+    const {navigation } = props; // Hook to access navigation
+
+    const { setUser } = useContext(AppContext);
+
+    const handleSignInPress = () => {
+        setUser({ id: 1, name: 'Test User' }); 
+        
+    };
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
@@ -65,7 +74,7 @@ function SignIn_Page() {
                 <Text style={SignInPageStyles.forgotPasswordText}>Forgot password?</Text>
             </View>
 
-            <TouchableOpacity style={SignInPageStyles.signInButton}>
+            <TouchableOpacity style={SignInPageStyles.signInButton} onPress={handleSignInPress}>
                 <Text style={SignInPageStyles.signInButtonText}>Sign In</Text>
             </TouchableOpacity>
 
@@ -94,4 +103,4 @@ function SignIn_Page() {
     );
 }
 
-export default SignIn_Page;
+export default SignIn;
