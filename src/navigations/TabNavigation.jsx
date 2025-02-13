@@ -1,7 +1,9 @@
+
 import { StyleSheet, Text, View } from 'react-native'
 import React from 'react'
 
 import { NavigationContainer } from '@react-navigation/native';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 
@@ -18,7 +20,7 @@ const Tab = createBottomTabNavigator();
 
 const TabNavigation = () => {
   return (
-    
+   
     <Tab.Navigator screenOptions={({ route }) => ({
       tabBarIcon: ({ focused, color, size }) => {
         let iconName;
@@ -62,7 +64,7 @@ const TabNavigation = () => {
         headerShown: false,
       }} />
     </Tab.Navigator>
- 
+   
   )
 }
 

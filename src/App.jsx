@@ -11,8 +11,8 @@ function App() {
   return (
 
    
-    <AppContextProvider >
-          <AppNavigation />
+    <AppContextProvider>
+          <AppNavigation/>
     </AppContextProvider>
 
     
