@@ -5,6 +5,11 @@ import SignIn from '../Screens/SignIn'
 import SignUp from '../Screens/SignUp'
 import Welcome from '../Screens/Welcome'
 import EditProfile from '../Screens/EditProfile'
+import Thongtincoban from '../Screens/Thongtincoban'
+import Thongtinvedamcuoi from '../Screens/Thongtinvedamcuoi'
+import Dichvucanthiet from '../Screens/Dichvucanthiet'
+import Sothichvauutien from '../Screens/Sothichvauutien'
+import Ghichuvaykien from '../Screens/Ghichuvaykien'
 
 
 
@@ -29,7 +34,13 @@ const Stack = createNativeStackNavigator();
 const StackNavigation = () => {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-            
+
+
+            <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
+            <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} />
+            <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} />
+            <Stack.Screen name="Sothichvauutien" component={Sothichvauutien} />
+            <Stack.Screen name="Ghichuvaykien" component={Ghichuvaykien} />
             <Stack.Screen name="TabNavigation" component={TabNavigation} />
             <Stack.Screen name="EditProfile" component={EditProfile} />
            
