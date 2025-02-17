@@ -3,7 +3,7 @@ import { StyleSheet } from "react-native";
 const SignInPageStyles = StyleSheet.create({
     container: {
         width: '100%',
-        height: 'auto',
+        height: '100%',
         justifyContent: 'center',
         padding: 20,
         backgroundColor: '#fff',
@@ -11,15 +11,15 @@ const SignInPageStyles = StyleSheet.create({
     welcomeText: {
         fontSize: 28,
         fontWeight: 'bold',
-        textAlign: 'center',
+        textAlign: 'start',
         marginBottom: 10,
         color: '#333',
         fontFamily: 'Playfair_me',
     },
     instructionText: {
         fontSize: 16,
-        textAlign: 'center',
-        marginBottom: 20,
+        textAlign: 'start',
+        marginBottom: 30,
         color: '#666',
         fontFamily: 'Playfair_Me', 
     },
@@ -31,6 +31,7 @@ const SignInPageStyles = StyleSheet.create({
         paddingHorizontal: 15,
         marginBottom: 15,
         backgroundColor: '#f9f9f9',
+        paddingStart: 40
     },
     rememberMeContainer: {
         flexDirection: 'row',
@@ -54,8 +55,9 @@ const SignInPageStyles = StyleSheet.create({
     signInButton: {
         backgroundColor: '#000',
         paddingVertical: 15,
-        borderRadius: 5,
+        borderRadius: 15,
         marginBottom: 20,
+        marginTop: 20
     },
     signInButtonText: {
         color: '#fff',
@@ -91,6 +93,8 @@ const SignInPageStyles = StyleSheet.create({
         marginBottom: 10,
         textDecorationLine: 'underline',
         fontSize: 17,
+        justifyContent:'center',
+        alignItems:'center'
     },
     signUpPrompt: {
         textAlign: 'start',
