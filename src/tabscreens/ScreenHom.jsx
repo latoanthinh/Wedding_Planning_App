@@ -18,7 +18,8 @@ const slides = [
   },
 ];
 
-const ScreenHom = () => {
+const ScreenHom = (props) => {
+  const {navigation} = props;
   const flatListRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -179,6 +180,15 @@ const ScreenHom = () => {
               </View>
             </View>
           </View>
+
+          <View style={styles.Tou}>
+          <TouchableOpacity onPress={() => navigation.navigate('Thongtincoban')} style={styles.Combo}>
+            <Text >
+              Combo
+            </Text>
+          </TouchableOpacity>
+            
+          </View>
         </ScrollView>
       )}
     </View>
@@ -188,6 +198,24 @@ const ScreenHom = () => {
 export default ScreenHom;
 
 const styles = StyleSheet.create({
+  Combo: {
+    width: 320,
+    height: 40,
+    backgroundColor: "#CECBCB",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center"
+
+},
+Tou: {
+ 
+  height: 50,
+  justifyContent:"center",
+  alignItems:'center'
+
+
+
+},
   container: {
     flex: 1,
     padding: 20,

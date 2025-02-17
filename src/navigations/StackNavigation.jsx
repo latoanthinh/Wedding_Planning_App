@@ -34,14 +34,14 @@ const Stack = createNativeStackNavigator();
 const StackNavigation = () => {
     return (
         <Stack.Navigator screenOptions={{ headerShown: false }}>
-
-
+          
+          
+            <Stack.Screen name="TabNavigation" component={TabNavigation} />
             <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
             <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} />
             <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} />
             <Stack.Screen name="Sothichvauutien" component={Sothichvauutien} />
             <Stack.Screen name="Ghichuvaykien" component={Ghichuvaykien} />
-            <Stack.Screen name="TabNavigation" component={TabNavigation} />
             <Stack.Screen name="EditProfile" component={EditProfile} />
            
         </Stack.Navigator>
