@@ -8,7 +8,6 @@ function App() {
     <SafeAreaView style={styles.container}>
       <Welcome/>
     </SafeAreaView>
-    //haha
   );
 }
 

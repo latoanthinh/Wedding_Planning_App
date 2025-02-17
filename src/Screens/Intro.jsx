@@ -28,7 +28,7 @@ const slides = [
 
 const Intro = () => {
 
-    
+     
 
     const flatListRef = useRef(null);
     const scrollX = useRef(new Animated.Value(0)).current;
