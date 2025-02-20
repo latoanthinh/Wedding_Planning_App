@@ -1,5 +1,8 @@
-import { StyleSheet, Text, View, Image, FlatList, Dimensions, Animated, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
-import React, { useRef, useState } from 'react';
+import { StyleSheet, Text, View, Image, FlatList,ActivityIndicator, ToastAndroid,Dimensions, Animated, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import React, { useRef, useState ,useEffect} from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { Hall } from '../redux/HallSlice';
+import { Clothes } from '../redux/ClothesSlice';
 
 const { width } = Dimensions.get("window");
 
@@ -24,6 +27,105 @@ const ScreenHom = (props) => {
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isSearchClicked, setIsSearchClicked] = useState(false);
+
+  const dispatch = useDispatch();
+
+
+  //xử lý Clothes
+
+  const { ClothesData, ClothesStatus } = useSelector((state) => state.clothes);
+
+  useEffect(() => {
+    dispatch(Clothes());
+  }, [dispatch]);
+
+  // Xử lý khi không thể fetch dữ liệu
+  useEffect(() => {
+    if (ClothesStatus === 'failed') {
+      ToastAndroid.show('Không thể tải Hall!', ToastAndroid.SHORT);
+    }
+  }, [ClothesStatus]);
+  useEffect(() => {
+    if (ClothesStatus === 'succeeded') {
+      console.log('Dữ liệu sản phẩm:', ClothesData);
+    }
+  }, [ClothesStatus, ClothesData]);
+
+  const renderCloItem = ({ item }) => {
+    
+    return (
+      <TouchableOpacity>
+        <View style={styles.backgroudClo}>
+          <Image source={{ uri: item.imageUrl}} style={styles.imgClo} />  
+
+          <Text  style={styles.nameClo} numberOfLines={1} >{item.name}</Text>    
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
+  //xử lý Clothes
+
+  //xử lý hall
+  
+  const { HallData, HallStatus } = useSelector((state) => state.hall);
+
+
+
+  useEffect(() => {
+    dispatch(Hall());
+  }, [dispatch]);
+
+  // Xử lý khi không thể fetch dữ liệu
+  useEffect(() => {
+    if (HallStatus === 'failed') {
+      ToastAndroid.show('Không thể tải Hall!', ToastAndroid.SHORT);
+    }
+  }, [HallStatus]);
+  useEffect(() => {
+    if (HallStatus === 'succeeded') {
+      console.log('Dữ liệu sản phẩm:', HallData);
+    }
+  }, [HallStatus, HallData]);
+
+  // Render một item trong danh sách hall
+  const renderHallItem = ({ item }) => {
+    
+    return (
+      <TouchableOpacity>
+        <View style={styles.backgroudhall}>
+          <Image source={{ uri: item.imageUrl}} style={styles.imghall} />
+    
+    <Text  style={styles.namehall} numberOfLines={1} >{item.name}</Text>
+          <Text numberOfLines={1}>{item.location}</Text>
+          
+          <View style={styles.bottomhall}>
+
+            <View style={{flexDirection:"row",alignItems:"center"}} >
+
+            <Image source={require('../Assets/Images/numberperson.png')} style={{width:15,height:15}}/>
+              
+            <Text>{item.soluongkhach} Khách</Text>
+           
+            </View>
+
+            <View style={{flexDirection:"row",alignItems:"center"}}>
+              <Image source={require('../Assets/Images/house.png')} style={{width:15,height:15}}/>
+              <Text> Sảnh {item.sanh}</Text>
+
+            </View>
+            
+           
+
+          </View>
+          <View style={{ borderWidth:1, borderColor:"#CECBCB"}}></View>
+          <Text >Xem Giá</Text>
+          
+        </View>
+      </TouchableOpacity>
+    );
+  };
+  //xử lý hall
 
   const handleScroll = Animated.event(
     [{ nativeEvent: { contentOffset: { x: scrollX } } }],
@@ -150,7 +252,19 @@ const ScreenHom = (props) => {
               </View>
             </View>
             <Text style={styles.recommendedTitle}>Recommended</Text>
-            <Text style={styles.sectionTitle}>Hall Danh sach</Text>
+            <View>
+          {HallStatus === 'loading' && <ActivityIndicator size="large" color="#0000ff" />}
+          {HallStatus === 'succeeded' &&(
+            <FlatList
+              data={HallData}
+              renderItem={renderHallItem}
+              keyExtractor={(item) => item._id.toString()}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+            />
+          )}
+          {HallStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
+          </View>
             <View style={styles.dressContainer}>
               <Text style={styles.sectionTitle}>Váy Cưới</Text>
               <Text style={styles.viewAll}>View all</Text>
@@ -159,9 +273,19 @@ const ScreenHom = (props) => {
               <Image source={require('../Assets/Images/dresse.png')} />
             </View>
             <View style={styles.dressRow}>
-              <Image source={require('../Assets/Images/dresses1.png')} />
-              <Image source={require('../Assets/Images/dresses2.png')} />
-              <Image source={require('../Assets/Images/dresses3.png')} />
+            
+          {ClothesStatus === 'loading' && <ActivityIndicator size="large" color="#0000ff" />}
+          {ClothesStatus === 'succeeded' &&(
+            <FlatList
+              data={ClothesData}
+              renderItem={renderCloItem}
+              keyExtractor={(item) => item._id.toString()}
+              horizontal={true}
+              showsHorizontalScrollIndicator={false}
+            />
+          )}
+          {ClothesStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
+          
             </View>
             <View style={styles.dressContainer}>
               <Text style={styles.sectionTitle}>Kế hoạch</Text>
@@ -198,6 +322,46 @@ const ScreenHom = (props) => {
 export default ScreenHom;
 
 const styles = StyleSheet.create({
+
+  nameClo:{
+    fontSize:5, 
+    fontWeight:"bold"
+
+  },
+
+
+  imgClo:{
+    width:110,
+    height: 122,
+    marginRight:10,
+    borderRadius:10
+  },
+  backgroudClo:{
+    alignItems:"center"
+  },
+  bottomhall:{
+    flexDirection:"row",
+    justifyContent:'space-between'
+  },
+  namehall:{
+    fontSize:18,
+    fontWeight:"bold",
+    
+  },
+  imghall:{
+    width: "100%",
+    height:140,
+    
+  },
+  backgroudhall:{
+
+    borderWidth:1,
+    width:320,
+    height:250,
+    padding:10,
+    marginRight:10
+    
+  },
   Combo: {
     width: 320,
     height: 40,
