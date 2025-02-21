@@ -15,11 +15,6 @@ const AppContext = createContext(); // tạo ra 1 context
 function AppContextProvider(props) {
     const { children } = props
     const [user, setUser] = useState(null);
-    
-
-    
-
-    
     return (
         <AppContext.Provider value={{ user, setUser }} >
             <Provider store={store}>

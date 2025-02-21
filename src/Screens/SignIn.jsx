@@ -1,8 +1,10 @@
-import React, { useState,useContext } from "react";
-import { View, Text, TextInput, TouchableOpacity, Image } from "react-native";
+import React, { useState,useContext, useEffect } from "react";
+import { View, Text, TextInput, TouchableOpacity, Image, ToastAndroid } from "react-native";
 import SignInPageStyles from "../Styles/SignInPageStyles";
 import { useNavigation } from '@react-navigation/native';
 import { AppContext } from '../AppContext';
+import { useDispatch, useSelector } from 'react-redux';
+import { DangNhapTaiKhoan } from '../redux/LoginSlice';
 
 const SignIn = (props) => {
     
@@ -10,12 +12,30 @@ const SignIn = (props) => {
     const [isChecked, setIsChecked] = useState(false); // State to track the checkbox status
     const {navigation } = props; // Hook to access navigation
 
-    const { setUser } = useContext(AppContext);
+    const [email, setEmail] = useState('tran07hieu');
+    const [password, setPassword] = useState('123456');
+    const {user, setUser} = useContext(AppContext);
 
-    const handleSignInPress = () => {
-        setUser({ id: 1, name: 'Test User' }); 
-        
-    };
+
+    const dispatch = useDispatch();
+    const { loginData, loginStatus } = useSelector((state) => state.login);
+
+    
+
+    useEffect(() => {
+        if (loginStatus == "succeeded") {
+            setUser(loginData);
+            ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
+        }
+        else if (loginStatus === 'failed') {
+            ToastAndroid.show('Đăng nhập thất bại!', ToastAndroid.SHORT);
+        }
+      }, [loginStatus,loginData, setUser])
+    
+      console.log("Dữ liệu gửi đi:", { email, password });
+      const dangnhap = () => {
+        dispatch(DangNhapTaiKhoan({email, password ,setUser}));
+      }
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
@@ -38,6 +58,8 @@ const SignIn = (props) => {
                     style={SignInPageStyles.input}
                     placeholder="Email"
                     placeholderTextColor="#aaa"
+                    value={email} 
+                    onChangeText={text => setEmail(text)}
                 />
                 <Image source={require('../Assets/Images/user.png')} style={{ width: 20, height: 20, position: 'absolute', top: 15, left: 8 }} />
             </View>
@@ -49,6 +71,8 @@ const SignIn = (props) => {
                     placeholder="Password"
                     placeholderTextColor="#aaa"
                     secureTextEntry={!isPasswordVisible}
+                    value={password} 
+                    onChangeText={text => setPassword(text)}
                 />
                 <Image source={require('../Assets/Images/lock.png')} style={{ width: 20, height: 20, position: 'absolute', top: 15, left: 8 }} />
                 <TouchableOpacity onPress={togglePasswordVisibility} style={{ position: 'absolute', top: 15, right: 18 }}>
@@ -74,7 +98,7 @@ const SignIn = (props) => {
                 <Text style={SignInPageStyles.forgotPasswordText}>Forgot password?</Text>
             </View>
 
-            <TouchableOpacity style={SignInPageStyles.signInButton} onPress={handleSignInPress}>
+            <TouchableOpacity style={SignInPageStyles.signInButton} onPress={dangnhap}>
                 <Text style={SignInPageStyles.signInButtonText}>Sign In</Text>
             </TouchableOpacity>
 
