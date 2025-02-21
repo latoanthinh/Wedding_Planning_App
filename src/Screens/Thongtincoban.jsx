@@ -1,16 +1,13 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList} from 'react-native'
-import React,{useState} from 'react'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Button } from 'react-native'
+import React, { useState } from 'react'
+import DatePicker from 'react-native-date-picker';
 
 const Thongtincoban = (props) => {
-    const {navigation} = props;
+  const { navigation } = props;
 
-    
+  const [date, setDate] = useState(new Date());
+  const [open, setOpen] = useState(false);
 
-
-
-
-   
-    
   return (
     <View style={styles.container}>
       <Text style={styles.thongtincoban}>Thông Tin Cơ Bản</Text>
@@ -26,24 +23,33 @@ const Thongtincoban = (props) => {
         placeholderTextColor="#888" // Màu của hint
       />
 
-        <View style={styles.box}>
+      <View style={styles.box}>
         <Text style={styles.text}>Ngày dự định tổ chức đám cưới?
         </Text>
       </View>
 
+      <DatePicker
+        date={date}
+        mode="date"
+        onDateChange={(selectedDate) => {
+          setDate(selectedDate);
+        }}
+      />
+
       <View style={styles.Tou}>
 
-      <TouchableOpacity style={styles.touGui}>
-        <Text style={{color:"white"}}>Gửi</Text>
-      </TouchableOpacity>
-      
-      <TouchableOpacity style={styles.touTiep}  onPress={() => navigation.navigate('Thongtinvedamcuoi')}>
-        <Text style={{color:"white"}}>Tiếp Theo</Text>
-      </TouchableOpacity>
+        <TouchableOpacity style={styles.touGui}>
+          <Text style={{ color: "white" }}>Gửi</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity style={styles.touTiep} onPress={() => navigation.navigate('Thongtinvedamcuoi')}>
+          <Text style={{ color: "white" }}>Tiếp Theo</Text>
+        </TouchableOpacity>
 
       </View>
 
-      
+
+
     </View>
   )
 }
@@ -51,74 +57,78 @@ const Thongtincoban = (props) => {
 export default Thongtincoban
 
 const styles = StyleSheet.create({
-   
-    touTiep:{
-        width:100,
-        height:40,
-        backgroundColor:"#000000",
-        borderRadius: 8,
-        justifyContent:"center",
-        alignItems:"center"
-    },
-    touGui:{
-        width:100,
-        height:40,
-        backgroundColor:"#CECBCB",
-        borderRadius: 8,
-        justifyContent:"center",
-        alignItems:"center"
-    },
+  label: {
+    fontSize: 16,
+    marginBottom: 20,
+  },
 
-    Tou:{
-        width:320,
-        height:50,
-        marginTop:20,
-        flexDirection:"row",
-        justifyContent:"space-between"
-        
-        
+  touTiep: {
+    width: 100,
+    height: 40,
+    backgroundColor: "#000000",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  touGui: {
+    width: 100,
+    height: 40,
+    backgroundColor: "#CECBCB",
+    borderRadius: 8,
+    justifyContent: "center",
+    alignItems: "center"
+  },
 
-    },
-    input: {
-        width: 320,
-        height: 50,
-        borderRadius: 8,
-        paddingHorizontal: 10,
-        fontSize: 16,
-        backgroundColor: '#FFFFFF',
-        marginTop:50
-      },
-    box: {
-        width:320,
-        height:130,
-        borderWidth: 2,
-        borderColor: 'black',
-        padding: 16,
-        borderRadius: 8, // Tùy chọn để góc bo tròn
-        marginTop:30,
-        justifyContent:"center",
-        alignItems: 'center',
-
-      },
-      text: {
-        fontSize: 15,
-        color: 'black',
-        fontWeight:600
-      },
-
-    thongtincoban:{
-        fontSize: 20,
-        fontWeight:"bold"
+  Tou: {
+    width: 320,
+    height: 50,
+    marginTop: 20,
+    flexDirection: "row",
+    justifyContent: "space-between"
 
 
-    },
-    container:{
-        alignItems:"center",
-        padding:20,
-        backgroundColor:"#FAFAFA",
-        flex:1
 
-    }
+  },
+  input: {
+    width: 320,
+    height: 50,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    fontSize: 16,
+    backgroundColor: '#FFFFFF',
+    marginTop: 50
+  },
+  box: {
+    width: 320,
+    height: 130,
+    borderWidth: 2,
+    borderColor: 'black',
+    padding: 16,
+    borderRadius: 8, // Tùy chọn để góc bo tròn
+    marginTop: 30,
+    justifyContent: "center",
+    alignItems: 'center',
+
+  },
+  text: {
+    fontSize: 15,
+    color: 'black',
+    fontWeight: 600
+  },
+
+  thongtincoban: {
+    fontSize: 20,
+    fontWeight: "bold"
+
+
+  },
+  container: {
+    alignItems: "center",
+    padding: 20,
+    backgroundColor: "#FAFAFA",
+    flex: 1
+
+  }
 
 
 
