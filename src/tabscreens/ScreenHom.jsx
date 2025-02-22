@@ -1,5 +1,5 @@
-import { StyleSheet, Text, View, Image, FlatList,ActivityIndicator, ToastAndroid,Dimensions, Animated, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
-import React, { useRef, useState ,useEffect} from 'react';
+import { StyleSheet, Text, View, Image, FlatList, ActivityIndicator, ToastAndroid, Dimensions, Animated, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import React, { useRef, useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Hall } from '../redux/HallSlice';
 import { Clothes } from '../redux/ClothesSlice';
@@ -22,7 +22,7 @@ const slides = [
 ];
 
 const ScreenHom = (props) => {
-  const {navigation} = props;
+  const { navigation } = props;
   const flatListRef = useRef(null);
   const scrollX = useRef(new Animated.Value(0)).current;
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -52,22 +52,22 @@ const ScreenHom = (props) => {
   }, [ClothesStatus, ClothesData]);
 
   const renderCloItem = ({ item }) => {
-    
+
     return (
       <TouchableOpacity>
         <View style={styles.backgroudClo}>
-          <Image source={{ uri: item.imageUrl}} style={styles.imgClo} />  
+          <Image source={{ uri: item.imageUrl[0] }} style={styles.imgClo} />
 
-          <Text  style={styles.nameClo} numberOfLines={1} >{item.name}</Text>    
+          <Text style={styles.nameClo} numberOfLines={1} >{item.name}</Text>
         </View>
       </TouchableOpacity>
     );
   };
 
-  //xử lý Clothes
+
 
   //xử lý hall
-  
+
   const { HallData, HallStatus } = useSelector((state) => state.hall);
 
 
@@ -90,37 +90,24 @@ const ScreenHom = (props) => {
 
   // Render một item trong danh sách hall
   const renderHallItem = ({ item }) => {
-    
     return (
       <TouchableOpacity>
         <View style={styles.backgroudhall}>
-          <Image source={{ uri: item.imageUrl}} style={styles.imghall} />
-    
-    <Text  style={styles.namehall} numberOfLines={1} >{item.name}</Text>
-          <Text numberOfLines={1}>{item.location}</Text>
-          
+          <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
+          <Text style={styles.namehall} numberOfLines={2} >{item.name}</Text>
+          <Text style={{height:35}} numberOfLines={2}>{item.location}</Text>
           <View style={styles.bottomhall}>
-
-            <View style={{flexDirection:"row",alignItems:"center"}} >
-
-            <Image source={require('../Assets/Images/numberperson.png')} style={{width:15,height:15}}/>
-              
-            <Text>{item.soluongkhach} Khách</Text>
-           
+            <View style={{ flexDirection: "row", alignItems: "center" }} >
+              <Image source={require('../Assets/Images/numberperson.png')} style={{ width: 15, height: 15 }} />
+              <Text>{item.soluongkhach} Khách</Text>
             </View>
-
-            <View style={{flexDirection:"row",alignItems:"center"}}>
-              <Image source={require('../Assets/Images/house.png')} style={{width:15,height:15}}/>
+            <View style={{ flexDirection: "row", alignItems: "center" }}>
+              <Image source={require('../Assets/Images/house.png')} style={{ width: 15, height: 15 }} />
               <Text> Sảnh {item.sanh}</Text>
-
             </View>
-            
-           
-
           </View>
-          <View style={{ borderWidth:1, borderColor:"#CECBCB"}}></View>
-          <Text >Xem Giá</Text>
-          
+          <View style={{ borderWidth: 1, borderColor: "#CECBCB" }}></View>
+          <Text style={{fontWeight:'bold'}} >Xem sảnh</Text>
         </View>
       </TouchableOpacity>
     );
@@ -222,7 +209,6 @@ const ScreenHom = (props) => {
               </View>
             </View>
             <Text style={styles.greetingText}>Hello, <Text>Your Name</Text></Text>
-            <Text style={styles.sectionTitle}>All danh sach</Text>
             <Text style={styles.dealsTitle}>Deals of the day</Text>
             <View style={styles.sliderContainer}>
               <FlatList
@@ -253,18 +239,18 @@ const ScreenHom = (props) => {
             </View>
             <Text style={styles.recommendedTitle}>Recommended</Text>
             <View>
-          {HallStatus === 'loading' && <ActivityIndicator size="large" color="#0000ff" />}
-          {HallStatus === 'succeeded' &&(
-            <FlatList
-              data={HallData}
-              renderItem={renderHallItem}
-              keyExtractor={(item) => item._id.toString()}
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-            />
-          )}
-          {HallStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
-          </View>
+              {HallStatus === 'loading' && <ActivityIndicator size="large" color="#0000ff" />}
+              {HallStatus === 'succeeded' && (
+                <FlatList
+                  data={HallData}
+                  renderItem={renderHallItem}
+                  keyExtractor={(item) => item._id.toString()}
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={false}
+                />
+              )}
+              {HallStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
+            </View>
             <View style={styles.dressContainer}>
               <Text style={styles.sectionTitle}>Váy Cưới</Text>
               <Text style={styles.viewAll}>View all</Text>
@@ -273,19 +259,19 @@ const ScreenHom = (props) => {
               <Image source={require('../Assets/Images/dresse.png')} />
             </View>
             <View style={styles.dressRow}>
-            
-          {ClothesStatus === 'loading' && <ActivityIndicator size="large" color="#0000ff" />}
-          {ClothesStatus === 'succeeded' &&(
-            <FlatList
-              data={ClothesData}
-              renderItem={renderCloItem}
-              keyExtractor={(item) => item._id.toString()}
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-            />
-          )}
-          {ClothesStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
-          
+
+              {ClothesStatus === 'loading' && <ActivityIndicator size="large" color="#0000ff" />}
+              {ClothesStatus === 'succeeded' && (
+                <FlatList
+                  data={ClothesData}
+                  renderItem={renderCloItem}
+                  keyExtractor={(item) => item._id.toString()}
+                  horizontal={true}
+                  showsHorizontalScrollIndicator={false}
+                />
+              )}
+              {ClothesStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
+
             </View>
             <View style={styles.dressContainer}>
               <Text style={styles.sectionTitle}>Kế hoạch</Text>
@@ -306,12 +292,12 @@ const ScreenHom = (props) => {
           </View>
 
           <View style={styles.Tou}>
-          <TouchableOpacity onPress={() => navigation.navigate('Thongtincoban')} style={styles.Combo}>
-            <Text >
-              Combo
-            </Text>
-          </TouchableOpacity>
-            
+            <TouchableOpacity onPress={() => navigation.navigate('Thongtincoban')} style={styles.Combo}>
+              <Text >
+                Combo
+              </Text>
+            </TouchableOpacity>
+
           </View>
         </ScrollView>
       )}
@@ -323,44 +309,43 @@ export default ScreenHom;
 
 const styles = StyleSheet.create({
 
-  nameClo:{
-    fontSize:5, 
-    fontWeight:"bold"
-
+  nameClo: {
+    fontSize: 10,
+    height: 40,
+    padding:10
   },
 
 
-  imgClo:{
-    width:110,
+  imgClo: {
+    width: 110,
     height: 122,
-    marginRight:10,
-    borderRadius:10
+    marginRight: 10,
+    borderRadius: 10,
   },
-  backgroudClo:{
-    alignItems:"center"
+  backgroudClo: {
+    alignItems: "center",
+    height: 160,
   },
-  bottomhall:{
-    flexDirection:"row",
-    justifyContent:'space-between'
+  bottomhall: {
+    flexDirection: "row",
+    justifyContent: 'space-between',
+    marginTop: 3
   },
-  namehall:{
-    fontSize:18,
-    fontWeight:"bold",
-    
+  namehall: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 8,
+    height:50
   },
-  imghall:{
+  imghall: {
     width: "100%",
-    height:140,
-    
-  },
-  backgroudhall:{
+    height: 140,
 
-    borderWidth:1,
-    width:320,
-    height:250,
-    padding:10,
-    marginRight:10
-    
+  },
+  backgroudhall: {
+    width: 320,
+    height: 290,
+    padding: 10,
   },
   Combo: {
     width: 320,
@@ -370,16 +355,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center"
 
-},
-Tou: {
- 
-  height: 50,
-  justifyContent:"center",
-  alignItems:'center'
+  },
+  Tou: {
+
+    height: 50,
+    justifyContent: "center",
+    alignItems: 'center'
 
 
 
-},
+  },
   container: {
     flex: 1,
     padding: 20,
