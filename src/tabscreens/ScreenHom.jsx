@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View, Image, FlatList,ActivityIndicator, ToastAndroid,Dimensions, Animated, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, Image, FlatList,ActivityIndicator, 
+  ToastAndroid,Dimensions, Animated, TouchableOpacity, TextInput, Alert, ScrollView } from 'react-native';
 import React, { useRef, useState ,useEffect} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Hall } from '../redux/HallSlice';
@@ -45,18 +46,18 @@ const ScreenHom = (props) => {
       ToastAndroid.show('Không thể tải Hall!', ToastAndroid.SHORT);
     }
   }, [ClothesStatus]);
-  useEffect(() => {
-    if (ClothesStatus === 'succeeded') {
-      console.log('Dữ liệu sản phẩm:', ClothesData);
-    }
-  }, [ClothesStatus, ClothesData]);
+  // useEffect(() => {
+  //   if (ClothesStatus === 'succeeded') {
+  //     console.log('Dữ liệu sản phẩm:', ClothesData);
+  //   }
+  // }, [ClothesStatus, ClothesData]);
 
   const renderCloItem = ({ item }) => {
     
     return (
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate("DetailClothes", { productIdClo: item._id })}>
         <View style={styles.backgroudClo}>
-          <Image source={{ uri: item.imageUrl}} style={styles.imgClo} />  
+          <Image source={{ uri: item.imageUrl[0]}} style={styles.imgClo} />  
 
           <Text  style={styles.nameClo} numberOfLines={1} >{item.name}</Text>    
         </View>
@@ -82,11 +83,11 @@ const ScreenHom = (props) => {
       ToastAndroid.show('Không thể tải Hall!', ToastAndroid.SHORT);
     }
   }, [HallStatus]);
-  useEffect(() => {
-    if (HallStatus === 'succeeded') {
-      console.log('Dữ liệu sản phẩm:', HallData);
-    }
-  }, [HallStatus, HallData]);
+  // useEffect(() => {
+  //   if (HallStatus === 'succeeded') {
+  //     console.log('Dữ liệu sản phẩm:', HallData);
+  //   }
+  // }, [HallStatus, HallData]);
 
   // Render một item trong danh sách hall
   const renderHallItem = ({ item }) => {
@@ -267,7 +268,12 @@ const ScreenHom = (props) => {
           </View>
             <View style={styles.dressContainer}>
               <Text style={styles.sectionTitle}>Váy Cưới</Text>
+
+              <TouchableOpacity onPress={()=> navigation.navigate("Dress")}>
+                
               <Text style={styles.viewAll}>View all</Text>
+              </TouchableOpacity>
+              
             </View>
             <View style={styles.imageContainer}>
               <Image source={require('../Assets/Images/dresse.png')} />
@@ -282,6 +288,7 @@ const ScreenHom = (props) => {
               keyExtractor={(item) => item._id.toString()}
               horizontal={true}
               showsHorizontalScrollIndicator={false}
+              initialNumToRender={3}
             />
           )}
           {ClothesStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
