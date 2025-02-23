@@ -2,14 +2,14 @@ import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity } from 'reac
 import React, { useState } from 'react'
 
 const EditProfile = (props) => {
-  const {navigation} = props;
+  const { navigation } = props;
   const [text, setText] = useState('');
 
   return (
     <View style={{ flex: 1, padding: 20, backgroundColor: '#fff' }}>
       <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Image source={require('../Assets/Images/back.png')} />
+          <Image source={require('../Assets/Images/back.png')} />
         </TouchableOpacity>
         <Text style={{ fontSize: 24 }}>Edit Profile</Text>
         <View style={{ flexDirection: 'row' }}>

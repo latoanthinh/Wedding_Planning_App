@@ -5,13 +5,10 @@ import AppNavigation from './navigations/Appnavigation';
 function App() {
   return (
 
-   
     <AppContextProvider>
-          <AppNavigation/>
+      <AppNavigation />
     </AppContextProvider>
-
     
-
   );
 }
 
