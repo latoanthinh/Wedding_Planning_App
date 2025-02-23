@@ -51,7 +51,7 @@ const Dress = (props) => {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
+        <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
           <Icon name="arrow-left" size={20} color="#000" />
         </TouchableOpacity>
         <Text style={styles.title}>Dress</Text>
