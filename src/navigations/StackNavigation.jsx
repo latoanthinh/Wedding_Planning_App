@@ -12,6 +12,7 @@ import Sothichvauutien from '../Screens/Sothichvauutien'
 import Ghichuvaykien from '../Screens/Ghichuvaykien'
 import DetailClothes from '../Screens/DetailClothes'
 import Dress from '../Screens/Dress'
+import FlowersScreen from '../Screens/FlowersScreen'
 
 
 
@@ -43,6 +44,7 @@ const StackNavigation = () => {
       <Stack.Screen name="TabNavigation" component={TabNavigation} />
       <Stack.Screen name="Dress" component={Dress} />
       <Stack.Screen name="DetailClothes" component={DetailClothes} />
+      <Stack.Screen name="FlowersScreen" component={FlowersScreen} />
       <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
       <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} />
       <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} />

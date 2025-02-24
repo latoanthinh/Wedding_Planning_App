@@ -309,7 +309,13 @@ const ScreenHom = (props) => {
                 <Text style={styles.locationTitle}>Địa Điểm</Text>
                 <Text style={styles.statusText}>Status</Text>
               </View>
+              
             </View>
+            <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("FlowersScreen")}>
+                <Image source={require('../Assets/Images/thiepcuoi.png')} />
+                <Text style={styles.locationTitle}>Flowers</Text>
+                <Text style={styles.statusText}>Status</Text>
+              </TouchableOpacity>
           </View>
 
           <View style={styles.Tou}>
