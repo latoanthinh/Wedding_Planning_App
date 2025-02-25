@@ -5,6 +5,7 @@ import  FlowersReducer  from './FlowersSlice';
 import  LoginReducer  from './LoginSlice';
 import  RegisterReducer  from './RegisterSlice';
 import  ChitietsanphamReducer  from './ChitietsanphamSlice';
+import  ChitietFlowersReducer  from './ChitietFlowersSlice';
 
 
 
@@ -13,7 +14,7 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
-    
+    chitietflowers:ChitietFlowersReducer,
     flowers: FlowersReducer,
     chitiet : ChitietsanphamReducer,
     register: RegisterReducer,

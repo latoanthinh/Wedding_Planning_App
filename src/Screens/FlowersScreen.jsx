@@ -1,70 +1,159 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import {
-    View, Text, FlatList, Image,StyleSheet,TouchableOpacity, TextInput,ActivityIndicator,
+  View, Text, FlatList, Image, StyleSheet, TouchableOpacity, TextInput, ActivityIndicator, Modal, Button,
+  TouchableWithoutFeedback,
+  ImageBackground
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { FlowersAPI } from "../redux/FlowersSlice";
+
+
 const FlowersScreen = (props) => {
 
-    const { navigation } = props;
-      const dispatch = useDispatch();
-      const { FlowersData, FlowersStatus } = useSelector((state) => state.flowers);
-      const numColumns = 2;
+  const { navigation } = props;
+  const dispatch = useDispatch();
+  const { FlowersData, FlowersStatus } = useSelector((state) => state.flowers);
+  const numColumns = 2;
 
-      useEffect(() => {
-          dispatch(FlowersAPI());
-        }, [dispatch]);
+  // State cho Modal chi tiết
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedFlower, setSelectedFlower] = useState(null);
+  // State quản lý danh sách yêu thích
+  const [favoris, setFavoris] = useState([]);
 
-        const ProductCard = ({ item }) => (
-            <TouchableOpacity >
-              <View style={styles.card}>
-                <Image source={{ uri: item.imageUrl }} style={styles.image} />
-                <Text style={styles.productName}>{item.name}</Text>
-                <Text style={styles.productPrice}>{item.price}đ</Text>
-                <View style={styles.ratingContainer}>
-                  
-                  <Text style={styles.ratingText}>{item.description}</Text>
+
+  // Hàm mở modal
+  const openModal = (flower) => {
+    setSelectedFlower(flower);
+    setModalVisible(true);
+  };
+
+  // Hàm đóng modal
+  const closeModal = () => {
+    setModalVisible(false);
+  };
+
+  // Hàm thêm/xóa khỏi danh sách yêu thích
+  const toggleFavoris = (flowerId) => {
+    setFavoris((prevFavoris) =>
+      prevFavoris.includes(flowerId)
+        ? prevFavoris.filter((id) => id !== flowerId) // Xóa khỏi danh sách
+        : [...prevFavoris, flowerId] // Thêm vào danh sách
+    );
+  };
+
+  useEffect(() => {
+    dispatch(FlowersAPI());
+  }, [dispatch]);
+
+  const ProductCard = ({ item }) => (
+    <TouchableOpacity onPress={() => openModal(item)}>
+      <View style={styles.card}>
+        <Image source={{ uri: item.imageUrl }} style={styles.image} />
+        <Text style={styles.productName}>{item.name}</Text>
+        <Text style={styles.productPrice}>{item.price}đ</Text>
+        <View style={styles.ratingContainer}>
+
+          <Text style={styles.ratingText}>{item.description}</Text>
+        </View>
+      </View>
+    </TouchableOpacity>
+  );
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
+          <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
+        </TouchableOpacity>
+        <Text style={styles.title}>Flowers</Text>
+        <TouchableOpacity>
+          <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+        </TouchableOpacity>
+      </View>
+      <TextInput style={styles.searchBox} placeholder="Search..." />
+      {FlowersStatus === "loading" && <ActivityIndicator size="large" color="#0000ff" />}
+      {FlowersStatus === "succeeded" && (
+
+        <FlatList
+          numColumns={numColumns}
+          data={FlowersData}
+          keyExtractor={(product) => product._id.toString()}
+          renderItem={({ item }) => <ProductCard item={item} />}
+          showsHorizontalScrollIndicator={false}
+        />
+
+      )}
+
+      {FlowersStatus === "failed" && <Text>Không thể tải dữ liệu!</Text>}
+
+      {/* Modal chi tiết sản phẩm */}
+      <Modal
+        visible={modalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={closeModal}
+      >
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.modalContainer}>
+            <View>
+              <TouchableWithoutFeedback>
+                <View style={styles.modalContent}>
+                  {selectedFlower && (
+                    <>
+                      <ImageBackground source={{ uri: selectedFlower.imageUrl }} style={styles.modalImage} >
+                        {/* Biểu tượng trái tim trong Modal */}
+                        <TouchableOpacity
+                          style={styles.heartIconModal}
+                          onPress={() => toggleFavoris(selectedFlower._id)}
+                        >
+                          <Image
+                            source={favoris.includes(selectedFlower._id)
+                              ? require("../Assets/Images/heart_filled.png")
+                              : require("../Assets/Images/heart_outline.png")}
+                            style={styles.heartImage}
+                          />
+                        </TouchableOpacity>
+                      </ImageBackground>
+                      <Text style={styles.modalTitle}>{selectedFlower.name}</Text>
+                      <Text style={styles.modalPrice}>{selectedFlower.price}đ</Text>
+                      <Text style={styles.modalDescription}>{selectedFlower.description}</Text>
+
+
+                    </>
+                  )}
                 </View>
-              </View>
-            </TouchableOpacity>
-          );
+              </TouchableWithoutFeedback>
+            </View>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
 
-
-    return (
-       <View style={styles.container}>
-             <View style={styles.header}>
-               <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
-                <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
-               </TouchableOpacity>
-               <Text style={styles.title}>Flowers</Text>
-               <TouchableOpacity>
-                 <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-               </TouchableOpacity>
-             </View>
-             <TextInput style={styles.searchBox} placeholder="Search..." />
-             {FlowersStatus === "loading" && <ActivityIndicator size="large" color="#0000ff" />}
-             {FlowersStatus === "succeeded" && (
-               
-                     <FlatList
-                        numColumns={numColumns}
-                       data={FlowersData}
-                       keyExtractor={(product) => product._id.toString()}
-                       renderItem={({ item }) => <ProductCard item={item} />}
-                       showsHorizontalScrollIndicator={false}
-                     />
-                   
-                 )}
-            
-             {FlowersStatus === "failed" && <Text>Không thể tải dữ liệu!</Text>}
-           </View>
-    )
+    </View>
+  )
 }
 
 export default FlowersScreen
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#f5f5f5", paddingHorizontal: 16 },
-    icon: { width: 24, height: 24 },
+  heartImage: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 24,
+    height: 24,
+    tintColor: "red", // Màu đỏ cho trái tim
+  },
+
+  // Modal styles
+  modalContainer: { flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "rgba(0,0,0,0.5)" },
+  modalContent: { width: 300, backgroundColor: "#fff", padding: 20, borderRadius: 10, alignItems: "center" },
+  modalImage: { width: 200, height: 200, borderRadius: 10, marginBottom: 10 },
+  modalTitle: { fontSize: 18, fontWeight: "bold", marginBottom: 5 },
+  modalPrice: { fontSize: 16, fontWeight: "bold", color: "#111", marginBottom: 5 },
+  modalDescription: { fontSize: 14, textAlign: "center", marginBottom: 10 },
+  container: { flex: 1, backgroundColor: "#f5f5f5", paddingHorizontal: 16 },
+  icon: { width: 24, height: 24 },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
@@ -78,7 +167,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
   },
-  
+
   card: {
     flex: 1,
     backgroundColor: "#fff",
@@ -90,15 +179,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
-    width:180,
+    width: 180,
 
   },
   image: { width: "100%", height: 150, borderRadius: 10 },
-  
-  
+
+
   productName: { fontSize: 14, fontWeight: "bold", marginTop: 10 },
   productPrice: { fontSize: 16, fontWeight: "bold", color: "#111", marginTop: 5 },
-  
+
   ratingContainer: { flexDirection: "row", alignItems: "center", marginTop: 5 },
   ratingText: { fontSize: 14, marginLeft: 5 },
 })
