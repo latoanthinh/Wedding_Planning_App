@@ -1,9 +1,13 @@
 import { Text, View, Image, FlatList, TouchableOpacity, ScrollView } from 'react-native';
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect, useCallback, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Lottie from 'lottie-react-native';
 import { Hall } from '../redux/HallSlice';
 import styles from '../Styles/Home_Style';
+
+import { AppContext } from '../AppContext';
+
+
 
 const slides = [
   { image: require("../Assets/Images/backgroud_home.png") },
@@ -16,14 +20,19 @@ const ScreenHom = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
 
+  const { user } = useContext(AppContext); // Lấy thông tin user từ Context
+
+
+  
+
   const dispatch = useDispatch();
   const { HallData, HallStatus } = useSelector((state) => state.hall);
 
   useEffect(() => {
     const fetchData = async () => {
-      setIsLoading(true); 
+      setIsLoading(true);
       await dispatch(Hall());
-      setIsLoading(false); 
+      setIsLoading(false);
     };
     fetchData();
   }, [dispatch]);
@@ -35,14 +44,14 @@ const ScreenHom = ({ navigation }) => {
         <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
         <Text numberOfLines={1}>{item.location}</Text>
         <View style={styles.bottomhall}>
-          
+
           <View style={styles.detailRow}>
             <Image source={require('../Assets/Images/house.png')} style={styles.icon} />
             <Text> {item.sanh} Sảnh</Text>
           </View>
-          
+
         </View>
-        
+
       </View>
     </TouchableOpacity>
   ), [navigation]);
@@ -57,7 +66,7 @@ const ScreenHom = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      {isLoading ? ( 
+      {isLoading ? (
         renderLoading()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
@@ -71,7 +80,9 @@ const ScreenHom = ({ navigation }) => {
                 </TouchableOpacity>
               </View>
             </View>
-            <Text style={styles.greetingText}>Hello, <Text>Your Name</Text></Text>
+            <Text style={styles.greetingText}>
+              Hello, {user.name}
+            </Text>
             <Text style={styles.sectionTitle}>All danh sách</Text>
             <Text style={styles.dealsTitle}>Deals of the day</Text>
             <View style={styles.sliderContainer}>

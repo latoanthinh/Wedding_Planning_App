@@ -55,7 +55,7 @@ const SignIn = (props) => {
 
     useEffect(() => {
         if (loginStatus == "succeeded") {
-            setUser(loginData);
+            setUser(loginData.user);
             ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
         }
         else if (loginStatus === 'failed') {

@@ -176,17 +176,17 @@ const SignUp = () => {
                 </TouchableOpacity>
             </View>
             <View style={{ flexDirection: "row", alignItems: 'center', justifyContent: 'center' }}>
-    <TouchableOpacity onPress={toggleCheckbox}>
-        <Image
-            source={isChecked
-                ? require('../Assets/Images/check-box-50.png')
-                : require('../Assets/Images/checked.png')}
-            style={SignInPageStyles.checkbox}
-        />
-    </TouchableOpacity>
-    <Text style={{ fontSize: 17, fontWeight: 'bold' }}>I Agree with privacy and policy</Text>
-</View>
-{policyError ? <Text style={{ color: 'red', fontSize: 12, textAlign: 'center' }}>{policyError}</Text> : null}
+                <TouchableOpacity onPress={toggleCheckbox}>
+                    <Image
+                        source={isChecked
+                            ? require('../Assets/Images/check-box-50.png')
+                            : require('../Assets/Images/checked.png')}
+                        style={SignInPageStyles.checkbox}
+                    />
+                </TouchableOpacity>
+                <Text style={{ fontSize: 17, fontWeight: 'bold' }}>I Agree with privacy and policy</Text>
+            </View>
+            {policyError ? <Text style={{ color: 'red', fontSize: 12, textAlign: 'center' }}>{policyError}</Text> : null}
             <TouchableOpacity style={SignInPageStyles.signInButton} onPress={dangky}>
                 <Text style={SignInPageStyles.signInButtonText}>Sign up</Text>
             </TouchableOpacity>
