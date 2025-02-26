@@ -10,6 +10,11 @@ import Thongtinvedamcuoi from '../Screens/Thongtinvedamcuoi'
 import Dichvucanthiet from '../Screens/Dichvucanthiet'
 import Sothichvauutien from '../Screens/Sothichvauutien'
 import Ghichuvaykien from '../Screens/Ghichuvaykien'
+import DetailClothes from '../Screens/DetailClothes'
+import Dress from '../Screens/Dress'
+import FlowersScreen from '../Screens/FlowersScreen'
+import DetailFlowers from '../Screens/DetailFlowers'
+import HallWeddings from '../Screens/HallWeddings'
 
 
 
@@ -18,10 +23,10 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 const GuestStack = createNativeStackNavigator();
 const GuestStackNavigation = () => {
   return (
-    <GuestStack.Navigator screenOptions={{ headerShown: false}}>
-        
-        <GuestStack.Screen name="SignIn" component={SignIn} />
-        <GuestStack.Screen name="SignUp" component={SignUp} />
+    <GuestStack.Navigator screenOptions={{ headerShown: false }}>
+
+      <GuestStack.Screen name="SignIn" component={SignIn} />
+      <GuestStack.Screen name="SignUp" component={SignUp} />
     </GuestStack.Navigator>
   )
 }
@@ -30,22 +35,32 @@ const GuestStackNavigation = () => {
 
 // START: Stack dành cho user đã đăng nhập
 import TabNavigation from './TabNavigation'
+
 const Stack = createNativeStackNavigator();
 const StackNavigation = () => {
-    return (
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          
-          
-            <Stack.Screen name="TabNavigation" component={TabNavigation} />
-            <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
-            <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} />
-            <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} />
-            <Stack.Screen name="Sothichvauutien" component={Sothichvauutien} />
-            <Stack.Screen name="Ghichuvaykien" component={Ghichuvaykien} />
-            <Stack.Screen name="EditProfile" component={EditProfile} />
-           
-        </Stack.Navigator>
-    )
+  return (
+   
+    <Stack.Navigator screenOptions={{ headerShown: false}}>
+
+
+      <Stack.Screen name="TabNavigation" component={TabNavigation} />
+      <Stack.Screen name="Dress" component={Dress} />
+      <Stack.Screen name="DetailClothes" component={DetailClothes} />
+      <Stack.Screen name="FlowersScreen" component={FlowersScreen} />
+      <Stack.Screen name="DetailFlowers" component={DetailFlowers} />
+      <Stack.Screen name="HallWeddings" component={HallWeddings} />
+
+      <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
+      <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} />
+      <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} />
+      <Stack.Screen name="Sothichvauutien" component={Sothichvauutien} />
+      <Stack.Screen name="Ghichuvaykien" component={Ghichuvaykien} />
+      <Stack.Screen name="EditProfile" component={EditProfile} />
+
+
+    </Stack.Navigator>
+    
+  )
 }
 // END: Stack dành cho user đã đăng nhập
 

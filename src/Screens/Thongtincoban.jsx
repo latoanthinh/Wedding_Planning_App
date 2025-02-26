@@ -1,28 +1,25 @@
-import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Button } from 'react-native'
-import React, { useState } from 'react'
+import { StyleSheet, Text, View, TextInput, TouchableOpacity, FlatList, Button, ActivityIndicator } from 'react-native'
+import React, { useState, useEffect } from 'react'
 import DatePicker from 'react-native-date-picker';
+
+
+
+
+
 
 const Thongtincoban = (props) => {
   const { navigation } = props;
 
   const [date, setDate] = useState(new Date());
-  const [open, setOpen] = useState(false);
+  
+  
+  
 
   return (
     <View style={styles.container}>
       <Text style={styles.thongtincoban}>Thông Tin Cơ Bản</Text>
 
-      <View style={styles.box}>
-        <Text style={styles.text}>Bạn Tên Gì?
-        </Text>
-      </View>
-
-      <TextInput
-        style={styles.input}
-        placeholder="Tên của bạn" // Hint xuất hiện trong ô TextInput
-        placeholderTextColor="#888" // Màu của hint
-      />
-
+      
       <View style={styles.box}>
         <Text style={styles.text}>Ngày dự định tổ chức đám cưới?
         </Text>
@@ -38,9 +35,6 @@ const Thongtincoban = (props) => {
 
       <View style={styles.Tou}>
 
-        <TouchableOpacity style={styles.touGui}>
-          <Text style={{ color: "white" }}>Gửi</Text>
-        </TouchableOpacity>
 
         <TouchableOpacity style={styles.touTiep} onPress={() => navigation.navigate('Thongtinvedamcuoi')}>
           <Text style={{ color: "white" }}>Tiếp Theo</Text>
@@ -84,7 +78,7 @@ const styles = StyleSheet.create({
     height: 50,
     marginTop: 20,
     flexDirection: "row",
-    justifyContent: "space-between"
+    justifyContent: "flex-end"
 
 
 
