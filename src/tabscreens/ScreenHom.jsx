@@ -90,10 +90,13 @@ const ScreenHom = (props) => {
   // }, [HallStatus, HallData]);
 
   // Render một item trong danh sách hall
+  
   const renderHallItem = ({ item }) => {
     
     return (
-      <TouchableOpacity>
+      <TouchableOpacity onPress={() => navigation.navigate("HallWeddings", { productIdHall: item._id })}>
+        
+
         <View style={styles.backgroudhall}>
           <Image source={{ uri: item.imageUrl}} style={styles.imghall} />
     

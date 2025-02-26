@@ -36,7 +36,7 @@ const DetailClothes = ({ navigation, route }) => {
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.canGoBack() && navigation.goBack()}>
+                <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Detail</Text>
