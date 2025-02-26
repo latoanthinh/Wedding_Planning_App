@@ -6,7 +6,7 @@ function App() {
   return (
 
     <AppContextProvider>
-      <AppNavigation />
+      <AppNavigation/>
     </AppContextProvider>
 
   );
