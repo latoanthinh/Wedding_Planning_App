@@ -1,7 +1,6 @@
 import React, { useState,useContext, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, ToastAndroid } from "react-native";
 import SignInPageStyles from "../Styles/SignInPageStyles";
-import { useNavigation } from '@react-navigation/native';
 import { AppContext } from '../AppContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { DangNhapTaiKhoan } from '../redux/LoginSlice';
@@ -9,8 +8,8 @@ import { DangNhapTaiKhoan } from '../redux/LoginSlice';
 const SignIn = (props) => {
     
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-    const [isChecked, setIsChecked] = useState(false); // State to track the checkbox status
-    const {navigation } = props; // Hook to access navigation
+    const [isChecked, setIsChecked] = useState(false);
+    const {navigation } = props;
 
     const [email, setEmail] = useState('tran07hieu');
     const [password, setPassword] = useState('123456');
@@ -32,7 +31,7 @@ const SignIn = (props) => {
         }
       }, [loginStatus,loginData, setUser])
     
-      console.log("Dữ liệu gửi đi:", { email, password });
+    //   console.log("Dữ liệu gửi đi:", { email, password });
       const dangnhap = () => {
         dispatch(DangNhapTaiKhoan({email, password ,setUser}));
       }
@@ -42,11 +41,11 @@ const SignIn = (props) => {
     };
 
     const toggleCheckbox = () => {
-        setIsChecked(!isChecked); // Toggle the checkbox state
+        setIsChecked(!isChecked);
     };
 
     const handleSignUpPress = () => {
-        navigation.navigate('SignUp'); // Navigate to the SignUp screen
+        navigation.navigate('SignUp'); 
     };
 
     return (
@@ -88,8 +87,8 @@ const SignIn = (props) => {
                     <TouchableOpacity onPress={toggleCheckbox}>
                         <Image
                             source={isChecked
-                                ? require('../Assets/Images/check-box-50.png') // Checked checkbox image
-                                : require('../Assets/Images/checked.png')}  // Unchecked checkbox image
+                                ? require('../Assets/Images/check-box-50.png')
+                                : require('../Assets/Images/checked.png')}
                             style={SignInPageStyles.checkbox}
                         />
                     </TouchableOpacity>
