@@ -13,14 +13,12 @@ const HallWeddings = ({ navigation, route }) => {
     const { HallTheoWeddingFlowersData, HallTheoWeddingFlowersStatus,error } = useSelector(state => state.halltheowedding);
 
     useEffect(() => {
-        console.log("Received productIdHall:", productIdHall);
+        
         if (productIdHall) {
             dispatch(HallTheoWedding(productIdHall));
         }
     }, [productIdHall, dispatch]);
-    useEffect(() => {
-        console.log("HallTheoWeddingFlowersData:", HallTheoWeddingFlowersData);
-    }, [HallTheoWeddingFlowersData]);
+    
 
     const renderHallItem = ({ item }) => {
         return (

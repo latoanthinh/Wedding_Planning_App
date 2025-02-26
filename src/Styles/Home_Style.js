@@ -190,6 +190,7 @@ const styles = StyleSheet.create({
   bottomhall: {
     flexDirection: "row",
     justifyContent: 'space-between',
+    alignItems:"center"
   },
   namehall: {
     fontSize: 18,
@@ -202,7 +203,7 @@ const styles = StyleSheet.create({
   backgroudhall: {
     borderWidth: 0.5,
     width: 320,
-    height: 280,
+    height: 230,
     padding: 8,
     margin: 10,
   },
@@ -222,7 +223,6 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
-    marginEnd: 10,
     tintColor: '#CECBCB',
   },
   detailRow: {

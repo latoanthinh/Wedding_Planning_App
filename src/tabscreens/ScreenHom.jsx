@@ -35,15 +35,14 @@ const ScreenHom = ({ navigation }) => {
         <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
         <Text numberOfLines={1}>{item.location}</Text>
         <View style={styles.bottomhall}>
-          <View style={styles.detailRow}>
-            <Image source={require('../Assets/Images/numberperson.png')} style={styles.icon} />
-          </View>
+          
           <View style={styles.detailRow}>
             <Image source={require('../Assets/Images/house.png')} style={styles.icon} />
-            <Text>Sảnh {item.sanh}</Text>
+            <Text> {item.sanh} Sảnh</Text>
           </View>
+          
         </View>
-        <Text>Xem Giá</Text>
+        
       </View>
     </TouchableOpacity>
   ), [navigation]);
