@@ -6,16 +6,12 @@ import SignUp from '../Screens/SignUp'
 import Welcome from '../Screens/Welcome'
 import EditProfile from '../Screens/EditProfile'
 import Thongtincoban from '../Screens/Thongtincoban'
-import Thongtinvedamcuoi from '../Screens/Thongtinvedamcuoi'
-import Dichvucanthiet from '../Screens/Dichvucanthiet'
-import Sothichvauutien from '../Screens/Sothichvauutien'
-import Ghichuvaykien from '../Screens/Ghichuvaykien'
 import DetailClothes from '../Screens/DetailClothes'
 import Dress from '../Screens/Dress'
 import FlowersScreen from '../Screens/FlowersScreen'
 import DetailFlowers from '../Screens/DetailFlowers'
 import GenPlan from '../Screens/GenPlan'
-
+import HallWeddings from '../Screens/HallWeddings'
 
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -50,10 +46,7 @@ const StackNavigation = () => {
       <Stack.Screen name="DetailFlowers" component={DetailFlowers} />
       <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
       <Stack.Screen name="GenPlan" component={GenPlan} />
-      {/* <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} /> */}
-      {/* <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} /> */}
-      {/* <Stack.Screen name="Sothichvauutien" component={Sothichvauutien} /> */}
-      {/* <Stack.Screen name="Ghichuvaykien" component={Ghichuvaykien} /> */}
+      <Stack.Screen name="HallWeddings" component={HallWeddings} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
 
 
