@@ -14,6 +14,7 @@ import DetailClothes from '../Screens/DetailClothes'
 import Dress from '../Screens/Dress'
 import FlowersScreen from '../Screens/FlowersScreen'
 import DetailFlowers from '../Screens/DetailFlowers'
+import GenPlan from '../Screens/GenPlan'
 
 
 
@@ -48,10 +49,11 @@ const StackNavigation = () => {
       <Stack.Screen name="FlowersScreen" component={FlowersScreen} />
       <Stack.Screen name="DetailFlowers" component={DetailFlowers} />
       <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
-      <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} />
-      <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} />
-      <Stack.Screen name="Sothichvauutien" component={Sothichvauutien} />
-      <Stack.Screen name="Ghichuvaykien" component={Ghichuvaykien} />
+      <Stack.Screen name="GenPlan" component={GenPlan} />
+      {/* <Stack.Screen name="Thongtinvedamcuoi" component={Thongtinvedamcuoi} /> */}
+      {/* <Stack.Screen name="Dichvucanthiet" component={Dichvucanthiet} /> */}
+      {/* <Stack.Screen name="Sothichvauutien" component={Sothichvauutien} /> */}
+      {/* <Stack.Screen name="Ghichuvaykien" component={Ghichuvaykien} /> */}
       <Stack.Screen name="EditProfile" component={EditProfile} />
 
 
