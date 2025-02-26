@@ -8,7 +8,7 @@ function App() {
     <AppContextProvider>
       <AppNavigation />
     </AppContextProvider>
-    
+
   );
 }
 export default App;

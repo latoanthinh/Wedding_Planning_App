@@ -1,4 +1,4 @@
-import React, { useState,useContext, useEffect } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { View, Text, TextInput, TouchableOpacity, Image, ToastAndroid } from "react-native";
 import SignInPageStyles from "../Styles/SignInPageStyles";
 import { AppContext } from '../AppContext';
@@ -6,20 +6,20 @@ import { useDispatch, useSelector } from 'react-redux';
 import { DangNhapTaiKhoan } from '../redux/LoginSlice';
 
 const SignIn = (props) => {
-    
+
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
-    const {navigation } = props;
+    const { navigation } = props;
 
     const [email, setEmail] = useState('tran07hieu');
     const [password, setPassword] = useState('123456');
-    const {user, setUser} = useContext(AppContext);
+    const { user, setUser } = useContext(AppContext);
 
 
     const dispatch = useDispatch();
     const { loginData, loginStatus } = useSelector((state) => state.login);
 
-    
+
 
     useEffect(() => {
         if (loginStatus == "succeeded") {
@@ -29,12 +29,12 @@ const SignIn = (props) => {
         else if (loginStatus === 'failed') {
             ToastAndroid.show('Đăng nhập thất bại!', ToastAndroid.SHORT);
         }
-      }, [loginStatus,loginData, setUser])
-    
+    }, [loginStatus, loginData, setUser])
+
     //   console.log("Dữ liệu gửi đi:", { email, password });
-      const dangnhap = () => {
-        dispatch(DangNhapTaiKhoan({email, password ,setUser}));
-      }
+    const dangnhap = () => {
+        dispatch(DangNhapTaiKhoan({ email, password, setUser }));
+    }
 
     const togglePasswordVisibility = () => {
         setIsPasswordVisible(!isPasswordVisible);
@@ -45,7 +45,7 @@ const SignIn = (props) => {
     };
 
     const handleSignUpPress = () => {
-        navigation.navigate('SignUp'); 
+        navigation.navigate('SignUp');
     };
 
     return (
@@ -57,12 +57,12 @@ const SignIn = (props) => {
                     style={SignInPageStyles.input}
                     placeholder="Email"
                     placeholderTextColor="#aaa"
-                    value={email} 
+                    value={email}
                     onChangeText={text => setEmail(text)}
                 />
                 <Image source={require('../Assets/Images/user.png')} style={{ width: 20, height: 20, position: 'absolute', top: 15, left: 8 }} />
             </View>
-            
+
 
             <View>
                 <TextInput
@@ -70,7 +70,7 @@ const SignIn = (props) => {
                     placeholder="Password"
                     placeholderTextColor="#aaa"
                     secureTextEntry={!isPasswordVisible}
-                    value={password} 
+                    value={password}
                     onChangeText={text => setPassword(text)}
                 />
                 <Image source={require('../Assets/Images/lock.png')} style={{ width: 20, height: 20, position: 'absolute', top: 15, left: 8 }} />
@@ -114,11 +114,10 @@ const SignIn = (props) => {
                 </TouchableOpacity>
             </View>
 
-            <Text style={SignInPageStyles.guestText}>Continue as a Guest</Text>
-            <View style={{flexDirection:'row',alignItems:'center', justifyContent:'center'}} > 
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }} >
                 <Text style={SignInPageStyles.signUpPrompt}>
                     Don't have an account? </Text>
-                <TouchableOpacity onPress={handleSignUpPress} style={{marginLeft:20}}>
+                <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 20 }}>
                     <Text style={{ color: 'gray' }}>Sign up</Text>
                 </TouchableOpacity>
             </View>

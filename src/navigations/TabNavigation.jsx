@@ -20,7 +20,7 @@ const Tab = createBottomTabNavigator();
 
 const TabNavigation = () => {
   return (
-   
+
     <Tab.Navigator screenOptions={({ route }) => ({
       tabBarIcon: ({ focused, color, size }) => {
         let iconName;
@@ -36,7 +36,7 @@ const TabNavigation = () => {
         } else if (route.name === 'Setting') {
           iconName = focused ? 'person-outline' : 'person-outline';
 
-          
+
         }
 
 
@@ -44,12 +44,12 @@ const TabNavigation = () => {
       },
       tabBarActiveTintColor: 'tomato',
       tabBarInactiveTintColor: 'black',
-      tabBarInactiveTintColor: 'gray', // Màu của icon khi không được chọn
+      tabBarInactiveTintColor: 'gray',
       tabBarStyle: {
-        backgroundColor: 'white', // Màu nền của Tab Navigation
+        backgroundColor: 'white',
       },
       tabBarShowLabel: false,
-      
+
     })} >
       <Tab.Screen name="Home" component={ScreenHom} options={{
         headerShown: false,
@@ -64,7 +64,7 @@ const TabNavigation = () => {
         headerShown: false,
       }} />
     </Tab.Navigator>
-   
+
   )
 }
 
