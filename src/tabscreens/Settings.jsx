@@ -1,10 +1,14 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
-import React, { useState } from 'react';
+import React, { useState ,useContext} from 'react';
 import { languages } from '../Assets/languages';
+import {AppContext} from '../AppContext';
+
+
 
 const Settings = (props) => {
   const { navigation } = props;
   const [language, setLanguage] = useState('en');
+  const {user} = useContext(AppContext);
 
   const handle = (screenName) => {
     navigation.navigate(screenName);
@@ -27,8 +31,8 @@ const Settings = (props) => {
       <View style={styles.profileContainer}>
         <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
         <View style={styles.profileTextContainer}>
-          <Text style={styles.profileName}>{t('yourName')}</Text>
-          <Text style={styles.profileEmail}>{t('yourEmail')}</Text>
+          <Text style={styles.profileName}>{user.name}</Text>
+          <Text style={styles.profileEmail}>{user.email}</Text>
         </View>
       </View>
 
