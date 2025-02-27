@@ -15,13 +15,13 @@ import React, {
   useCallback,
   useContext,
 } from 'react';
-import {useDispatch, useSelector} from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Lottie from 'lottie-react-native';
-import {Hall} from '../redux/HallSlice';
+import { Hall } from '../redux/HallSlice';
 import styles from '../Styles/Home_Style';
-import {AppContext} from '../AppContext';
+import { AppContext } from '../AppContext';
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const slides = [
   {
@@ -38,15 +38,15 @@ const slides = [
   },
 ];
 
-const ScreenHome = ({navigation}) => {
+const ScreenHome = ({ navigation }) => {
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchClicked, setIsSearchClicked] = useState(false);
 
-  const {user} = useContext(AppContext);
+  const { user } = useContext(AppContext);
   const dispatch = useDispatch();
-  const {HallData, HallStatus} = useSelector(state => state.hall);
+  const { HallData, HallStatus } = useSelector(state => state.hall);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -58,7 +58,6 @@ const ScreenHome = ({navigation}) => {
   }, [dispatch]);
 
   useEffect(() => {
-    // Auto scroll carousel
     const timer = setInterval(() => {
       if (currentIndex < slides.length - 1) {
         flatListRef.current?.scrollToIndex({
@@ -87,13 +86,13 @@ const ScreenHome = ({navigation}) => {
   );
 
   const renderHallItem = useCallback(
-    ({item}) => (
+    ({ item }) => (
       <TouchableOpacity
         onPress={() =>
-          navigation.navigate('HallWeddings', {productIdHall: item._id})
+          navigation.navigate('HallWeddings', { productIdHall: item._id })
         }>
         <View style={styles.backgroudhall}>
-          <Image source={{uri: item.imageUrl}} style={styles.imghall} />
+          <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
           <Text style={styles.namehall} numberOfLines={1}>
             {item.name}
           </Text>
@@ -127,7 +126,7 @@ const ScreenHome = ({navigation}) => {
     </View>
   );
 
-  const renderCarouselItem = ({item}) => (
+  const renderCarouselItem = ({ item }) => (
     <View style={styles.slide}>
       <Image source={item.image} style={styles.slideImage} />
       <View style={styles.slideOverlay}>
@@ -205,7 +204,7 @@ const ScreenHome = ({navigation}) => {
                 <TouchableOpacity
                   key={index}
                   onPress={() =>
-                    flatListRef.current?.scrollToIndex({index, animated: true})
+                    flatListRef.current?.scrollToIndex({ index, animated: true })
                   }>
                   <View
                     style={[
@@ -217,7 +216,7 @@ const ScreenHome = ({navigation}) => {
               ))}
             </View>
           </View>
-          
+
           <View style={styles.surveyContainer}>
             <Image
               source={require('../Assets/Images/servey.png')}
@@ -286,7 +285,7 @@ const ScreenHome = ({navigation}) => {
           </TouchableOpacity>
 
           {/* Services */}
-          <Text style={[styles.sectionTitle, {marginLeft: 20, marginTop: 20}]}>
+          <Text style={[styles.sectionTitle, { marginLeft: 20, marginTop: 20 }]}>
             Dịch vụ khác
           </Text>
 
