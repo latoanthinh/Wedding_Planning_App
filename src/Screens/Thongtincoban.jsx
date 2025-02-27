@@ -154,6 +154,7 @@ const generatePlanFromBudget = (budget) => {
 
 const Thongtincoban = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
+  // Dùng chung một state 'answer' cho các câu hỏi dạng text
   const [answer, setAnswer] = useState("");
   const [date, setDate] = useState(new Date());
   const [openDatePicker, setOpenDatePicker] = useState(false);
@@ -221,7 +222,11 @@ const Thongtincoban = () => {
           <TextInput
             style={styles.input}
             placeholder="Nhập câu trả lời của bạn..."
-            onChangeText={(text) => setAnswer(text)}
+            onChangeText={(text) => {
+              // Chỉ cho phép nhập số (lọc ký tự không phải số)
+              const numericText = text.replace(/[^0-9]/g, "");
+              setAnswer(numericText);
+            }}
             value={answer}
             keyboardType="numeric"
           />
@@ -301,7 +306,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
-    alignSelf:'center'
+    alignSelf: "center",
   },
   input: {
     width: "100%",

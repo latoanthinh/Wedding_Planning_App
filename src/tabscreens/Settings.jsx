@@ -13,58 +13,66 @@ const Settings = (props) => {
   const t = (key) => languages[language][key];
 
   return (
-    <View style={{ flex: 1, padding: 20, backgroundColor: '#fff' }}>
-      <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
-        <Image source={require('../Assets/Images/Sort.png')} />
-        <Text style={{ fontSize: 24 }}>{t('profile')}</Text>
-        <View style={{ flexDirection: 'row' }}>
-          <Image source={require('../Assets/Images/home48.png')} style={{ width: 24, height: 24 }} />
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Image source={require('../Assets/Images/Sort.png')} style={styles.headerIcon} />
+        <Text style={styles.headerTitle}>{t('profile')}</Text>
+        <View style={styles.headerRight}>
+          <Image source={require('../Assets/Images/home48.png')} style={styles.headerIcon} />
         </View>
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 30 }}>
-        <Image source={require('../Assets/Images/mask.png')} style={{ borderRadius: 55 }} />
-        <View style={{ marginStart: 30 }}>
-          <Text style={{ fontSize: 24, marginTop: 10 }}>{t('yourName')}</Text>
-          <Text style={{ fontSize: 14, marginTop: 5, color: 'gray' }}>{t('yourEmail')}</Text>
+
+      {/* Profile Info */}
+      <View style={styles.profileContainer}>
+        <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
+        <View style={styles.profileTextContainer}>
+          <Text style={styles.profileName}>{t('yourName')}</Text>
+          <Text style={styles.profileEmail}>{t('yourEmail')}</Text>
         </View>
       </View>
-      <TouchableOpacity onPress={() => handle('EditProfile')} style={styles.signInButton}>
-        <Text style={styles.signInButtonText}>{t('editProfile')}</Text>
+
+      {/* Edit Profile Button */}
+      <TouchableOpacity onPress={() => handle('EditProfile')} style={styles.editProfileButton}>
+        <Text style={styles.editProfileButtonText}>{t('editProfile')}</Text>
       </TouchableOpacity>
-      <View style={{ borderBottomWidth: 2, borderColor: 'gray', width: '100%' }}></View>
 
-      <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image source={require('../Assets/Images/Users.png')} style={{ marginRight: 20, width: 25, height: 25 }} />
-          <Text style={{ fontSize: 18 }}>{t('accountType')}</Text>
+      <View style={styles.divider} />
+
+      {/* Options */}
+      <View style={styles.optionRow}>
+        <View style={styles.optionLeft}>
+          <Image source={require('../Assets/Images/Users.png')} style={styles.optionIcon} />
+          <Text style={styles.optionText}>{t('accountType')}</Text>
         </View>
-        <Image source={require('../Assets/Images/Next.png')} style={{ width: 25, height: 25 }} />
+        <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
       </View>
 
-      <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image source={require('../Assets/Images/addfolder.png')} style={{ marginRight: 20, width: 25, height: 25 }} />
-          <Text style={{ fontSize: 18 }}>{t('addBudgetLimit')}</Text>
+      <View style={styles.optionRow}>
+        <View style={styles.optionLeft}>
+          <Image source={require('../Assets/Images/addfolder.png')} style={styles.optionIcon} />
+          <Text style={styles.optionText}>{t('addBudgetLimit')}</Text>
         </View>
-        <Image source={require('../Assets/Images/Next.png')} style={{ width: 25, height: 25 }} />
+        <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
       </View>
 
-      <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image source={require('../Assets/Images/setting.png')} style={{ marginRight: 20, width: 25, height: 25 }} />
-          <Text style={{ fontSize: 18 }}>{t('settings')}</Text>
-        </View>
-      </View>
-
-      <View style={{ flexDirection: 'row', width: '100%', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <Image source={require('../Assets/Images/question.png')} style={{ marginRight: 20, width: 25, height: 25 }} />
-          <Text style={{ fontSize: 18 }}>{t('helpFeedback')}</Text>
+      <View style={styles.optionRow}>
+        <View style={styles.optionLeft}>
+          <Image source={require('../Assets/Images/setting.png')} style={styles.optionIcon} />
+          <Text style={styles.optionText}>{t('settings')}</Text>
         </View>
       </View>
 
-      <TouchableOpacity onPress={() => setLanguage(language === 'en' ? 'vi' : 'en')} style={{ marginTop: 20 }}>
-        <Text style={{ fontSize: 18 , paddingLeft: 45}}>
+      <View style={styles.optionRow}>
+        <View style={styles.optionLeft}>
+          <Image source={require('../Assets/Images/question.png')} style={styles.optionIcon} />
+          <Text style={styles.optionText}>{t('helpFeedback')}</Text>
+        </View>
+      </View>
+
+      {/* Language Switch */}
+      <TouchableOpacity onPress={() => setLanguage(language === 'en' ? 'vi' : 'en')} style={styles.languageButton}>
+        <Text style={styles.languageButtonText}>
           {language === 'en' ? 'Switch to Vietnamese' : 'Chuyển sang tiếng Anh'}
         </Text>
       </TouchableOpacity>
@@ -75,16 +83,100 @@ const Settings = (props) => {
 export default Settings;
 
 const styles = StyleSheet.create({
-  signInButton: {
+  container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#fff'
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
+  },
+  headerIcon: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain'
+  },
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333'
+  },
+  headerRight: {
+    flexDirection: 'row'
+  },
+  profileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 30
+  },
+  profileImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 40
+  },
+  profileTextContainer: {
+    marginLeft: 30
+  },
+  profileName: {
+    fontSize: 24,
+    marginTop: 10,
+    color: '#333'
+  },
+  profileEmail: {
+    fontSize: 14,
+    marginTop: 5,
+    color: 'gray'
+  },
+  editProfileButton: {
     backgroundColor: '#deeefe',
     paddingVertical: 15,
     borderRadius: 10,
-    marginBottom: 20,
-    marginTop: 20,
+    marginVertical: 20
   },
-  signInButtonText: {
+  editProfileButtonText: {
     color: '#001cff',
     textAlign: 'center',
     fontSize: 16,
+    fontWeight: 'bold'
   },
+  divider: {
+    borderBottomWidth: 2,
+    borderColor: 'gray',
+    marginVertical: 10
+  },
+  optionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 20
+  },
+  optionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  optionIcon: {
+    width: 25,
+    height: 25,
+    marginRight: 20,
+    resizeMode: 'contain'
+  },
+  optionText: {
+    fontSize: 18,
+    color: '#333'
+  },
+  nextIcon: {
+    width: 25,
+    height: 25,
+    resizeMode: 'contain'
+  },
+  languageButton: {
+    marginTop: 20,
+    paddingLeft: 45
+  },
+  languageButtonText: {
+    fontSize: 18,
+    color: '#001cff'
+  }
 });
