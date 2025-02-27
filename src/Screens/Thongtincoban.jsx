@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { 
+  View, 
+  Text, 
+  TextInput, 
+  TouchableOpacity, 
+  StyleSheet,
+  Image 
+} from "react-native";
 import Sound from "react-native-sound";
 import Video from "react-native-video";
 import DatePicker from "react-native-date-picker";
@@ -113,23 +120,21 @@ const generatePlanFromBudget = (budget) => {
   let leftover = budget;
   const plan = [];
 
-  // Lặp qua từng category (dress, hall, flowers, food, ...)
   Object.keys(productsData).forEach((categoryKey) => {
     const items = productsData[categoryKey];
     // Sắp xếp item theo giá tăng dần
     items.sort((a, b) => a.price - b.price);
 
-    // Tìm item đắt nhất có thể mua được với leftover
     let chosenItem = null;
     for (let i = items.length - 1; i >= 0; i--) {
       if (items[i].price <= leftover) {
         chosenItem = items[i];
-        leftover -= chosenItem.price; // trừ vào ngân sách còn lại
+        leftover -= chosenItem.price;
         break;
       }
     }
 
-    // Nếu không mua nổi item nào => có thể chọn item rẻ nhất (nhưng ghi chú)
+    // Nếu không mua nổi item nào, chọn item rẻ nhất và thông báo
     if (!chosenItem) {
       const cheapest = items[0];
       chosenItem = {
@@ -139,7 +144,7 @@ const generatePlanFromBudget = (budget) => {
     }
 
     plan.push({
-      category: categoryKey.toUpperCase(), // PLACE, DRESS, ...
+      category: categoryKey.toUpperCase(),
       ...chosenItem,
     });
   });
@@ -152,10 +157,7 @@ const Thongtincoban = () => {
   const [answer, setAnswer] = useState("");
   const [date, setDate] = useState(new Date());
   const [openDatePicker, setOpenDatePicker] = useState(false);
-
-  // Lưu ngân sách
   const [budget, setBudget] = useState(0);
-
   const [videoPlayed, setVideoPlayed] = useState(false);
   const [ttsPlayed, setTtsPlayed] = useState(false);
 
@@ -185,24 +187,22 @@ const Thongtincoban = () => {
   };
 
   const handleNext = () => {
-    // Nếu là câu hỏi về ngân sách, lưu lại
     if (surveyData[currentIndex].question.includes("Ngân sách")) {
-      setBudget(Number(answer)); // chuyển answer sang dạng số
+      setBudget(Number(answer));
     }
-
-    // Kiểm tra xem có phải câu cuối không
     if (currentIndex < surveyData.length - 1) {
-      // Chưa phải câu cuối => sang câu tiếp
       setCurrentIndex(currentIndex + 1);
       setAnswer("");
     } else {
-      // Đã tới câu cuối => Tính combo dựa trên budget
       const plan = generatePlanFromBudget(budget);
-
-      // Chuyển sang màn hình 'GenPlanScreen', kèm dữ liệu 'plan'
       navigation.navigate("GenPlan", { plan, budget });
     }
   };
+
+  // Nếu là câu hỏi về ngân sách, disable nút khi answer chưa được nhập
+  const isNextDisabled =
+    surveyData[currentIndex].question.includes("Ngân sách") &&
+    answer.trim() === "";
 
   return (
     <View style={styles.container}>
@@ -217,27 +217,29 @@ const Thongtincoban = () => {
       />
       <View style={styles.card}>
         <Text style={styles.question}>{surveyData[currentIndex].question}</Text>
-
-        {/* Nếu câu hỏi dạng text */}
         {surveyData[currentIndex].type === "text" && (
           <TextInput
             style={styles.input}
-            placeholder="Nhập số tiền..."
+            placeholder="Nhập câu trả lời của bạn..."
             onChangeText={(text) => setAnswer(text)}
             value={answer}
             keyboardType="numeric"
           />
         )}
-
-        {/* Nếu câu hỏi dạng date */}
         {surveyData[currentIndex].type === "date" && (
-          <TouchableOpacity onPress={() => setOpenDatePicker(true)} style={styles.datePickerButton}>
+          <TouchableOpacity
+            onPress={() => setOpenDatePicker(true)}
+            style={styles.datePickerButton}
+          >
+            <Image
+              source={require("../Assets/Images/calendar.png")}
+              style={styles.calendarIcon}
+            />
             <Text style={styles.dateText}>{date.toDateString()}</Text>
           </TouchableOpacity>
         )}
       </View>
 
-      {/* DatePicker */}
       <DatePicker
         modal
         open={openDatePicker}
@@ -250,7 +252,11 @@ const Thongtincoban = () => {
         onCancel={() => setOpenDatePicker(false)}
       />
 
-      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+      <TouchableOpacity
+        style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
+        onPress={handleNext}
+        disabled={isNextDisabled}
+      >
         <Text style={styles.buttonText}>
           {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
         </Text>
@@ -295,6 +301,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
     marginBottom: 10,
+    alignSelf:'center'
   },
   input: {
     width: "100%",
@@ -305,23 +312,38 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   datePickerButton: {
-    width: "100%",
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f0f0f0", // Màu nền nhẹ
     padding: 12,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#ced4da",
-    borderRadius: 8,
-    alignItems: "center",
-    backgroundColor: "#fff",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  calendarIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 8,
+    tintColor: "#333",
   },
   dateText: {
     fontSize: 16,
-    color: "#000",
+    color: "#333",
+    fontWeight: "bold",
   },
   nextButton: {
     backgroundColor: "#333",
     paddingVertical: 12,
     paddingHorizontal: 30,
     borderRadius: 8,
+  },
+  nextButtonDisabled: {
+    opacity: 0.5,
   },
   buttonText: {
     color: "white",
