@@ -4,8 +4,10 @@ const {width} = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    width:'100%',
+    height: '100%',
     backgroundColor: '#f9f9f9',
+    paddingTop: 15
   },
   scrollViewContent: {
     paddingBottom: 30,
@@ -17,8 +19,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   loadingAnimation: {
-    width: 100,
-    height: 100,
+    width: 50,
+    height: 50,
   },
   loadingText: {
     fontSize: 16,
