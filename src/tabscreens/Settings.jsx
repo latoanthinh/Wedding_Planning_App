@@ -59,6 +59,16 @@ const Settings = (props) => {
         </View>
         <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
       </View>
+      <View style={styles.optionRow}>
+        <View style={styles.optionLeft}>
+          <Image source={require('../Assets/Images/addfolder.png')} style={styles.optionIcon} />
+          <Text style={styles.optionText}>{t('plan')}</Text>
+        </View>
+        <TouchableOpacity onPress={()=> navigation.navigate("AllPlan")}>
+        <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
+        </TouchableOpacity>
+       
+      </View>
 
       <View style={styles.optionRow}>
         <View style={styles.optionLeft}>

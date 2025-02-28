@@ -8,6 +8,7 @@ export const languages = {
     addBudgetLimit: "Add budget limit",
     settings: "Setting",
     helpFeedback: "Help & Feedback",
+    plan:"Plan"
   },
   vi: {
     profile: "Hồ sơ",
@@ -18,5 +19,6 @@ export const languages = {
     addBudgetLimit: "Thêm giới hạn ngân sách",
     settings: "Cài đặt",
     helpFeedback: "Trợ giúp & Phản hồi",
+    plan:"Kế Hoạch"
   },
 };
