@@ -171,6 +171,9 @@ const Thongtincoban = () => {
   }, [currentIndex]);
 
   const playTTS = (ttsFile) => {
+    if (sound) {
+        sound.stop(); // Stop the currently playing sound
+    }
     const sound = new Sound(ttsFile, (error) => {
       if (error) {
         console.log("Error loading TTS sound", error);
