@@ -1,16 +1,19 @@
-import React, { useState, useEffect } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
+import React, { useState, useEffect, useContext } from "react";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
   StyleSheet,
-  Image 
+  Image, ActivityIndicator
 } from "react-native";
 import Sound from "react-native-sound";
 import Video from "react-native-video";
 import DatePicker from "react-native-date-picker";
 import { useNavigation } from "@react-navigation/native";
+import { useDispatch, useSelector } from 'react-redux';
+import { createPlan } from '../redux/CreatePlanSlice';
+import { AppContext } from "../AppContext";
 
 const surveyData = [
   {
@@ -32,6 +35,12 @@ const surveyData = [
     videoFile: require("../Assets/Videos/video3.mp4"),
   },
   {
+    question: "Địa điểm tổ chức đám cưới?",
+    type: "text",
+    ttsFile: require("../Assets/TTS/audio3.mp3"),
+    videoFile: require("../Assets/Videos/video3.mp4"),
+  },
+  {
     question: "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!",
     type: "info",
     ttsFile: require("../Assets/TTS/audio3.mp3"),
@@ -39,131 +48,60 @@ const surveyData = [
   },
 ];
 
-// Ví dụ danh sách sản phẩm ở mỗi hạng mục
-const productsData = {
-  dress: [
-    {
-      id: "dress1",
-      name: "Simple Dress",
-      price: 2000,
-      rating: 4.5,
-      discount: null,
-      image: require("../Assets/Images/dresses1.png"),
-    },
-    {
-      id: "dress2",
-      name: "Elegant Dress",
-      price: 4000,
-      rating: 4.8,
-      discount: "10% OFF",
-      image: require("../Assets/Images/dresses1.png"),
-    },
-  ],
-  hall: [
-    {
-      id: "hall1",
-      name: "Small Hall",
-      price: 3000,
-      rating: 4.6,
-      discount: null,
-      image: require("../Assets/Images/house.png"),
-    },
-    {
-      id: "hall2",
-      name: "Luxury Hall",
-      price: 7000,
-      rating: 4.9,
-      discount: "5% OFF",
-      image: require("../Assets/Images/house.png"),
-    },
-  ],
-  flowers: [
-    {
-      id: "flowers1",
-      name: "Basic Flowers",
-      price: 500,
-      rating: 4.4,
-      discount: null,
-      image: require("../Assets/Images/dresse.png"),
-    },
-    {
-      id: "flowers2",
-      name: "Premium Flowers",
-      price: 1500,
-      rating: 4.8,
-      discount: null,
-      image: require("../Assets/Images/dresse.png"),
-    },
-  ],
-  food: [
-    {
-      id: "food1",
-      name: "Standard Buffet",
-      price: 2000,
-      rating: 4.7,
-      discount: null,
-      image: require("../Assets/Images/fb_btn.png"),
-    },
-    {
-      id: "food2",
-      name: "Deluxe Buffet",
-      price: 5000,
-      rating: 4.9,
-      discount: "15% OFF",
-      image: require("../Assets/Images/fb_btn.png"),
-    },
-  ],
-};
+const Thongtincoban = (props) => {
 
-// Hàm chọn 1 sản phẩm/hạng mục sao cho tổng không vượt quá budget
-const generatePlanFromBudget = (budget) => {
-  let leftover = budget;
-  const plan = [];
-
-  Object.keys(productsData).forEach((categoryKey) => {
-    const items = productsData[categoryKey];
-    // Sắp xếp item theo giá tăng dần
-    items.sort((a, b) => a.price - b.price);
-
-    let chosenItem = null;
-    for (let i = items.length - 1; i >= 0; i--) {
-      if (items[i].price <= leftover) {
-        chosenItem = items[i];
-        leftover -= chosenItem.price;
-        break;
-      }
-    }
-
-    // Nếu không mua nổi item nào, chọn item rẻ nhất và thông báo
-    if (!chosenItem) {
-      const cheapest = items[0];
-      chosenItem = {
-        ...cheapest,
-        name: `${cheapest.name} (not enough budget)`,
-      };
-    }
-
-    plan.push({
-      category: categoryKey.toUpperCase(),
-      ...chosenItem,
-    });
+  // Dùng chung một state 'answer' cho các câu hỏi dạng text
+  const [answers, setAnswers] = useState({
+    eventDate: new Date(),
+    guestCount: "",
+    budget: "",
+    planLocation: "",
+    userId: "",
   });
 
-  return plan;
-};
+  useEffect(() => {
+    if (user && user._id) {
+      setAnswers((prev) => ({ ...prev, userId: user._id }));
+    }
 
-const Thongtincoban = () => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  // Dùng chung một state 'answer' cho các câu hỏi dạng text
-  const [answer, setAnswer] = useState("");
-  const [date, setDate] = useState(new Date());
-  const [openDatePicker, setOpenDatePicker] = useState(false);
-  const [budget, setBudget] = useState(0);
+  }, [user]); // Cập nhật userId khi user thay đổi
+
+
+  const { user } = useContext(AppContext);
   const [videoPlayed, setVideoPlayed] = useState(false);
   const [ttsPlayed, setTtsPlayed] = useState(false);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [openDatePicker, setOpenDatePicker] = useState(false);
+  const { navigation } = props;
+  const dispatch = useDispatch();
+  const { loading, error } = useSelector((state) => state.createplan);
+  
 
-  const navigation = useNavigation();
 
+
+
+
+
+  const handleNext = () => {
+    
+    if (currentIndex < surveyData.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      dispatch(createPlan({
+        eventDate: answers.eventDate.toISOString(),
+        guestCount: answers.guestCount,
+        budget: answers.budget,
+        planLocation: answers.planLocation,
+        userId: answers.userId
+      }))
+        .unwrap()
+        .then((data) => {
+          alert("Tạo kế hoạch thành công!");
+          navigation.navigate("GenPlan", { planId: data.plan._id });
+        })
+        .catch((err) => alert("Lỗi: " + err));
+    }
+  };
   useEffect(() => {
     setTtsPlayed(false);
     setVideoPlayed(false);
@@ -190,23 +128,23 @@ const Thongtincoban = () => {
     return () => sound.release();
   };
 
-  const handleNext = () => {
-    if (surveyData[currentIndex].question.includes("Ngân sách")) {
-      setBudget(Number(answer));
-    }
-    if (currentIndex < surveyData.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setAnswer("");
-    } else {
-      const plan = generatePlanFromBudget(budget);
-      navigation.navigate("GenPlan", { plan, budget });
-    }
-  };
+  // const handleNext = () => {
+  //   if (surveyData[currentIndex].question.includes("Ngân sách")) {
+  //     setBudget(Number(answer));
+  //   }
+  //   if (currentIndex < surveyData.length - 1) {
+  //     setCurrentIndex(currentIndex + 1);
+  //     setAnswer("");
+  //   } else {
+  //     const plan = generatePlanFromBudget(budget);
+  //     navigation.navigate("GenPlan", { plan, budget });
+  //   }
+  // };
 
   // Nếu là câu hỏi về ngân sách, disable nút khi answer chưa được nhập
-  const isNextDisabled =
-    surveyData[currentIndex].question.includes("Ngân sách") &&
-    answer.trim() === "";
+  // const isNextDisabled =
+  //   surveyData[currentIndex].question.includes("Ngân sách") &&
+  //   answer.trim() === "";
 
   return (
     <View style={styles.container}>
@@ -224,14 +162,18 @@ const Thongtincoban = () => {
         {surveyData[currentIndex].type === "text" && (
           <TextInput
             style={styles.input}
-            placeholder="Nhập câu trả lời của bạn..."
-            onChangeText={(text) => {
-              // Chỉ cho phép nhập số (lọc ký tự không phải số)
-              const numericText = text.replace(/[^0-9]/g, "");
-              setAnswer(numericText);
-            }}
-            value={answer}
-            keyboardType="numeric"
+            placeholder="Nhập thông tin"
+            value={
+              currentIndex === 1
+                ? answers.guestCount
+                : currentIndex === 2
+                ? answers.budget
+                : answers.planLocation
+            }
+            onChangeText={(text) => setAnswers({
+              ...answers,
+              [currentIndex === 1 ? "guestCount" : currentIndex === 2 ? "budget" : "planLocation"]: text
+            })}
           />
         )}
         {surveyData[currentIndex].type === "date" && (
@@ -239,11 +181,7 @@ const Thongtincoban = () => {
             onPress={() => setOpenDatePicker(true)}
             style={styles.datePickerButton}
           >
-            <Image
-              source={require("../Assets/Images/calendar.png")}
-              style={styles.calendarIcon}
-            />
-            <Text style={styles.dateText}>{date.toDateString()}</Text>
+            <Text style={styles.dateText}>{answers.eventDate.toDateString()}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -251,24 +189,20 @@ const Thongtincoban = () => {
       <DatePicker
         modal
         open={openDatePicker}
-        date={date}
+        date={answers.eventDate}
         mode="date"
         onConfirm={(selectedDate) => {
           setOpenDatePicker(false);
-          setDate(selectedDate);
+          setAnswers(prev => ({ ...prev, eventDate: selectedDate }));
         }}
         onCancel={() => setOpenDatePicker(false)}
       />
 
-      <TouchableOpacity
-        style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
-        onPress={handleNext}
-        disabled={isNextDisabled}
-      >
-        <Text style={styles.buttonText}>
-          {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
-        </Text>
+    <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
+        {loading ? <ActivityIndicator color="white" /> : <Text style={styles.buttonText}>Tiếp theo</Text>}
       </TouchableOpacity>
+
+      {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
 };

@@ -154,7 +154,7 @@ const SignIn = (props) => {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }} >
                 <Text style={SignInPageStyles.signUpPrompt}>
                     Don't have an account? </Text>
-                <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 20 }}>
+                <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 10, fontFamily: 'Playfair_me' }}>
                     <Text style={{ color: 'gray' }}>Sign up</Text>
                 </TouchableOpacity>
             </View>

@@ -8,8 +8,8 @@ import { DangKyTaiKhoan } from '../redux/RegisterSlice';
 
 const SignUp = () => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
-    const [isChecked, setIsChecked] = useState(false); // State to track the checkbox status
-    const navigation = useNavigation(); // Hook to access navigation
+    const [isChecked, setIsChecked] = useState(false);
+    const navigation = useNavigation();
 
 
     const [email, setEmail] = useState('');
@@ -108,11 +108,11 @@ const SignUp = () => {
     };
 
     const toggleCheckbox = () => {
-        setIsChecked(!isChecked); // Toggle the checkbox state
+        setIsChecked(!isChecked);
     };
 
     const handleSignUpPress = () => {
-        navigation.navigate('SignIn'); // Navigate to the SignUp screen
+        navigation.navigate('SignIn');
     };
     return (
         <View style={SignInPageStyles.container}>
@@ -184,7 +184,7 @@ const SignUp = () => {
                         style={SignInPageStyles.checkbox}
                     />
                 </TouchableOpacity>
-                <Text style={{ fontSize: 17, fontWeight: 'bold' }}>I Agree with privacy and policy</Text>
+                <Text style={{ fontSize: 17, fontFamily: 'Playfair_me' }}>I Agree with privacy and policy</Text>
             </View>
             {policyError ? <Text style={{ color: 'red', fontSize: 12, textAlign: 'center' }}>{policyError}</Text> : null}
             <TouchableOpacity style={SignInPageStyles.signInButton} onPress={dangky}>
@@ -193,7 +193,7 @@ const SignUp = () => {
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 15 }} >
                 <Text style={SignInPageStyles.signUpPrompt}>
                     Don't have an account? </Text>
-                <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 20 }}>
+                <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 10, fontFamily: 'Playfair_me' }}>
                     <Text style={{ color: 'gray' }}>Sign in</Text>
                 </TouchableOpacity>
             </View>

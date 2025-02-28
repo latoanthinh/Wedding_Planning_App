@@ -7,6 +7,7 @@ import  RegisterReducer  from './RegisterSlice';
 import  ChitietsanphamReducer  from './ChitietsanphamSlice';
 import  ChitietFlowersReducer  from './ChitietFlowersSlice';
 import  HallTheoWeddingHallsReducer  from './HallTheoWeddingHallsSlice';
+import  CreatePlanReducer  from './CreatePlanSlice';
 
 
 
@@ -15,6 +16,7 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    createplan:CreatePlanReducer,
     halltheowedding: HallTheoWeddingHallsReducer,
     chitietflowers:ChitietFlowersReducer,
     flowers: FlowersReducer,
