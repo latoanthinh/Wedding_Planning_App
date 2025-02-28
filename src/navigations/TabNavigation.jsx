@@ -42,10 +42,10 @@ const TabNavigation = () => {
         tabBarStyle: {
           backgroundColor: colorInterpolation,
           borderTopWidth: 0,
-          elevation: 10,
+          // elevation: 10,
           borderTopLeftRadius: 15,
           borderTopRightRadius: 15,
-          position: 'absolute',
+          // position: 'absolute',
           left: 10,
           right: 10,
           height: 65,
@@ -55,6 +55,7 @@ const TabNavigation = () => {
         tabBarLabelStyle: {
           fontSize: 12,
           marginBottom: 0,
+          fontFamily:'Playfair_me',
         },
         tabBarShowLabel: true,
       })}>

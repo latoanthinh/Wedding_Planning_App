@@ -15,8 +15,21 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { FlowersAPI } from "../redux/FlowersSlice";
+import Lottie from 'lottie-react-native'; // Import Lottie
 
 const { width } = Dimensions.get("window");
+
+const renderLoading = () => (
+  <View style={styles.loadingContainer}>
+    <Lottie
+      source={require('../Assets/Animations/loading.json')}
+      autoPlay
+      loop
+      style={styles.loadingAnimation}
+    />
+    <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+  </View>
+);
 
 const FlowersScreen = (props) => {
   const { navigation } = props;
@@ -57,18 +70,20 @@ const FlowersScreen = (props) => {
     }).format(price);
   };
 
-  const ProductCard = ({ item }) => (
-    <TouchableOpacity onPress={() => openModal(item)}>
+  const renderItem = ({ item }) => {
+    return (
       <View style={styles.card}>
-        <Image source={{ uri: item.imageUrl }} style={styles.image} />
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productPrice}>{formatPrice(item.price)} đ</Text>
-        <View style={styles.ratingContainer}>
-          <Text style={styles.ratingText}>{item.description}</Text>
-        </View>
+        <TouchableOpacity onPress={() => openModal(item)}>
+          <Image source={{ uri: item.imageUrl }} style={styles.image} />
+          <Text style={styles.productName}>{item.name}</Text>
+          <Text style={styles.productPrice}>{formatPrice(item.price)} đ</Text>
+          <View style={styles.ratingContainer}>
+            <Text style={styles.ratingText}>{item.description}</Text>
+          </View>
+        </TouchableOpacity>
       </View>
-    </TouchableOpacity>
-  );
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -82,13 +97,13 @@ const FlowersScreen = (props) => {
         </TouchableOpacity>
       </View>
       <TextInput style={styles.searchBox} placeholder="Search..." />
-      {FlowersStatus === "loading" && <ActivityIndicator size="large" color="#0000ff" />}
+      {FlowersStatus === "loading" && renderLoading()}
       {FlowersStatus === "succeeded" && (
         <FlatList
           numColumns={numColumns}
           data={FlowersData}
           keyExtractor={(product) => product._id.toString()}
-          renderItem={({ item }) => <ProductCard item={item} />}
+          renderItem={renderItem}
           showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.flatListContainer}
         />
@@ -140,6 +155,20 @@ const FlowersScreen = (props) => {
 export default FlowersScreen;
 
 const styles = StyleSheet.create({
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingAnimation: {
+    width: 50,
+    height: 50,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#000',
+  },
   heartImage: {
     position: "absolute",
     top: 10,
@@ -161,7 +190,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     alignItems: "center",
     paddingTop: 30,
-    paddingBottom: 20
+    paddingBottom: 20,
   },
   title: { fontSize: 22, fontWeight: "bold", color: "black" },
   searchBox: {
@@ -169,6 +198,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     marginBottom: 10,
+    margin: 8
   },
   card: {
     flex: 1,
