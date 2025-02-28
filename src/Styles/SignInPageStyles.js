@@ -10,18 +10,17 @@ const SignInPageStyles = StyleSheet.create({
     },
     welcomeText: {
         fontSize: 28,
-        fontWeight: 'bold',
         textAlign: 'start',
         marginBottom: 10,
         color: '#333',
-        fontFamily: 'Playfair_me',
+        fontFamily: 'PlayfairDisplay2',
     },
     instructionText: {
         fontSize: 16,
         textAlign: 'start',
         marginBottom: 30,
         color: '#666',
-        fontFamily: 'Playfair_Me', 
+        fontFamily: 'Playfair_me',
     },
     input: {
         height: 50,
@@ -31,7 +30,8 @@ const SignInPageStyles = StyleSheet.create({
         paddingHorizontal: 15,
         marginBottom: 15,
         backgroundColor: '#f9f9f9',
-        paddingStart: 40
+        paddingStart: 40,
+        fontFamily: 'Playfair_me'
     },
     rememberMeContainer: {
         flexDirection: 'row',
@@ -47,10 +47,12 @@ const SignInPageStyles = StyleSheet.create({
     rememberMeText: {
         color: '#000',
         fontSize: 14,
+        fontFamily: 'Playfair-re'
     },
     forgotPasswordText: {
         color: '#000',
         fontSize: 14,
+        fontFamily: 'Playfair-re'
     },
     signInButton: {
         backgroundColor: '#000',
@@ -62,7 +64,6 @@ const SignInPageStyles = StyleSheet.create({
     signInButtonText: {
         color: '#fff',
         textAlign: 'center',
-        fontWeight: 'bold',
         fontSize: 16,
         fontFamily: 'Playfair_me',
     },
@@ -71,6 +72,7 @@ const SignInPageStyles = StyleSheet.create({
         marginVertical: 10,
         color: '#000000',
         fontSize: 17,
+        fontFamily: 'Playfair_me'
     },
     socialButtonsContainer: {
         flexDirection: 'row',
@@ -87,24 +89,16 @@ const SignInPageStyles = StyleSheet.create({
         width: '100%',
         height: '100%',
     },
-    guestText: {
-        textAlign: 'start',
-        color: '#BABABA',
-        marginBottom: 10,
-        textDecorationLine: 'underline',
-        fontSize: 17,
-        justifyContent:'center',
-        alignItems:'center'
-    },
     signUpPrompt: {
         textAlign: 'start',
         color: '#000000',
         fontSize: 17,
+        fontFamily: 'Playfair_me'
     },
     signUpText: {
         color: '#BABABA',
         fontSize: 17,
-        fontFamily: 'Playfair_me',
+        fontFamily: 'Playfair_me'
     },
 });
 

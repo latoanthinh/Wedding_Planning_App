@@ -1,69 +1,83 @@
 import {
     StyleSheet, Text, View, Image, FlatList, ActivityIndicator,
-    ToastAndroid, TouchableOpacity
+    TouchableOpacity, Dimensions, Pressable
 } from 'react-native';
 import React, { useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { HallTheoWedding } from '../redux/HallTheoWeddingHallsSlice';
+import Lottie from 'lottie-react-native';
+
+const { width } = Dimensions.get('window');
 
 const HallWeddings = ({ navigation, route }) => {
-    const { productIdHall } = route?.params; // Lấy productIdHall từ params
-    
+    const { productIdHall } = route?.params;
     const dispatch = useDispatch();
-    const { HallTheoWeddingFlowersData, HallTheoWeddingFlowersStatus,error } = useSelector(state => state.halltheowedding);
+    const { HallTheoWeddingFlowersData, HallTheoWeddingFlowersStatus } = useSelector(state => state.halltheowedding);
 
     useEffect(() => {
-        
         if (productIdHall) {
             dispatch(HallTheoWedding(productIdHall));
         }
     }, [productIdHall, dispatch]);
-    
+    // dấu chấm động
+    const formatPrice = (price) => {
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    };
 
     const renderHallItem = ({ item }) => {
         return (
-            <TouchableOpacity >
+            <Pressable>
                 <View style={styles.backgroudhall}>
                     <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
                     <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
                     <View style={styles.bottomhall}>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <Image source={require('../Assets/Images/numberperson.png')} style={{ width: 15, height: 15 }} />
+                            <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
                             <Text>{item.SoLuongKhach} Khách</Text>
                         </View>
                         <View style={{ flexDirection: "row", alignItems: "center" }}>
-                    <Image source={require('../Assets/Images/price.png')} style={{ width: 15, height: 15 }} />
-                    <Text> {item.price}Đ</Text>
+                            <Image source={require('../Assets/Images/price.png')} style={styles.iconSmall} />
+                            <Text> {formatPrice(item.price)} VNĐ</Text>
+                        </View>
                     </View>
-                    </View>
-                    
-                  
                 </View>
-            </TouchableOpacity>
+            </Pressable>
         );
     };
 
+    const renderLoading = () => (
+        <View style={styles.loadingContainer}>
+            <Lottie
+                source={require('../Assets/Animations/loading.json')}
+                autoPlay
+                loop
+                style={styles.loadingAnimation}
+            />
+            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+        </View>
+    );
+
     return (
         <View style={styles.container}>
-
-
             <View style={styles.header}>
-                            <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
-                                <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
-                            </TouchableOpacity>
-                            <Text style={styles.title}>WEDDINGHALLS</Text>
-                            <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
-                                <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-                            </TouchableOpacity>
-                        </View>
-            {HallTheoWeddingFlowersStatus === 'loading' && <ActivityIndicator size="large" color="#0000ff" />}
+                <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
+                    <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
+                </TouchableOpacity>
+                <Text style={styles.title}>WEDDING HALLS</Text>
+                <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
+                    <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+                </TouchableOpacity>
+            </View>
+
+            {HallTheoWeddingFlowersStatus === 'loading' && renderLoading()}
             {HallTheoWeddingFlowersStatus === 'succeeded' && (
                 <FlatList
-                data={Array.isArray(HallTheoWeddingFlowersData) ? HallTheoWeddingFlowersData : [HallTheoWeddingFlowersData]}
-                renderItem={renderHallItem}
-                keyExtractor={(item) => item._id.toString()}
-                showsHorizontalScrollIndicator={false}
-            />
+                    data={Array.isArray(HallTheoWeddingFlowersData) ? HallTheoWeddingFlowersData : [HallTheoWeddingFlowersData]}
+                    renderItem={renderHallItem}
+                    keyExtractor={(item) => item._id.toString()}
+                    showsVerticalScrollIndicator={false}
+                    contentContainerStyle={styles.flatListContent}
+                />
             )}
             {HallTheoWeddingFlowersStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
         </View>
@@ -73,47 +87,75 @@ const HallWeddings = ({ navigation, route }) => {
 export default HallWeddings;
 
 const styles = StyleSheet.create({
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingTop: 20, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingTop: 20,
+        paddingBottom: 10,
+    },
     icon: { width: 24, height: 24 },
-    title: { fontSize: 22, fontWeight: 'bold', color: 'black' },
+    title: { fontSize: 24, fontWeight: 'bold', color: '#333' },
     bottomhall: {
         flexDirection: "row",
         justifyContent: 'space-between',
-        padding:10,
-        width:"100%"
+        padding: 10,
+        width: "100%"
     },
     namehall: {
-        fontSize: 20,
+        fontSize: 18,
         fontWeight: "bold",
-        marginTop:5
+        marginTop: 5,
+        color: '#555'
     },
     imghall: {
         width: "100%",
-        height: 140,
-        borderTopLeftRadius: 20,  // Bo góc trái trên
-        borderTopRightRadius: 20, // Bo góc phải trên
+        height: width * 0.35,
+        borderTopLeftRadius: 20,
+        borderTopRightRadius: 20,
     },
-    
     backgroudhall: {
-        width: 350,
-        height: 220,
+        width: width * 0.9,
+        height: width * 0.55,
         marginRight: 10,
-        borderRadius: 15, // Bo góc toàn bộ item
-        overflow: "hidden", // Đảm bảo hình ảnh không bị lẹm ra ngoài
-        backgroundColor: "#fff", // Nền trắng cho card
-        elevation: 2, // Bóng đổ trên Android
+        borderRadius: 15,
+        overflow: "hidden",
+        backgroundColor: "#fff",
+        elevation: 3,
         shadowColor: "#000",
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 5,
-        marginTop:10,
-        alignItems:"center"
+        marginTop: 15,
+        alignItems: "center"
     },
-    
     container: {
         flex: 1,
         padding: 20,
         backgroundColor: '#fff',
-        alignItems:"center"
-      }
+        alignItems: "center"
+    },
+    iconSmall: {
+        width: 15,
+        height: 15,
+        marginRight: 5
+    },
+    flatListContent: {
+        paddingBottom: 20
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center'
+    },
+    loadingAnimation: {
+        width: 100,
+        height: 100,
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        color: '#555',
+    }
 });

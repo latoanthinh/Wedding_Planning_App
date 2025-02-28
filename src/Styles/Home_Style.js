@@ -1,10 +1,10 @@
-import {StyleSheet, Dimensions} from 'react-native';
+import { StyleSheet, Dimensions } from 'react-native';
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const styles = StyleSheet.create({
   container: {
-    width:'100%',
+    width: '100%',
     height: '100%',
     backgroundColor: '#f9f9f9',
     paddingTop: 15
@@ -30,32 +30,19 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 20,
-    paddingBottom: 10,
-  },
-  menuIcon: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
+    paddingTop: 30,
   },
   rightHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 15,
-  },
-  notificationImage: {
-    width: 24,
-    height: 24,
-    resizeMode: 'contain',
-    marginRight: 10,
   },
   searchIcon: {
     width: 24,
     height: 24,
-    resizeMode: 'contain',
+
   },
   greetingText: {
     fontSize: 22,
@@ -174,9 +161,9 @@ const styles = StyleSheet.create({
     marginRight: 15,
     padding: 10,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
-    shadowRadius: 4,
+    shadowRadius: 12,
     elevation: 3,
   },
   imghall: {
@@ -239,7 +226,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
@@ -282,7 +269,7 @@ const styles = StyleSheet.create({
     padding: 12,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
@@ -296,7 +283,7 @@ const styles = StyleSheet.create({
     marginTop: 15,
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
@@ -368,20 +355,20 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 3},
+    shadowOffset: { width: 0, height: 3 },
     shadowOpacity: 0.1,
     shadowRadius: 5,
     elevation: 3,
     marginHorizontal: 20,
     marginBottom: 20,
-    height:100
+    height: 100
   },
 
   surveyIcon: {
     width: 100,
     height: 100,
     resizeMode: 'contain',
-    marginLeft:15,
+    marginLeft: 15,
   },
 
   surveyContent: {
@@ -418,6 +405,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
   },
+  
 });
 
 export default styles;

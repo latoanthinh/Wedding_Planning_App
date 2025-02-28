@@ -7,6 +7,8 @@ import {
   ScrollView,
   StatusBar,
   Dimensions,
+  Pressable,
+  Animated,
 } from 'react-native';
 import React, {
   useRef,
@@ -43,6 +45,7 @@ const ScreenHome = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const [isSearchClicked, setIsSearchClicked] = useState(false);
+  const scrollX = useRef(new Animated.Value(0)).current;
 
   const { user } = useContext(AppContext);
   const dispatch = useDispatch();
@@ -87,7 +90,7 @@ const ScreenHome = ({ navigation }) => {
 
   const renderHallItem = useCallback(
     ({ item }) => (
-      <TouchableOpacity
+      <Pressable
         onPress={() =>
           navigation.navigate('HallWeddings', { productIdHall: item._id })
         }>
@@ -109,7 +112,7 @@ const ScreenHome = ({ navigation }) => {
             </View>
           </View>
         </View>
-      </TouchableOpacity>
+      </Pressable>
     ),
     [navigation],
   );
@@ -138,7 +141,6 @@ const ScreenHome = ({ navigation }) => {
     </View>
   );
 
-
   return (
     <View style={styles.container}>
       <StatusBar
@@ -155,23 +157,12 @@ const ScreenHome = ({ navigation }) => {
           showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <Image
-              source={require('../Assets/Images/Sort.png')}
-              style={styles.menuIcon}
-            />
-            <View style={styles.rightHeader}>
+            <TouchableOpacity
+              onPress={() => setIsSearchClicked(!isSearchClicked)}>
               <Image
-                source={require('../Assets/Images/notifi.png')}
-                style={styles.notificationImage}
-              />
-              <TouchableOpacity
-                onPress={() => setIsSearchClicked(!isSearchClicked)}>
-                <Image
-                  source={require('../Assets/Images/search.png')}
-                  style={styles.searchIcon}
-                />
-              </TouchableOpacity>
-            </View>
+                source={require('../Assets/Images/search.png')}
+                style={styles.searchIcon} />
+            </TouchableOpacity>
           </View>
 
           {/* Greeting */}
@@ -198,22 +189,57 @@ const ScreenHome = ({ navigation }) => {
               renderItem={renderCarouselItem}
               snapToInterval={width}
               decelerationRate="fast"
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                { useNativeDriver: false }
+              )}
             />
             <View style={styles.indicatorContainer}>
-              {slides.map((_, index) => (
-                <TouchableOpacity
-                  key={index}
-                  onPress={() =>
-                    flatListRef.current?.scrollToIndex({ index, animated: true })
-                  }>
-                  <View
-                    style={[
-                      styles.dot,
-                      currentIndex === index && styles.activeDot,
-                    ]}
-                  />
-                </TouchableOpacity>
-              ))}
+              {slides.map((_, index) => {
+                const inputRange = [
+                  (index - 1) * width,
+                  index * width,
+                  (index + 1) * width,
+                ];
+
+                const dotOpacity = scrollX.interpolate({
+                  inputRange,
+                  outputRange: [0.5, 1, 0.5],
+                  extrapolate: 'clamp',
+                });
+
+                const dotBounce = scrollX.interpolate({
+                  inputRange,
+                  outputRange: [0.9, 1.2, 0.9],
+                  extrapolate: 'clamp',
+                });
+
+                const dotColor = scrollX.interpolate({
+                  inputRange,
+                  outputRange: ['#ccc', '#f3f6f4', '#ccc'], 
+                  extrapolate: 'clamp',
+                });
+
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() =>
+                      flatListRef.current?.scrollToIndex({ index, animated: true })
+                    }>
+                    <Animated.View
+                      style={[
+                        styles.dot,
+                        {
+                          opacity: dotOpacity,
+                          transform: [{ scale: dotBounce }],
+                          backgroundColor: dotColor, 
+                        },
+                        currentIndex === index && styles.activeDot,
+                      ]}
+                    />
+                  </TouchableOpacity>
+                );
+              })}
             </View>
           </View>
 
@@ -240,7 +266,7 @@ const ScreenHome = ({ navigation }) => {
           <View style={styles.recommendedHeader}>
             <Text style={styles.recommendedTitle}>Recommended</Text>
             <TouchableOpacity>
-              <Text style={styles.viewAll}>Xem tất cả</Text>
+              <Text style={styles.viewAll}>View all</Text>
             </TouchableOpacity>
           </View>
 
