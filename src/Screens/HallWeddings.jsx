@@ -1,5 +1,5 @@
 import {
-    StyleSheet, Text, View, Image, FlatList, ActivityIndicator,
+    StyleSheet, Text, View, Image, FlatList,
     TouchableOpacity, Dimensions, Pressable
 } from 'react-native';
 import React, { useEffect } from 'react';
@@ -92,8 +92,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
-        paddingTop: 20,
+        paddingTop: 30,
         paddingBottom: 10,
+        paddingHorizontal: 10
     },
     icon: { width: 24, height: 24 },
     title: { fontSize: 24, fontWeight: 'bold', color: '#333' },
@@ -110,13 +111,13 @@ const styles = StyleSheet.create({
         color: '#555'
     },
     imghall: {
-        width: "100%",
+        width: "99%",
         height: width * 0.35,
         borderTopLeftRadius: 20,
         borderTopRightRadius: 20,
     },
     backgroudhall: {
-        width: width * 0.9,
+        width: "auto",
         height: width * 0.55,
         marginRight: 10,
         borderRadius: 15,
@@ -128,13 +129,16 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.2,
         shadowRadius: 5,
         marginTop: 15,
-        alignItems: "center"
+        alignItems: "center",
+        marginLeft: 10
     },
     container: {
-        flex: 1,
-        padding: 15,
+        width: '100%',
+        height: '100%',
+        padding: 10,
         backgroundColor: '#fff',
-        alignItems: "center"
+        alignItems: "center",
+        justifyContent: "center",
     },
     iconSmall: {
         width: 15,
