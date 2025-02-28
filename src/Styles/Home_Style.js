@@ -47,26 +47,27 @@ const styles = StyleSheet.create({
   greetingText: {
     fontSize: 22,
     color: '#333',
-    fontWeight: 'bold',
     marginLeft: 20,
     marginBottom: 6,
+    fontFamily:'Playfair_me'
   },
   welcomeText: {
     fontSize: 14,
     color: '#666',
     marginLeft: 20,
     marginBottom: 20,
+    fontFamily:'Playfair_me'
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily:'Playfair_me',
     color: '#333',
     marginLeft: 0,
     marginBottom: 0,
   },
   dealsTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily:'Playfair_me',
     color: '#333',
     marginLeft: 20,
     marginTop: 10,
@@ -101,7 +102,7 @@ const styles = StyleSheet.create({
   slideTitle: {
     color: '#fff',
     fontSize: 20,
-    fontWeight: 'bold',
+    fontFamily:'Playfair_me',
     marginBottom: 10,
   },
   exploreButton: {
@@ -115,6 +116,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '500',
     fontSize: 14,
+    fontFamily:'Playfair_me',
   },
   indicatorContainer: {
     position: 'absolute',
@@ -142,13 +144,14 @@ const styles = StyleSheet.create({
   },
   recommendedTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontFamily:'Playfair_me',
     color: '#333',
   },
   viewAll: {
     fontSize: 14,
     color: '#FF6B6B',
     fontWeight: '500',
+    fontFamily:'Playfair_me',
   },
   hallListContainer: {
     paddingLeft: 20,
@@ -174,7 +177,7 @@ const styles = StyleSheet.create({
   },
   namehall: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontFamily:'Playfair_me',
     color: '#333',
     marginBottom: 4,
   },
@@ -182,6 +185,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#666',
     marginBottom: 6,
+    fontFamily:'Playfair_me',
   },
   bottomhall: {
     flexDirection: 'row',
@@ -200,6 +204,7 @@ const styles = StyleSheet.create({
   detailText: {
     fontSize: 12,
     color: '#666',
+    fontFamily:'Playfair_me',
   },
   errorContainer: {
     marginHorizontal: 20,
@@ -211,6 +216,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#FF6B6B',
     fontWeight: '500',
+    fontFamily:'Playfair_me',
   },
   dressContainer: {
     flexDirection: 'row',
@@ -248,7 +254,7 @@ const styles = StyleSheet.create({
   dressCollectionText: {
     color: '#fff',
     fontSize: 9,
-    fontWeight: 'bold',
+    fontFamily:'Playfair_me',
     marginBottom: 5,
   },
   dressSubtitle: {
@@ -302,14 +308,14 @@ const styles = StyleSheet.create({
   },
   locationTitle: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily:'Playfair_me',
     color: '#333',
     marginVertical: 8,
   },
   statusText: {
     color: '#4CAF50',
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily:'Playfair_me',
   },
   flowerContainer: {
     width: '90%',
@@ -327,10 +333,10 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: 'absolute',
-    right: 0, // Đặt overlay về bên phải
-    width: '50%', // Chỉ tối nửa bên phải
+    right: 0,
+    width: '50%', 
     height: '100%',
-    backgroundColor: 'rgba(0, 0, 0, 0.4)', // Màu tối nhẹ
+    backgroundColor: 'rgba(0, 0, 0, 0.4)', 
   },
   textContainer: {
     position: 'absolute',
@@ -340,13 +346,14 @@ const styles = StyleSheet.create({
   },
   flowerTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
     color: '#fff',
+    fontFamily:'Playfair_me',
   },
   statusText: {
     fontSize: 14,
     color: '#ddd',
     marginTop: 5,
+    fontFamily:'Playfair_me',
   },
   surveyContainer: {
     flexDirection: 'row',
@@ -378,8 +385,7 @@ const styles = StyleSheet.create({
 
   surveyText: {
     fontSize: 14,
-    fontWeight: 'bold',
-    fontStyle: 'italic',
+    fontFamily:'Playfair_me',
     color: '#333',
     marginBottom: 8,
   },
@@ -403,7 +409,7 @@ const styles = StyleSheet.create({
   surveyButtonText: {
     color: '#fff',
     fontSize: 12,
-    fontWeight: '600',
+    fontFamily:'Playfair_me',
   },
   
 });
