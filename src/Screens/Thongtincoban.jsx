@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useContext } from "react";
 import { 
   View, 
   Text, 
@@ -8,12 +8,16 @@ import {
   Image,
   Animated,
   Dimensions,
-  Keyboard
+  Keyboard,
+  ActivityIndicator
 } from "react-native";
 import Sound from "react-native-sound";
 import Video from "react-native-video";
 import DatePicker from "react-native-date-picker";
 import { useNavigation } from "@react-navigation/native";
+import { useDispatch, useSelector } from "react-redux";
+import { createPlan } from "../redux/CreatePlanSlice";
+import { AppContext } from "../AppContext";
 
 const screenWidth = Dimensions.get("window").width;
 
@@ -53,119 +57,36 @@ const surveyData = [
   },
 ];
 
-const productsData = {
-  dress: [
-    {
-      id: "dress1",
-      name: "Simple Dress",
-      price: 2000,
-      rating: 4.5,
-      discount: null,
-      image: require("../Assets/Images/dresses1.png"),
-    },
-    {
-      id: "dress2",
-      name: "Elegant Dress",
-      price: 4000,
-      rating: 4.8,
-      discount: "10% OFF",
-      image: require("../Assets/Images/dresses1.png"),
-    },
-  ],
-  hall: [
-    {
-      id: "hall1",
-      name: "Small Hall",
-      price: 3000,
-      rating: 4.6,
-      discount: null,
-      image: require("../Assets/Images/house.png"),
-    },
-    {
-      id: "hall2",
-      name: "Luxury Hall",
-      price: 7000,
-      rating: 4.9,
-      discount: "5% OFF",
-      image: require("../Assets/Images/house.png"),
-    },
-  ],
-  flowers: [
-    {
-      id: "flowers1",
-      name: "Basic Flowers",
-      price: 500,
-      rating: 4.4,
-      discount: null,
-      image: require("../Assets/Images/dresse.png"),
-    },
-    {
-      id: "flowers2",
-      name: "Premium Flowers",
-      price: 1500,
-      rating: 4.8,
-      discount: null,
-      image: require("../Assets/Images/dresse.png"),
-    },
-  ],
-  food: [
-    {
-      id: "food1",
-      name: "Standard Buffet",
-      price: 2000,
-      rating: 4.7,
-      discount: null,
-      image: require("../Assets/Images/fb_btn.png"),
-    },
-    {
-      id: "food2",
-      name: "Deluxe Buffet",
-      price: 5000,
-      rating: 4.9,
-      discount: "15% OFF",
-      image: require("../Assets/Images/fb_btn.png"),
-    },
-  ],
-};
-
-const generatePlanFromBudget = (budget) => {
-  let leftover = budget;
-  const plan = [];
-
-  Object.keys(productsData).forEach((categoryKey) => {
-    const items = productsData[categoryKey];
-    items.sort((a, b) => a.price - b.price);
-    let chosenItem = null;
-    for (let i = items.length - 1; i >= 0; i--) {
-      if (items[i].price <= leftover) {
-        chosenItem = items[i];
-        leftover -= chosenItem.price;
-        break;
-      }
-    }
-    if (!chosenItem) {
-      const cheapest = items[0];
-      chosenItem = { ...cheapest, name: `${cheapest.name} (not enough budget)` };
-    }
-    plan.push({ category: categoryKey.toUpperCase(), ...chosenItem });
-  });
-  return plan;
-};
-
-const Thongtincoban = () => {
+const Thongtincoban = (props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [answer, setAnswer] = useState("");
-  const [date, setDate] = useState(new Date());
+  // State answers lưu thông tin của từng câu hỏi
+  const [answers, setAnswers] = useState({
+    eventDate: new Date(),
+    guestCount: "",
+    budget: "",
+    planLocation: "",
+    userId: "",
+  });
   const [openDatePicker, setOpenDatePicker] = useState(false);
-  const [budget, setBudget] = useState(0);
   const [videoPlayed, setVideoPlayed] = useState(false);
   const [ttsPlayed, setTtsPlayed] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const { user } = useContext(AppContext);
+  const { error } = useSelector((state) => state.createplan);
 
+  // Nếu có user, cập nhật userId vào answers
+  useEffect(() => {
+    if (user && user._id) {
+      setAnswers((prev) => ({ ...prev, userId: user._id }));
+    }
+  }, [user]);
 
-  const locationOptions = ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Cần Thơ"];
+  // Vì giờ phần chọn địa điểm đã được hiển thị dưới dạng TextInput,
+  // nên không cần danh sách lựa chọn (locationOptions) nữa.
 
-
+  // Animated value cho hiệu ứng slide của card
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -193,8 +114,12 @@ const Thongtincoban = () => {
 
   const handleNext = () => {
     Keyboard.dismiss();
+    // Nếu là câu hỏi về ngân sách, chuyển đổi định dạng số (loại bỏ dấu chấm)
     if (surveyData[currentIndex].question.includes("Ngân sách")) {
-      setBudget(Number(answer.replace(/\./g, "")));
+      setAnswers((prev) => ({
+        ...prev,
+        budget: Number(prev.budget.replace(/\./g, "")),
+      }));
     }
     Animated.timing(slideAnim, {
       toValue: -screenWidth,
@@ -203,33 +128,60 @@ const Thongtincoban = () => {
     }).start(() => {
       if (currentIndex < surveyData.length - 1) {
         setCurrentIndex(currentIndex + 1);
-        setAnswer("");
-        slideAnim.setValue(screenWidth);
-        Animated.timing(slideAnim, {
-          toValue: 0,
-          duration: 300,
-          useNativeDriver: true,
-        }).start();
+        // Không reset giá trị ở đây, giữ nguyên thông tin đã nhập
       } else {
-        const plan = generatePlanFromBudget(budget);
-        navigation.navigate("GenPlan", { plan, budget });
+        setLoading(true);
+        dispatch(
+          createPlan({
+            eventDate: answers.eventDate.toISOString(),
+            guestCount: answers.guestCount,
+            budget: answers.budget,
+            planLocation: answers.planLocation,
+            userId: answers.userId,
+          })
+        )
+          .unwrap()
+          .then((data) => {
+            setLoading(false);
+            alert("Tạo kế hoạch thành công!");
+            navigation.navigate("GenPlan", { planId: data.plan._id });
+          })
+          .catch((err) => {
+            setLoading(false);
+            alert("Lỗi: " + err);
+          });
       }
+      slideAnim.setValue(screenWidth);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
     });
   };
 
-  
+  // Xác định các trường bắt buộc nhập (với loại "text" ngoại trừ câu "Chúng tôi đã gợi ý...")
   const isTextRequired =
     surveyData[currentIndex].type === "text" &&
-    surveyData[currentIndex].question !== "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!";
+    surveyData[currentIndex].question !==
+      "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!";
+
+  // Lấy giá trị bắt buộc dựa trên câu hỏi hiện tại
+  let requiredValue = "";
+  if (isTextRequired) {
+    if (currentIndex === 1) requiredValue = answers.guestCount;
+    else if (currentIndex === 2) requiredValue = answers.budget;
+    else if (currentIndex === 3) requiredValue = answers.planLocation;
+  }
 
   const isNextDisabled =
-    (isTextRequired && answer.trim() === "") ||
+    (isTextRequired && requiredValue.toString().trim() === "") ||
     (surveyData[currentIndex].question.includes("Ngân sách") &&
-      Number(answer.replace(/\./g, "")) < 50000000);
+      Number(answers.budget.toString().replace(/\./g, "")) < 50000000);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Khảo sát</Text>
+      <Text style={styles.header}>Thông tin cơ bản</Text>
       <View style={styles.topContainer}>
         <Video
           source={surveyData[currentIndex].videoFile}
@@ -257,63 +209,34 @@ const Thongtincoban = () => {
           <Text style={styles.question}>
             {surveyData[currentIndex].question}
           </Text>
-          {surveyData[currentIndex].type === "text" &&
-            surveyData[currentIndex].question === "Bạn muốn tổ chức đám cưới của mình ở đâu?" ? (
-              <View style={styles.optionsContainer}>
-                {locationOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.optionButton,
-                      answer === option && styles.optionButtonSelected,
-                    ]}
-                    onPress={() => setAnswer(option)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionButtonText,
-                        answer === option && styles.optionButtonTextSelected,
-                      ]}
-                    >
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-          ) : surveyData[currentIndex].type === "text" ? (
-            <View>
-              <TextInput
-                style={styles.input}
-                placeholder="Nhập câu trả lời của bạn..."
-                onChangeText={(text) => {
-                  if (surveyData[currentIndex].numericOnly) {
-                    const numericText = text.replace(/[^0-9]/g, "");
-                    if (surveyData[currentIndex].question.includes("Ngân sách")) {
-                      const formattedText = numericText.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                      setAnswer(formattedText);
-                    } else {
-                      setAnswer(numericText);
-                    }
+          {surveyData[currentIndex].type === "text" ? (
+            <TextInput
+              style={styles.input}
+              placeholder="Nhập câu trả lời của bạn..."
+              onChangeText={(text) => {
+                if (surveyData[currentIndex].numericOnly) {
+                  const numericText = text.replace(/[^0-9]/g, "");
+                  if (surveyData[currentIndex].question.includes("Ngân sách")) {
+                    const formattedText = numericText.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+                    setAnswers((prev) => ({ ...prev, budget: formattedText }));
                   } else {
-                    setAnswer(text);
+                    setAnswers((prev) => ({ ...prev, guestCount: numericText }));
                   }
-                }}
-                value={answer}
-                keyboardType={
-                  surveyData[currentIndex].numericOnly ? "numeric" : "default"
+                } else {
+                  setAnswers((prev) => ({ ...prev, planLocation: text }));
                 }
-              />
-              {surveyData[currentIndex].question.includes("Ngân sách") &&
-                answer.trim() !== "" &&
-                Number(answer.replace(/\./g, "")) < 50000000 && (
-                  <Text style={styles.errorText}>
-                    Số tiền tối thiểu là 50.000.000
-                  </Text>
-              )}
-              {isTextRequired && answer.trim() === "" && (
-                <Text style={styles.errorText}>Trường này là bắt buộc</Text>
-              )}
-            </View>
+              }}
+              value={
+                currentIndex === 1
+                  ? answers.guestCount
+                  : currentIndex === 2
+                  ? answers.budget
+                  : answers.planLocation
+              }
+              keyboardType={
+                surveyData[currentIndex].numericOnly ? "numeric" : "default"
+              }
+            />
           ) : surveyData[currentIndex].type === "date" ? (
             <TouchableOpacity
               onPress={() => setOpenDatePicker(true)}
@@ -323,30 +246,39 @@ const Thongtincoban = () => {
                 source={require("../Assets/Images/calendar.png")}
                 style={styles.calendarIcon}
               />
-              <Text style={styles.dateText}>{`${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`}</Text>
+              <Text style={styles.dateText}>
+                {`${answers.eventDate.getDate()}/${
+                  answers.eventDate.getMonth() + 1
+                }/${answers.eventDate.getFullYear()}`}
+              </Text>
             </TouchableOpacity>
           ) : null}
           <TouchableOpacity
             style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
             onPress={handleNext}
-            disabled={isNextDisabled}
+            disabled={isNextDisabled || loading}
           >
-            <Text style={styles.buttonText}>
-              {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
+              </Text>
+            )}
           </TouchableOpacity>
         </Animated.View>
         <DatePicker
           modal
           open={openDatePicker}
-          date={date}
+          date={answers.eventDate}
           mode="date"
           onConfirm={(selectedDate) => {
             setOpenDatePicker(false);
-            setDate(selectedDate);
+            setAnswers((prev) => ({ ...prev, eventDate: selectedDate }));
           }}
           onCancel={() => setOpenDatePicker(false)}
         />
+        {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
     </View>
   );
@@ -390,9 +322,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   progressDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
     backgroundColor: "#e0e0e0",
     marginHorizontal: 4,
   },
@@ -424,15 +356,9 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: "#ced4da",
-    borderRadius: 8,
+    borderRadius: 10,
     backgroundColor: "#fff",
     fontSize: 18,
-  },
-  currencyText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginLeft: 8,
-    color: "#333",
   },
   datePickerButton: {
     flexDirection: "row",
@@ -440,18 +366,18 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#f0f0f0",
     padding: 12,
-    borderRadius: 8,
+    borderRadius: 10,
     borderWidth: 1,
     borderColor: "#ced4da",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   calendarIcon: {
-    width: 20,
-    height: 20,
+    width: 24,
+    height: 24,
     marginRight: 8,
     tintColor: "#333",
   },
@@ -463,9 +389,9 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     backgroundColor: "#333",
-    paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 32,
+    borderRadius: 10,
     marginTop: 20,
     alignSelf: "center",
   },
@@ -473,7 +399,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: "white",
+    color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
     textAlign: "center",
@@ -482,20 +408,20 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-around",
-    marginVertical: 10,
+    marginVertical: 12,
   },
   optionButton: {
     backgroundColor: "#e0e0e0",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingHorizontal: 28,
     borderRadius: 12,
     marginVertical: 8,
     width: "45%",
     alignItems: "center",
     shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
+    elevation: 3,
   },
   optionButtonSelected: {
     backgroundColor: "#333",
@@ -511,7 +437,7 @@ const styles = StyleSheet.create({
   errorText: {
     color: "red",
     fontSize: 14,
-    marginTop: 5,
+    marginTop: 6,
     textAlign: "center",
   },
 });
