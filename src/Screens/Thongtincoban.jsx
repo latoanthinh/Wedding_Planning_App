@@ -162,10 +162,10 @@ const Thongtincoban = () => {
   const [ttsPlayed, setTtsPlayed] = useState(false);
   const navigation = useNavigation();
 
-  // Danh sách địa điểm cho câu hỏi "Bạn muốn tổ chức đám cưới của mình ở đâu?"
+
   const locationOptions = ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Cần Thơ"];
 
-  // Animated value cho hiệu ứng slide của card
+
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -192,9 +192,8 @@ const Thongtincoban = () => {
   };
 
   const handleNext = () => {
-    Keyboard.dismiss(); // Tắt bàn phím khi bấm nút
+    Keyboard.dismiss();
     if (surveyData[currentIndex].question.includes("Ngân sách")) {
-      // Loại bỏ dấu chấm và chuyển thành số
       setBudget(Number(answer.replace(/\./g, "")));
     }
     Animated.timing(slideAnim, {
@@ -218,7 +217,7 @@ const Thongtincoban = () => {
     });
   };
 
-  // Kiểm tra bắt buộc nhập: với các câu hỏi loại "text" (trừ info), nếu không có giá trị thì disable
+  
   const isTextRequired =
     surveyData[currentIndex].type === "text" &&
     surveyData[currentIndex].question !== "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!";
