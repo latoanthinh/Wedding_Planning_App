@@ -1,4 +1,4 @@
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef,useEffect} from 'react';
 import {
   View,
   Text,
@@ -7,8 +7,11 @@ import {
   ScrollView,
   TouchableOpacity,
   Animated,
+   ActivityIndicator
 } from 'react-native';
 import {useNavigation, CommonActions} from '@react-navigation/native';
+import { useDispatch, useSelector } from "react-redux";
+import { fetchPlanById } from "../redux/CreatePlanSlice";
 
 const ReplaceButton = ({onPress, children}) => {
   const scale = useRef(new Animated.Value(1)).current;
@@ -43,156 +46,166 @@ const ReplaceButton = ({onPress, children}) => {
 const GenPlan = ({route}) => {
   const navigation = useNavigation();
   // Lấy dữ liệu 'plan' và 'budget' được truyền từ Thongtincoban
-  const {plan, budget} = route.params;
-  const [currentPlan, setCurrentPlan] = useState(plan);
+  const {planId, budget} = route.params;
+  // const [currentPlan, setCurrentPlan] = useState(plan);
+  const dispatch = useDispatch();
+  const { plan, loading, error } = useSelector((state) => state.createplan);
+  
+  useEffect(() => {
+    dispatch(fetchPlanById(planId));
+  }, [dispatch, planId]);
+
+  if (loading) return <ActivityIndicator />;
+  if (error) return <Text style={{ color: "red" }}>{error}</Text>;
+  if (!plan) return <Text>Không tìm thấy kế hoạch.</Text>;
 
   // Fake data cho mỗi hạng mục
-  const productsData = {
-    dress: [
-      {
-        id: 'dress1',
-        name: 'Simple Dress',
-        price: 2000,
-        rating: 4.5,
-        discount: null,
-        image: require('../Assets/Images/dresses1.png'),
-      },
-      {
-        id: 'dress2',
-        name: 'Elegant Dress',
-        price: 4000,
-        rating: 4.8,
-        discount: '10% OFF',
-        image: require('../Assets/Images/dresses1.png'),
-      },
-      {
-        id: 'dress3',
-        name: 'Premium Dress',
-        price: 6000,
-        rating: 4.9,
-        discount: '15% OFF',
-        image: require('../Assets/Images/dresses1.png'),
-      },
-    ],
-    hall: [
-      {
-        id: 'hall1',
-        name: 'Small Hall',
-        price: 3000,
-        rating: 4.6,
-        discount: null,
-        image: require('../Assets/Images/house.png'),
-      },
-      {
-        id: 'hall2',
-        name: 'Luxury Hall',
-        price: 7000,
-        rating: 4.9,
-        discount: '5% OFF',
-        image: require('../Assets/Images/house.png'),
-      },
-      {
-        id: 'hall3',
-        name: 'Classic Hall',
-        price: 5000,
-        rating: 4.7,
-        discount: '10% OFF',
-        image: require('../Assets/Images/house.png'),
-      },
-    ],
-    flowers: [
-      {
-        id: 'flowers1',
-        name: 'Basic Flowers',
-        price: 500,
-        rating: 4.4,
-        discount: null,
-        image: require('../Assets/Images/dresse.png'),
-      },
-      {
-        id: 'flowers2',
-        name: 'Premium Flowers',
-        price: 1500,
-        rating: 4.8,
-        discount: null,
-        image: require('../Assets/Images/dresse.png'),
-      },
-      {
-        id: 'flowers3',
-        name: 'Deluxe Flowers',
-        price: 2500,
-        rating: 4.9,
-        discount: '20% OFF',
-        image: require('../Assets/Images/dresse.png'),
-      },
-    ],
-    food: [
-      {
-        id: 'food1',
-        name: 'Standard Buffet',
-        price: 2000,
-        rating: 4.7,
-        discount: null,
-        image: require('../Assets/Images/fb_btn.png'),
-      },
-      {
-        id: 'food2',
-        name: 'Deluxe Buffet',
-        price: 5000,
-        rating: 4.9,
-        discount: '15% OFF',
-        image: require('../Assets/Images/fb_btn.png'),
-      },
-      {
-        id: 'food3',
-        name: 'Ultimate Buffet',
-        price: 8000,
-        rating: 5.0,
-        discount: '20% OFF',
-        image: require('../Assets/Images/fb_btn.png'),
-      },
-    ],
-  };
+  // const productsData = {
+  //   dress: [
+  //     {
+  //       id: 'dress1',
+  //       name: 'Simple Dress',
+  //       price: 2000,
+  //       rating: 4.5,
+  //       discount: null,
+  //       image: require('../Assets/Images/dresses1.png'),
+  //     },
+  //     {
+  //       id: 'dress2',
+  //       name: 'Elegant Dress',
+  //       price: 4000,
+  //       rating: 4.8,
+  //       discount: '10% OFF',
+  //       image: require('../Assets/Images/dresses1.png'),
+  //     },
+  //     {
+  //       id: 'dress3',
+  //       name: 'Premium Dress',
+  //       price: 6000,
+  //       rating: 4.9,
+  //       discount: '15% OFF',
+  //       image: require('../Assets/Images/dresses1.png'),
+  //     },
+  //   ],
+  //   hall: [
+  //     {
+  //       id: 'hall1',
+  //       name: 'Small Hall',
+  //       price: 3000,
+  //       rating: 4.6,
+  //       discount: null,
+  //       image: require('../Assets/Images/house.png'),
+  //     },
+  //     {
+  //       id: 'hall2',
+  //       name: 'Luxury Hall',
+  //       price: 7000,
+  //       rating: 4.9,
+  //       discount: '5% OFF',
+  //       image: require('../Assets/Images/house.png'),
+  //     },
+  //     {
+  //       id: 'hall3',
+  //       name: 'Classic Hall',
+  //       price: 5000,
+  //       rating: 4.7,
+  //       discount: '10% OFF',
+  //       image: require('../Assets/Images/house.png'),
+  //     },
+  //   ],
+  //   flowers: [
+  //     {
+  //       id: 'flowers1',
+  //       name: 'Basic Flowers',
+  //       price: 500,
+  //       rating: 4.4,
+  //       discount: null,
+  //       image: require('../Assets/Images/dresse.png'),
+  //     },
+  //     {
+  //       id: 'flowers2',
+  //       name: 'Premium Flowers',
+  //       price: 1500,
+  //       rating: 4.8,
+  //       discount: null,
+  //       image: require('../Assets/Images/dresse.png'),
+  //     },
+  //     {
+  //       id: 'flowers3',
+  //       name: 'Deluxe Flowers',
+  //       price: 2500,
+  //       rating: 4.9,
+  //       discount: '20% OFF',
+  //       image: require('../Assets/Images/dresse.png'),
+  //     },
+  //   ],
+  //   food: [
+  //     {
+  //       id: 'food1',
+  //       name: 'Standard Buffet',
+  //       price: 2000,
+  //       rating: 4.7,
+  //       discount: null,
+  //       image: require('../Assets/Images/fb_btn.png'),
+  //     },
+  //     {
+  //       id: 'food2',
+  //       name: 'Deluxe Buffet',
+  //       price: 5000,
+  //       rating: 4.9,
+  //       discount: '15% OFF',
+  //       image: require('../Assets/Images/fb_btn.png'),
+  //     },
+  //     {
+  //       id: 'food3',
+  //       name: 'Ultimate Buffet',
+  //       price: 8000,
+  //       rating: 5.0,
+  //       discount: '20% OFF',
+  //       image: require('../Assets/Images/fb_btn.png'),
+  //     },
+  //   ],
+  // };
 
   // Tính tổng chi phí hiện tại
-  const totalCost = currentPlan.reduce(
-    (sum, item) => sum + (item.price || 0),
-    0,
-  );
-  const leftover = budget - totalCost;
+  // const totalCost = currentPlan.reduce(
+  //   (sum, item) => sum + (item.price || 0),
+  //   0,
+  // );
+  // const leftover = budget - totalCost;
 
-  // Hàm thay đổi sản phẩm cho hạng mục được chọn lại
-  const handleReplace = index => {
-    const currentItem = currentPlan[index];
-    const categoryKey =
-      currentItem.categoryKey || currentItem.category.toLowerCase();
-    // Tính tổng chi phí của các hạng mục khác
-    const sumOthers = currentPlan.reduce(
-      (sum, item, idx) => (idx === index ? sum : sum + (item.price || 0)),
-      0,
-    );
-    // Lọc danh sách sản phẩm hợp lệ sao cho tổng không vượt budget
-    let validCandidates = productsData[categoryKey].filter(candidate => {
-      if (candidate.id === currentItem.id) return false;
-      return candidate.price + sumOthers <= budget;
-    });
-    if (validCandidates.length === 0) {
-      // Fallback: chọn sản phẩm đầu tiên khác
-      validCandidates = productsData[categoryKey].filter(
-        candidate => candidate.id !== currentItem.id,
-      );
-    }
-    // Chọn sản phẩm có rating cao nhất trong các candidate
-    const newProduct = validCandidates.sort((a, b) => b.rating - a.rating)[0];
-    // Cập nhật lại currentPlan
-    const newPlan = [...currentPlan];
-    newPlan[index] = {
-      ...newProduct,
-      category: currentItem.category,
-      categoryKey: categoryKey,
-    };
-    setCurrentPlan(newPlan);
-  };
+  // // Hàm thay đổi sản phẩm cho hạng mục được chọn lại
+  // const handleReplace = index => {
+  //   const currentItem = currentPlan[index];
+  //   const categoryKey =
+  //     currentItem.categoryKey || currentItem.category.toLowerCase();
+  //   // Tính tổng chi phí của các hạng mục khác
+  //   const sumOthers = currentPlan.reduce(
+  //     (sum, item, idx) => (idx === index ? sum : sum + (item.price || 0)),
+  //     0,
+  //   );
+  //   // Lọc danh sách sản phẩm hợp lệ sao cho tổng không vượt budget
+  //   let validCandidates = productsData[categoryKey].filter(candidate => {
+  //     if (candidate.id === currentItem.id) return false;
+  //     return candidate.price + sumOthers <= budget;
+  //   });
+  //   if (validCandidates.length === 0) {
+  //     // Fallback: chọn sản phẩm đầu tiên khác
+  //     validCandidates = productsData[categoryKey].filter(
+  //       candidate => candidate.id !== currentItem.id,
+  //     );
+  //   }
+  //   // Chọn sản phẩm có rating cao nhất trong các candidate
+  //   const newProduct = validCandidates.sort((a, b) => b.rating - a.rating)[0];
+  //   // Cập nhật lại currentPlan
+  //   const newPlan = [...currentPlan];
+  //   newPlan[index] = {
+  //     ...newProduct,
+  //     category: currentItem.category,
+  //     categoryKey: categoryKey,
+  //   };
+  //   setCurrentPlan(newPlan);
+  // };
 
   return (
     <View style={styles.screenContainer}>
@@ -215,37 +228,13 @@ const GenPlan = ({route}) => {
       </View>
 
       {/* Danh sách các hạng mục */}
-      <ScrollView style={styles.scrollContainer}>
-        {currentPlan.map((item, index) => (
-          <View key={index} style={styles.itemContainer}>
-            <View style={styles.categoryHeader}>
-              <Text style={styles.categoryText}>{item.category}</Text>
-              {/* Nút "Chọn lại" bên phải với màu đen có hiệu ứng mượt */}
-              <ReplaceButton onPress={() => handleReplace(index)}>
-                <Text style={styles.replaceButtonText}>Chọn lại</Text>
-              </ReplaceButton>
-            </View>
-            <View style={styles.card}>
-              {item.image && (
-                <Image source={item.image} style={styles.cardImage} />
-              )}
-              <View style={styles.infoContainer}>
-                <Text style={styles.nameText}>{item.name}</Text>
-                {item.rating && (
-                  <Text style={styles.ratingText}>Rating: {item.rating}</Text>
-                )}
-                {item.discount && (
-                  <Text style={styles.discountText}>{item.discount}</Text>
-                )}
-                <Text style={styles.priceText}>{item.price} $</Text>
-              </View>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+      <Text style={{ fontSize: 20, fontWeight: "bold" }}>Plan 1</Text>
+      <Text>Ngày cưới: {new Date(plan.eventDate).toDateString()}</Text>
+      <Text>Số khách: {plan.guestCount}</Text>
+      <Text>Ngân sách: {plan.budget}</Text>
 
       {/* Phần so sánh giá tiền và nút Đặt cọc */}
-      <View style={styles.summaryContainer}>
+      {/* <View style={styles.summaryContainer}>
         <View style={styles.summaryDetails}>
           <View style={styles.summaryTextContainer}>
             <Text style={styles.summaryText}>
@@ -267,7 +256,7 @@ const GenPlan = ({route}) => {
             <Text style={styles.depositButtonText}>Đặt cọc</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </View> */}
     </View>
   );
 };
