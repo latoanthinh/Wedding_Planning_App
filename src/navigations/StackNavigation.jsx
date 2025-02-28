@@ -13,6 +13,7 @@ import DetailFlowers from '../Screens/DetailFlowers'
 import GenPlan from '../Screens/GenPlan'
 import HallWeddings from '../Screens/HallWeddings'
 import AllPlan from '../Screens/AllPlan'
+import InvitationsScreen from '../Screens/InvitationsScreen'
 
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -50,6 +51,7 @@ const StackNavigation = () => {
       <Stack.Screen name="HallWeddings" component={HallWeddings} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="AllPlan" component={AllPlan} />
+      <Stack.Screen name="InvitationsScreen" component={InvitationsScreen} />
 
 
     </Stack.Navigator>

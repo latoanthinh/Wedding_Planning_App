@@ -316,14 +316,14 @@ const ScreenHome = ({ navigation }) => {
           </Text>
 
           <View style={styles.locationRow}>
-            <View style={styles.locationItem}>
+            <TouchableOpacity style={styles.locationItem} onPress={()=> navigation.navigate("InvitationsScreen")}>
               <Image
                 source={require('../Assets/Images/thiepcuoi.png')}
                 style={styles.serviceIcon}
               />
               <Text style={styles.locationTitle}>Thiệp Cưới</Text>
               <Text style={styles.statusText}>Status</Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.locationItem}>
               <Image
