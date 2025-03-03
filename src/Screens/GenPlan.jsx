@@ -1,282 +1,116 @@
-import React, {useState, useRef,useEffect} from 'react';
+import React, { useEffect } from "react";
 import {
   View,
   Text,
   StyleSheet,
   Image,
   ScrollView,
-  TouchableOpacity,
-  Animated,
-   ActivityIndicator
-} from 'react-native';
-import {useNavigation, CommonActions} from '@react-navigation/native';
+  ActivityIndicator,
+} from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchPlanById } from "../redux/CreatePlanSlice";
 
-const ReplaceButton = ({onPress, children}) => {
-  const scale = useRef(new Animated.Value(1)).current;
-  const handlePressIn = () => {
-    Animated.timing(scale, {
-      toValue: 0.95,
-      duration: 100,
-      useNativeDriver: true,
-    }).start();
-  };
-  const handlePressOut = () => {
-    Animated.timing(scale, {
-      toValue: 1,
-      duration: 100,
-      useNativeDriver: true,
-    }).start();
-  };
-
-  return (
-    <Animated.View style={{transform: [{scale}]}}>
-      <TouchableOpacity
-        onPressIn={handlePressIn}
-        onPressOut={handlePressOut}
-        onPress={onPress}
-        style={styles.replaceButton}>
-        {children}
-      </TouchableOpacity>
-    </Animated.View>
-  );
-};
-
-const GenPlan = ({route}) => {
-  const navigation = useNavigation();
-  // Lấy dữ liệu 'plan' và 'budget' được truyền từ Thongtincoban
-  const {planId, budget} = route.params;
-  // const [currentPlan, setCurrentPlan] = useState(plan);
+const GenPlan = ({ route }) => {
+  const { planId } = route.params;
   const dispatch = useDispatch();
   const { plan, loading, error } = useSelector((state) => state.createplan);
-  
+
   useEffect(() => {
     dispatch(fetchPlanById(planId));
   }, [dispatch, planId]);
 
-  if (loading) return <ActivityIndicator />;
-  if (error) return <Text style={{ color: "red" }}>{error}</Text>;
-  if (!plan) return <Text>Không tìm thấy kế hoạch.</Text>;
+  if (loading) return <ActivityIndicator size="large" color="#A52A2A" />;
+  if (error) return <Text style={styles.error}>{error}</Text>;
+  if (!plan) return <Text style={styles.error}>Không tìm thấy kế hoạch.</Text>;
 
-  // Fake data cho mỗi hạng mục
-  // const productsData = {
-  //   dress: [
-  //     {
-  //       id: 'dress1',
-  //       name: 'Simple Dress',
-  //       price: 2000,
-  //       rating: 4.5,
-  //       discount: null,
-  //       image: require('../Assets/Images/dresses1.png'),
-  //     },
-  //     {
-  //       id: 'dress2',
-  //       name: 'Elegant Dress',
-  //       price: 4000,
-  //       rating: 4.8,
-  //       discount: '10% OFF',
-  //       image: require('../Assets/Images/dresses1.png'),
-  //     },
-  //     {
-  //       id: 'dress3',
-  //       name: 'Premium Dress',
-  //       price: 6000,
-  //       rating: 4.9,
-  //       discount: '15% OFF',
-  //       image: require('../Assets/Images/dresses1.png'),
-  //     },
-  //   ],
-  //   hall: [
-  //     {
-  //       id: 'hall1',
-  //       name: 'Small Hall',
-  //       price: 3000,
-  //       rating: 4.6,
-  //       discount: null,
-  //       image: require('../Assets/Images/house.png'),
-  //     },
-  //     {
-  //       id: 'hall2',
-  //       name: 'Luxury Hall',
-  //       price: 7000,
-  //       rating: 4.9,
-  //       discount: '5% OFF',
-  //       image: require('../Assets/Images/house.png'),
-  //     },
-  //     {
-  //       id: 'hall3',
-  //       name: 'Classic Hall',
-  //       price: 5000,
-  //       rating: 4.7,
-  //       discount: '10% OFF',
-  //       image: require('../Assets/Images/house.png'),
-  //     },
-  //   ],
-  //   flowers: [
-  //     {
-  //       id: 'flowers1',
-  //       name: 'Basic Flowers',
-  //       price: 500,
-  //       rating: 4.4,
-  //       discount: null,
-  //       image: require('../Assets/Images/dresse.png'),
-  //     },
-  //     {
-  //       id: 'flowers2',
-  //       name: 'Premium Flowers',
-  //       price: 1500,
-  //       rating: 4.8,
-  //       discount: null,
-  //       image: require('../Assets/Images/dresse.png'),
-  //     },
-  //     {
-  //       id: 'flowers3',
-  //       name: 'Deluxe Flowers',
-  //       price: 2500,
-  //       rating: 4.9,
-  //       discount: '20% OFF',
-  //       image: require('../Assets/Images/dresse.png'),
-  //     },
-  //   ],
-  //   food: [
-  //     {
-  //       id: 'food1',
-  //       name: 'Standard Buffet',
-  //       price: 2000,
-  //       rating: 4.7,
-  //       discount: null,
-  //       image: require('../Assets/Images/fb_btn.png'),
-  //     },
-  //     {
-  //       id: 'food2',
-  //       name: 'Deluxe Buffet',
-  //       price: 5000,
-  //       rating: 4.9,
-  //       discount: '15% OFF',
-  //       image: require('../Assets/Images/fb_btn.png'),
-  //     },
-  //     {
-  //       id: 'food3',
-  //       name: 'Ultimate Buffet',
-  //       price: 8000,
-  //       rating: 5.0,
-  //       discount: '20% OFF',
-  //       image: require('../Assets/Images/fb_btn.png'),
-  //     },
-  //   ],
-  // };
-
-  // Tính tổng chi phí hiện tại
-  // const totalCost = currentPlan.reduce(
-  //   (sum, item) => sum + (item.price || 0),
-  //   0,
-  // );
-  // const leftover = budget - totalCost;
-
-  // // Hàm thay đổi sản phẩm cho hạng mục được chọn lại
-  // const handleReplace = index => {
-  //   const currentItem = currentPlan[index];
-  //   const categoryKey =
-  //     currentItem.categoryKey || currentItem.category.toLowerCase();
-  //   // Tính tổng chi phí của các hạng mục khác
-  //   const sumOthers = currentPlan.reduce(
-  //     (sum, item, idx) => (idx === index ? sum : sum + (item.price || 0)),
-  //     0,
-  //   );
-  //   // Lọc danh sách sản phẩm hợp lệ sao cho tổng không vượt budget
-  //   let validCandidates = productsData[categoryKey].filter(candidate => {
-  //     if (candidate.id === currentItem.id) return false;
-  //     return candidate.price + sumOthers <= budget;
-  //   });
-  //   if (validCandidates.length === 0) {
-  //     // Fallback: chọn sản phẩm đầu tiên khác
-  //     validCandidates = productsData[categoryKey].filter(
-  //       candidate => candidate.id !== currentItem.id,
-  //     );
-  //   }
-  //   // Chọn sản phẩm có rating cao nhất trong các candidate
-  //   const newProduct = validCandidates.sort((a, b) => b.rating - a.rating)[0];
-  //   // Cập nhật lại currentPlan
-  //   const newPlan = [...currentPlan];
-  //   newPlan[index] = {
-  //     ...newProduct,
-  //     category: currentItem.category,
-  //     categoryKey: categoryKey,
-  //   };
-  //   setCurrentPlan(newPlan);
-  // };
+  // Đảm bảo dữ liệu không bị undefined
+  const {
+    name = "Kế hoạch cưới",
+    plandateevent,
+    plansoluongkhach = 0,
+    planlocation = "Chưa xác định",
+    totalPrice = 0,
+    invitationId = {},
+    lobbyId = {},
+    cateringId = {},
+    flowerId = {},
+    clothes = []
+  } = plan || {};
 
   return (
-    <View style={styles.screenContainer}>
-      {/* Header */}
-      <View style={styles.headerContainer}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() =>
-            navigation.reset({
-              index: 0,
-              routes: [{name: 'TabNavigation', params: {screen: 'Home'}}],
-            })
-          }>
-          <Image
-            source={require('../Assets/Images/back.png')}
-            style={styles.backIcon}
-          />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>YOUR PLAN</Text>
+    <ScrollView style={styles.container}>
+      <Text style={styles.title}>{name}</Text>
+
+      {/* Thông tin chung */}
+      <View style={styles.infoBox}>
+        <Text style={styles.detail}>📅 Ngày cưới: {plandateevent ? new Date(plandateevent).toLocaleDateString() : "--/--/----"}</Text>
+        <Text style={styles.detail}>👥 Số khách: {plansoluongkhach}</Text>
+        <Text style={styles.detail}>📍 Địa điểm: {planlocation}</Text>
+        <Text style={styles.totalPrice}>💰 Tổng chi phí: {(totalPrice ?? 0).toLocaleString()} VND</Text>
       </View>
 
-      {/* Danh sách các hạng mục */}
-      <Text style={{ fontSize: 20, fontWeight: "bold" }}>Plan 1</Text>
-      <Text>Ngày cưới: {new Date(plan.eventDate).toDateString()}</Text>
-      <Text>Số khách: {plan.guestCount}</Text>
-      <Text>Ngân sách: {plan.budget}</Text>
-
-      {/* Phần so sánh giá tiền và nút Đặt cọc */}
-      {/* <View style={styles.summaryContainer}>
-        <View style={styles.summaryDetails}>
-          <View style={styles.summaryTextContainer}>
-            <Text style={styles.summaryText}>
-              Số tiền của bạn:{' '}
-              <Text style={styles.budgetValue}>{budget} $</Text>
-            </Text>
-            <Text style={styles.summaryText}>
-              Tổng chi phí:{' '}
-              <Text
-                style={[
-                  styles.totalCostValue,
-                  totalCost > budget ? styles.overBudget : styles.withinBudget,
-                ]}>
-                {totalCost} $
-              </Text>
-            </Text>
+      {/* Hiển thị từng hạng mục */}
+      {[
+        { title: "Thiệp mời", data: invitationId },
+        { title: "Sảnh cưới", data: lobbyId, extra: `👥 Số khách: ${lobbyId?.SoLuongKhach || 0}` },
+        { title: "Dịch vụ ăn uống", data: cateringId },
+        { title: "Hoa trang trí", data: flowerId, extra: flowerId?.description || "Không có mô tả" },
+      ].map((item, index) => (
+        item.data && Object.keys(item.data).length > 0 ? (
+          <View key={index} style={styles.section}>
+            <Text style={styles.sectionTitle}>{item.title}</Text>
+            <View style={styles.card}>
+              <Image
+                source={{ uri: item.data.imageUrl || "https://via.placeholder.com/80" }}
+                style={styles.image}
+              />
+              <View style={styles.info}>
+                <Text style={styles.name}>{item.data.name || "Chưa chọn"}</Text>
+                {item.extra && <Text style={styles.extra}>{item.extra}</Text>}
+                <Text style={styles.price}>{(item.data?.price ?? 0).toLocaleString()} VND</Text>
+              </View>
+            </View>
           </View>
-          <TouchableOpacity style={styles.depositButton}>
-            <Text style={styles.depositButtonText}>Đặt cọc</Text>
-          </TouchableOpacity>
+        ) : null
+      ))}
+
+      {/* Trang phục cưới */}
+      {clothes.length > 0 && (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Trang phục cưới</Text>
+          {clothes.map((item, index) => (
+            <View key={index} style={styles.card}>
+              <Image
+                source={{ uri: item.imageUrl?.[0] || "https://via.placeholder.com/80" }}
+                style={styles.image}
+              />
+              <View style={styles.info}>
+                <Text style={styles.name}>{item.name || "Chưa chọn"}</Text>
+                <Text style={styles.price}>{(item.price ?? 0).toLocaleString()} VND</Text>
+              </View>
+            </View>
+          ))}
         </View>
-      </View> */}
-    </View>
+      )}
+    </ScrollView>
   );
 };
 
-export default GenPlan;
-
 const styles = StyleSheet.create({
-  screenContainer: {
+  container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: "#ffffff",
+    padding: 16,
   },
   headerContainer: {
-    paddingVertical: 10, 
+    paddingVertical: 10,
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
-    shadowOffset: {width: 0, height: 2},
+    shadowOffset: { width: 0, height: 2 },
   },
   headerTitle: {
-    fontSize: 16, 
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#000',
     letterSpacing: 1,
@@ -288,141 +122,102 @@ const styles = StyleSheet.create({
     paddingTop: 15,
   },
   itemContainer: {
-    marginBottom: 20,
-  },
-  categoryHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  categoryText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#3E3E3E',
-  },
-  replaceButton: {
-    backgroundColor: '#000',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
-    elevation: 3,
-  },
-  replaceButtonText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  card: {
-    flexDirection: 'row',
-    backgroundColor: '#fff',
-    borderRadius: 16,
-    padding: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    shadowOffset: {width: 0, height: 3},
-    alignItems: 'center',
-  },
-  cardImage: {
-    width: 100,
-    height: 100,
-    resizeMode: 'cover',
-    borderRadius: 12,
-  },
-  infoContainer: {
-    flex: 1,
-    paddingLeft: 16,
-  },
-  nameText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginBottom: 6,
-  },
-  ratingText: {
-    fontSize: 14,
-    color: '#606060',
-    marginBottom: 6,
-  },
-  discountText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    color: '#FF396F',
-    marginBottom: 6,
-  },
-  priceText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1A1A1A',
-  },
-  summaryContainer: {
-    paddingVertical: 20,
-    backgroundColor: '#fff',
-    borderTopWidth: 1,
-    borderColor: '#EAEAEA',
-    paddingHorizontal: 20,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    shadowOffset: {width: 0, height: -4},
-  },
-  summaryDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  summaryTextContainer: {
-    flex: 1,
-  },
-  summaryText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1A1A1A',
-    marginVertical: 4,
-  },
-  budgetValue: {
-    color: '#00BFA6',
-    fontWeight: 'bold',
-  },
-  totalCostValue: {
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  withinBudget: {
-    color: '#00BFA6',
-  },
-  overBudget: {
-    color: '#FF396F',
-  },
-  depositButton: {
-    backgroundColor: '#000',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginLeft: 10,
-  },
-  depositButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  backButton: {
-    position: 'absolute',
-    left: 15,
-    top: 10,
-    padding: 10,
-  },
 
-  backIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#000', 
-  },
+    title: {
+      fontSize: 30,
+      fontWeight: "bold",
+      textAlign: "center",
+      color: "#5D4037",
+      marginBottom: 15,
+      fontFamily: "Fairplay Display1",
+    },
+    infoBox: {
+      backgroundColor: "#FFF5EE",
+      borderRadius: 15,
+      padding: 20,
+
+      marginBottom: 20,
+      shadowColor: "#000",
+      shadowOpacity: 0.15,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 5,
+    },
+    detail: {
+      fontSize: 18,
+      color: "#4A342E",
+      marginBottom: 8,
+      fontFamily: "Fairplay Me",
+    },
+    totalPrice: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: "#654321",
+      marginTop: 10,
+      fontFamily: "Fairplay Display2",
+    },
+    section: {
+      marginTop: 20,
+    },
+    sectionTitle: {
+      fontSize: 22,
+      fontWeight: "bold",
+      color: "#5D4037",
+      marginBottom: 15,
+      fontFamily: "Fairplay Re",
+    },
+    card: {
+      flexDirection: "row",
+      backgroundColor: "#FFFFFF",
+      borderRadius: 15,
+      padding: 15,
+      marginBottom: 10,
+      alignItems: "center",
+      shadowColor: "#000",
+      shadowOpacity: 0.1,
+      shadowRadius: 5,
+      shadowOffset: { width: 0, height: 3 },
+      elevation: 5,
+    },
+    image: {
+      width: 90,
+      height: 90,
+      borderRadius: 15,
+      marginRight: 20,
+    },
+    info: {
+      flex: 1,
+    },
+    name: {
+      fontSize: 18,
+      fontWeight: "bold",
+      color: "#3E2723",
+      marginBottom: 6,
+      fontFamily: "Fairplay Display1",
+    },
+    extra: {
+      fontSize: 16,
+      color: "#8D6E63",
+      marginBottom: 6,
+      fontFamily: "Fairplay Me",
+    },
+    price: {
+      fontSize: 20,
+      fontWeight: "bold",
+      color: "#654321",
+      fontFamily: "Fairplay Display2",
+    },
+    error: {
+      fontSize: 20,
+      color: "red",
+      textAlign: "center",
+      marginTop: 25,
+    },
+    backIcon: {
+      width: 24,
+      height: 24,
+      tintColor: '#000',
+    }
+  }
 });
+export default GenPlan;
+
