@@ -14,8 +14,7 @@ const EditProfile = (props) => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Image source={require('../Assets/Images/back.png')} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        {/* View để cân bằng layout */}
+        <Text style={styles.headerTitle}>Chỉnh sửa cá nhân</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -31,25 +30,25 @@ const EditProfile = (props) => {
       <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
-          placeholder="Name"
+          placeholder="Tên"
           value={name}
           onChangeText={(text) => setName(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Note"
+          placeholder="Ghi chú"
           value={note}
           onChangeText={(text) => setNote(text)}
         />
         <TextInput
           style={styles.input}
-          placeholder="Address"
+          placeholder="Địa chỉ"
           value={address}
           onChangeText={(text) => setAddress(text)}
         />
 
         <TouchableOpacity style={styles.editButton}>
-          <Text style={styles.editButtonText}>Edit Profile</Text>
+          <Text style={styles.editButtonText}>Lưu</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -81,7 +80,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   headerRight: {
-    width: 24, // Chỗ trống để cân bằng header
+    width: 24, 
   },
   profileContainer: {
     marginTop: 40,

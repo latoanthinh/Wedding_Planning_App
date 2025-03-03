@@ -116,13 +116,13 @@ const SignUp = () => {
     };
     return (
         <View style={SignInPageStyles.container}>
-            <Text style={SignInPageStyles.welcomeText}>Welcome back!</Text>
-            <Text style={SignInPageStyles.instructionText}>Please, sign in to continue.</Text>
+            <Text style={SignInPageStyles.welcomeText}>Tạo tài khoản!</Text>
+            <Text style={SignInPageStyles.instructionText}>Vui lòng, đăng ký để tiếp tục.</Text>
 
             <View>
                 <TextInput
                     style={[SignInPageStyles.input, nameError ? { borderColor: 'red', borderWidth: 1 } : {}]}
-                    placeholder="Full Name"
+                    placeholder="Họ và tên"
                     placeholderTextColor="#aaa"
                     value={name}
                     onChangeText={text => setName(text)}
@@ -142,7 +142,7 @@ const SignUp = () => {
             <View>
                 <TextInput
                     style={[SignInPageStyles.input, passwordError ? { borderColor: 'red', borderWidth: 1 } : {}]}
-                    placeholder="Password"
+                    placeholder="Mật khẩu"
                     placeholderTextColor="#aaa"
                     secureTextEntry={!isPasswordVisible}
                     value={password}
@@ -160,7 +160,7 @@ const SignUp = () => {
             <View>
                 <TextInput
                     style={[SignInPageStyles.input, confirmPasswordError ? { borderColor: 'red', borderWidth: 1 } : {}]}
-                    placeholder="Confirm Password"
+                    placeholder="Nhập lại mật khẩu"
                     placeholderTextColor="#aaa"
                     secureTextEntry={!isPasswordVisible}
                     value={confirmPassword}
@@ -184,17 +184,17 @@ const SignUp = () => {
                         style={SignInPageStyles.checkbox}
                     />
                 </TouchableOpacity>
-                <Text style={{ fontSize: 17, fontFamily: 'Playfair_me' }}>I Agree with privacy and policy</Text>
+                <Text style={{ fontSize: 17, fontFamily: 'Playfair_me' }}>Tôi đồng ý với chính sách bảo mật</Text>
             </View>
             {policyError ? <Text style={{ color: 'red', fontSize: 12, textAlign: 'center' }}>{policyError}</Text> : null}
             <TouchableOpacity style={SignInPageStyles.signInButton} onPress={dangky}>
-                <Text style={SignInPageStyles.signInButtonText}>Sign up</Text>
+                <Text style={SignInPageStyles.signInButtonText}>Đăng ký</Text>
             </TouchableOpacity>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 15 }} >
                 <Text style={SignInPageStyles.signUpPrompt}>
-                    Don't have an account? </Text>
+                    Bạn đã có tài khoản? </Text>
                 <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 10, fontFamily: 'Playfair_me' }}>
-                    <Text style={{ color: 'gray' }}>Sign in</Text>
+                    <Text style={{ color: 'gray', fontFamily:'Playfair_me' }}>Đăng nhập ngay</Text>
                 </TouchableOpacity>
             </View>
         </View >

@@ -4,10 +4,10 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { Animated } from 'react-native';
 
-import Shopping from '../tabscreens/Shopping';
 import Favorites from '../tabscreens/Favorites';
 import Settings from '../tabscreens/Settings';
 import ScreenHom from '../tabscreens/ScreenHom';
+import Message from '../tabscreens/Message';
 
 const Tab = createBottomTabNavigator();
 
@@ -27,8 +27,8 @@ const TabNavigation = () => {
 
           if (route.name === 'Home') {
             iconName = focused ? 'home' : 'home';
-          } else if (route.name === 'Shopping') {
-            iconName = focused ? 'cart' : 'cart-outline';
+          } else if (route.name === 'Message') {
+            iconName = focused ? 'mail' : 'mail-outline';
           } else if (route.name === 'Favorites') {
             iconName = focused ? 'heart' : 'heart-outline';
           } else if (route.name === 'Setting') {
@@ -42,10 +42,8 @@ const TabNavigation = () => {
         tabBarStyle: {
           backgroundColor: colorInterpolation,
           borderTopWidth: 0,
-          // elevation: 10,
           borderTopLeftRadius: 15,
           borderTopRightRadius: 15,
-          // position: 'absolute',
           left: 10,
           right: 10,
           height: 65,
@@ -60,7 +58,7 @@ const TabNavigation = () => {
         tabBarShowLabel: true,
       })}>
       <Tab.Screen name="Home" component={ScreenHom} options={{ headerShown: false }} />
-      <Tab.Screen name="Shopping" component={Shopping} options={{ headerShown: false }} />
+      <Tab.Screen name="Message" component={Message} options={{ headerShown: false }} />
       <Tab.Screen name="Favorites" component={Favorites} options={{ headerShown: false }} />
       <Tab.Screen name="Setting" component={Settings} options={{ headerShown: false }} />
     </Tab.Navigator>

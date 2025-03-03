@@ -63,7 +63,6 @@ const SignIn = (props) => {
         }
     }, [loginStatus, loginData, setUser])
 
-    //   console.log("Dữ liệu gửi đi:", { email, password });
     const dangnhap = () => {
         if (validateInputs()) {
             dispatch(DangNhapTaiKhoan({ email, password, setUser }));
@@ -97,13 +96,14 @@ const SignIn = (props) => {
                     onChangeText={text => setEmail(text)}
                 />
                 {emailError ? <Text style={{ color: 'red', fontSize: 12 }}>{emailError}</Text> : null}
+                <Image source={require('../Assets/Images/user.png')} style={{ width: 20, height: 20, position: 'absolute', top: 15, left: 8 }} />
             </View>
 
 
             <View>
                 <TextInput
                     style={[SignInPageStyles.input, passwordError ? { borderColor: 'red', borderWidth: 1 } : {}]}
-                    placeholder="Password"
+                    placeholder="Mật khẩu"
                     placeholderTextColor="#aaa"
                     secureTextEntry={!isPasswordVisible}
                     value={password}
@@ -129,16 +129,16 @@ const SignIn = (props) => {
                             style={SignInPageStyles.checkbox}
                         />
                     </TouchableOpacity>
-                    <Text style={SignInPageStyles.rememberMeText}>Remember me</Text>
+                    <Text style={SignInPageStyles.rememberMeText}>Ghi nhớ</Text>
                 </View>
-                <Text style={SignInPageStyles.forgotPasswordText}>Forgot password?</Text>
+                <Text style={SignInPageStyles.forgotPasswordText}>Quên mật khẩu?</Text>
             </View>
 
             <TouchableOpacity style={SignInPageStyles.signInButton} onPress={dangnhap}>
-                <Text style={SignInPageStyles.signInButtonText}>Sign In</Text>
+                <Text style={SignInPageStyles.signInButtonText}>Đăng nhập</Text>
             </TouchableOpacity>
 
-            <Text style={SignInPageStyles.orText}>Or sign in with</Text>
+            <Text style={SignInPageStyles.orText}>Hoặc</Text>
             <View style={SignInPageStyles.socialButtonsContainer}>
                 <TouchableOpacity style={SignInPageStyles.socialButton}>
                     <Image source={require('../Assets/Images/gg_btn.png')} style={SignInPageStyles.socialIcon} />
@@ -153,9 +153,9 @@ const SignIn = (props) => {
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }} >
                 <Text style={SignInPageStyles.signUpPrompt}>
-                    Don't have an account? </Text>
+                    Bạn không có tài khoản? </Text>
                 <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 10, fontFamily: 'Playfair_me' }}>
-                    <Text style={{ color: 'gray' }}>Sign up</Text>
+                    <Text style={{ color: 'gray', fontFamily:'Playfair_me' }}>Đăng ký</Text>
                 </TouchableOpacity>
             </View>
         </View>

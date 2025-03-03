@@ -269,14 +269,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   headerContainer: {
-    paddingVertical: 10, // Giảm padding để header nhỏ hơn
+    paddingVertical: 10, 
     alignItems: 'center',
     justifyContent: 'center',
     elevation: 4,
     shadowOffset: {width: 0, height: 2},
   },
   headerTitle: {
-    fontSize: 16, // Giảm font size cho header
+    fontSize: 16, 
     fontWeight: 'bold',
     color: '#000',
     letterSpacing: 1,
@@ -423,6 +423,6 @@ const styles = StyleSheet.create({
   backIcon: {
     width: 24,
     height: 24,
-    tintColor: '#000', // Nếu muốn đổi màu, có thể chỉnh thành trắng ("#fff")
+    tintColor: '#000', 
   },
 });

@@ -1,14 +1,12 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
-import React, { useState ,useContext} from 'react';
+import React, { useState, useContext } from 'react';
 import { languages } from '../Assets/languages';
-import {AppContext} from '../AppContext';
-
-
+import { AppContext } from '../AppContext';
 
 const Settings = (props) => {
   const { navigation } = props;
-  const [language, setLanguage] = useState('en');
-  const {user} = useContext(AppContext);
+  const [language, setLanguage] = useState('vi'); 
+  const { user } = useContext(AppContext);
 
   const handle = (screenName) => {
     navigation.navigate(screenName);
@@ -64,10 +62,9 @@ const Settings = (props) => {
           <Image source={require('../Assets/Images/addfolder.png')} style={styles.optionIcon} />
           <Text style={styles.optionText}>{t('plan')}</Text>
         </View>
-        <TouchableOpacity onPress={()=> navigation.navigate("AllPlan")}>
-        <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
+        <TouchableOpacity onPress={() => navigation.navigate("AllPlan")}>
+          <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
         </TouchableOpacity>
-       
       </View>
 
       <View style={styles.optionRow}>
@@ -84,12 +81,6 @@ const Settings = (props) => {
         </View>
       </View>
 
-      {/* Language Switch */}
-      <TouchableOpacity onPress={() => setLanguage(language === 'en' ? 'vi' : 'en')} style={styles.languageButton}>
-        <Text style={styles.languageButtonText}>
-          {language === 'en' ? 'Switch to Vietnamese' : 'Chuyển sang tiếng Anh'}
-        </Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -184,13 +175,5 @@ const styles = StyleSheet.create({
     width: 25,
     height: 25,
     resizeMode: 'contain'
-  },
-  languageButton: {
-    marginTop: 20,
-    paddingLeft: 45
-  },
-  languageButtonText: {
-    fontSize: 18,
-    color: '#001cff'
   }
 });

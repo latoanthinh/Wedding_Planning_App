@@ -9,19 +9,19 @@ const slides = [
     {
         image: require("../Assets/Images/intro1.png"),
         description: "Start your journey to a magical wedding experience",
-        buttonText: "Begin now",
+        buttonText: "Bắt đầu",
         onPress: () => alert("Bạn đã nhấn nút 1"),
     },
     {
         image: require("../Assets/Images/intro2.png"),
         description: "Discover the beauty that awaits on your special day.",
-        buttonText: "Explore Styles",
+        buttonText: "Khám phá da dạng",
         onPress: () => alert("Bạn đã nhấn nút 2"),
     },
     {
         image: require("../Assets/Images/intro3.png"),
         description: "Let us help you design the perfect wedding atmosphere.",
-        buttonText: "Join Us Today",
+        buttonText: "Tham gia ngay",
         onPress: () => alert("Bạn đã nhấn nút 3"),
     },
 ];
@@ -45,7 +45,6 @@ const Intro = () => {
     };
   return (
     <View style={styles.container}>
-            {/* FlatList hiển thị ảnh */}
             <FlatList
                 ref={flatListRef}
                 data={slides}

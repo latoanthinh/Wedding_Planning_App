@@ -174,7 +174,7 @@ const ScreenHome = ({ navigation }) => {
           </Text>
 
           {/* Deals of the day */}
-          <Text style={styles.dealsTitle}>Deals of the day</Text>
+          <Text style={styles.dealsTitle}>Ưu đãi tốt</Text>
 
           {/* Carousel */}
           <View style={styles.sliderContainer}>
@@ -264,9 +264,9 @@ const ScreenHome = ({ navigation }) => {
 
           {/* Recommended */}
           <View style={styles.recommendedHeader}>
-            <Text style={styles.recommendedTitle}>Recommended</Text>
+            <Text style={styles.recommendedTitle}>Nổi bật</Text>
             <TouchableOpacity>
-              <Text style={styles.viewAll}>View all</Text>
+              <Text style={styles.viewAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
@@ -291,7 +291,7 @@ const ScreenHome = ({ navigation }) => {
           <View style={styles.dressContainer}>
             <Text style={styles.sectionTitle}>Váy Cưới</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Dress')}>
-              <Text style={styles.viewAll}>View all</Text>
+              <Text style={styles.viewAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
@@ -322,7 +322,7 @@ const ScreenHome = ({ navigation }) => {
                 style={styles.serviceIcon}
               />
               <Text style={styles.locationTitle}>Thiệp Cưới</Text>
-              <Text style={styles.statusText}>Status</Text>
+              {/* <Text style={styles.statusText}>Status</Text> */}
             </View>
 
             <View style={styles.locationItem}>
@@ -331,7 +331,7 @@ const ScreenHome = ({ navigation }) => {
                 style={styles.serviceIcon}
               />
               <Text style={styles.locationTitle}>Địa Điểm</Text>
-              <Text style={styles.statusText}>Status</Text>
+              {/* <Text style={styles.statusText}>Status</Text> */}
             </View>
           </View>
 
@@ -344,8 +344,8 @@ const ScreenHome = ({ navigation }) => {
             />
             <View style={styles.overlay}>
               <View style={styles.textContainer}>
-                <Text style={styles.flowerTitle}>Flowers</Text>
-                <Text style={styles.statusText}>Status</Text>
+                <Text style={styles.flowerTitle}>Hoa</Text>
+                <Text style={styles.statusText}>Xem mẫu hoa</Text>
               </View>
             </View>
           </TouchableOpacity>

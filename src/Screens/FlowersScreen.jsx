@@ -15,7 +15,7 @@ import {
 } from "react-native";
 import { useDispatch, useSelector } from "react-redux";
 import { FlowersAPI } from "../redux/FlowersSlice";
-import Lottie from 'lottie-react-native'; // Import Lottie
+import Lottie from 'lottie-react-native';
 
 const { width } = Dimensions.get("window");
 
@@ -76,7 +76,7 @@ const FlowersScreen = (props) => {
         <TouchableOpacity onPress={() => openModal(item)}>
           <Image source={{ uri: item.imageUrl }} style={styles.image} />
           <Text style={styles.productName}>{item.name}</Text>
-          <Text style={styles.productPrice}>{formatPrice(item.price)} đ</Text>
+          <Text style={styles.productPrice}>{formatPrice(item.price)} VNĐ</Text>
           <View style={styles.ratingContainer}>
             <Text style={styles.ratingText}>{item.description}</Text>
           </View>
@@ -91,12 +91,12 @@ const FlowersScreen = (props) => {
         <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
           <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
         </TouchableOpacity>
-        <Text style={styles.title}>Flowers</Text>
+        <Text style={styles.title}>Hoa cưới</Text>
         <TouchableOpacity>
           <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
         </TouchableOpacity>
       </View>
-      <TextInput style={styles.searchBox} placeholder="Search..." />
+      <TextInput style={styles.searchBox} placeholder="Tìm kiếm hoa cưới..." />
       {FlowersStatus === "loading" && renderLoading()}
       {FlowersStatus === "succeeded" && (
         <FlatList
@@ -138,7 +138,7 @@ const FlowersScreen = (props) => {
                         </TouchableOpacity>
                       </ImageBackground>
                       <Text style={styles.modalTitle}>{selectedFlower.name}</Text>
-                      <Text style={styles.modalPrice}>{formatPrice(selectedFlower.price)} đ</Text>
+                      <Text style={styles.modalPrice}>{formatPrice(selectedFlower.price)} VNĐ</Text>
                       <Text style={styles.modalDescription}>{selectedFlower.description}</Text>
                     </>
                   )}
