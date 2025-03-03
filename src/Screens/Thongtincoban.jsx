@@ -53,25 +53,19 @@ const surveyData = [
   },
 ];
 
-const Thongtincoban = (props) => {
+const Thongtincoban = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  // State answers lưu thông tin của từng câu hỏi
   const [answers, setAnswers] = useState({
     eventDate: new Date(),
     guestCount: "",
     budget: "",
     planLocation: "",
-    userId: "",
   });
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [videoPlayed, setVideoPlayed] = useState(false);
-  const [ttsPlayed, setTtsPlayed] = useState(false);
+  const [answer, setAnswer] = useState("");
   const navigation = useNavigation();
-
-
-  const locationOptions = ["Hà Nội", "TP. Hồ Chí Minh", "Đà Nẵng", "Cần Thơ"];
-
-
+  
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -96,21 +90,10 @@ const Thongtincoban = (props) => {
 
   const handleNext = () => {
     Keyboard.dismiss();
-    // Nếu là câu hỏi về ngân sách, chuyển đổi định dạng số (loại bỏ dấu chấm)
-    if (surveyData[currentIndex].question.includes("Ngân sách")) {
-      setAnswers((prev) => ({
-        ...prev,
-        budget: Number(prev.budget.replace(/\./g, "")),
-      }));
-    }
     
     if (currentIndex === surveyData.length - 1) {
-      setLoading(true); 
-      const plan = generatePlanFromBudget(budget);
-      setTimeout(() => {
-        setLoading(false); 
-        navigation.navigate("GenPlan", { plan, budget });
-      }, 2000); 
+      const plan = generatePlanFromBudget(answers.budget);
+      navigation.navigate("GenPlan", { plan });
     } else {
       Animated.timing(slideAnim, {
         toValue: -screenWidth,
@@ -125,31 +108,13 @@ const Thongtincoban = (props) => {
           duration: 300,
           useNativeDriver: true,
         }).start();
-      } else {
-        const plan = generatePlanFromBudget(budget);
-        navigation.navigate("GenPlan", { plan, budget });
-      }
-    });
+      });
+    }
   };
 
+  const isTextRequired = surveyData[currentIndex].type === "text" && surveyData[currentIndex].question !== "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!";
   
-  const isTextRequired =
-    surveyData[currentIndex].type === "text" &&
-    surveyData[currentIndex].question !==
-      "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!";
-
-  // Lấy giá trị bắt buộc dựa trên câu hỏi hiện tại
-  let requiredValue = "";
-  if (isTextRequired) {
-    if (currentIndex === 1) requiredValue = answers.guestCount;
-    else if (currentIndex === 2) requiredValue = answers.budget;
-    else if (currentIndex === 3) requiredValue = answers.planLocation;
-  }
-
-  const isNextDisabled =
-    (isTextRequired && requiredValue.toString().trim() === "") ||
-    (surveyData[currentIndex].question.includes("Ngân sách") &&
-      Number(answers.budget.toString().replace(/\./g, "")) < 50000000);
+  let isNextDisabled = isTextRequired && answer.trim() === "";
 
   return (
     <View style={styles.container}>
@@ -165,7 +130,6 @@ const Thongtincoban = (props) => {
         />
       </View>
       <View style={styles.bottomContainer}>
-        {/* Progress Indicator */}
         <View style={styles.progressContainer}>
           {surveyData.map((_, index) => (
             <View
@@ -178,78 +142,26 @@ const Thongtincoban = (props) => {
           ))}
         </View>
         <Animated.View style={[styles.card, { transform: [{ translateX: slideAnim }] }]}>
-          <Text style={styles.question}>
-            {surveyData[currentIndex].question}
-          </Text>
-          {surveyData[currentIndex].type === "text" &&
-            surveyData[currentIndex].question === "Bạn muốn tổ chức đám cưới của mình ở đâu?" ? (
-              <View style={styles.optionsContainer}>
-                {locationOptions.map((option) => (
-                  <TouchableOpacity
-                    key={option}
-                    style={[
-                      styles.optionButton,
-                      answer === option && styles.optionButtonSelected,
-                    ]}
-                    onPress={() => setAnswer(option)}
-                  >
-                    <Text
-                      style={[
-                        styles.optionButtonText,
-                        answer === option && styles.optionButtonTextSelected,
-                      ]}
-                    >
-                      {option}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-          ) : surveyData[currentIndex].type === "text" ? (
-            <View>
-              <TextInput
-                style={styles.input}
-                placeholder="Nhập câu trả lời của bạn..."
-                onChangeText={(text) => {
-                  if (surveyData[currentIndex].numericOnly) {
-                    const numericText = text.replace(/[^0-9]/g, "");
-                    if (surveyData[currentIndex].question.includes("Ngân sách")) {
-                      const formattedText = numericText.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                      setAnswer(formattedText);
-                    } else {
-                      setAnswer(numericText);
-                    }
-                  } else {
-                    setAnswer(text);
-                  }
-                }}
-                value={answer}
-                keyboardType={
-                  surveyData[currentIndex].numericOnly ? "numeric" : "default"
-                }
-              />
-              {surveyData[currentIndex].question.includes("Ngân sách") &&
-                answer.trim() !== "" &&
-                Number(answer.replace(/\./g, "")) < 50000000 && (
-                  <Text style={styles.errorText}>
-                    Số tiền tối thiểu là 50.000.000
-                  </Text>
-              )}
-              {isTextRequired && answer.trim() === "" && (
-                <Text style={styles.errorText}>Trường này là bắt buộc</Text>
-              )}
-            </View>
+          <Text style={styles.question}>{surveyData[currentIndex].question}</Text>
+          
+          {surveyData[currentIndex].type === "text" ? (
+            <TextInput
+              style={styles.input}
+              placeholder="Nhập câu trả lời của bạn..."
+              onChangeText={setAnswer}
+              value={answer}
+              keyboardType={surveyData[currentIndex].numericOnly ? "numeric" : "default"}
+            />
           ) : surveyData[currentIndex].type === "date" ? (
-            <TouchableOpacity
-              onPress={() => setOpenDatePicker(true)}
-              style={styles.datePickerButton}
-            >
+            <TouchableOpacity onPress={() => setOpenDatePicker(true)} style={styles.datePickerButton}>
               <Image
                 source={require("../Assets/Images/calendar.png")}
                 style={styles.calendarIcon}
               />
-              <Text style={styles.dateText}>{`${date.getDate()}/${date.getMonth() + 1}/${date.getFullYear()}`}</Text>
+              <Text style={styles.dateText}>{`${answers.eventDate.getDate()}/${answers.eventDate.getMonth() + 1}/${answers.eventDate.getFullYear()}`}</Text>
             </TouchableOpacity>
           ) : null}
+
           <TouchableOpacity
             style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
             onPress={handleNext}
@@ -263,11 +175,11 @@ const Thongtincoban = (props) => {
         <DatePicker
           modal
           open={openDatePicker}
-          date={date}
+          date={answers.eventDate}
           mode="date"
           onConfirm={(selectedDate) => {
             setOpenDatePicker(false);
-            setDate(selectedDate);
+            setAnswers((prev) => ({ ...prev, eventDate: selectedDate }));
           }}
           onCancel={() => setOpenDatePicker(false)}
         />
@@ -352,12 +264,6 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     fontSize: 18,
   },
-  currencyText: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginLeft: 8,
-    color: "#333",
-  },
   datePickerButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -367,11 +273,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderWidth: 1,
     borderColor: "#ced4da",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   calendarIcon: {
     width: 20,
@@ -400,42 +301,6 @@ const styles = StyleSheet.create({
     color: "white",
     fontSize: 18,
     fontWeight: "bold",
-    textAlign: "center",
-  },
-  optionsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    marginVertical: 10,
-  },
-  optionButton: {
-    backgroundColor: "#e0e0e0",
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    borderRadius: 12,
-    marginVertical: 8,
-    width: "45%",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  optionButtonSelected: {
-    backgroundColor: "#333",
-  },
-  optionButtonText: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "600",
-  },
-  optionButtonTextSelected: {
-    color: "#fff",
-  },
-  errorText: {
-    color: "red",
-    fontSize: 14,
-    marginTop: 5,
     textAlign: "center",
   },
 });

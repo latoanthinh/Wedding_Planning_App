@@ -1,21 +1,28 @@
-import { StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, TouchableWithoutFeedback, Keyboard } from 'react-native';
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  KeyboardAvoidingView,
+  Platform,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Dimensions,
+} from 'react-native';
 import React, { useState, useRef, useEffect } from 'react';
+
+const { width, height } = Dimensions.get('window');
 
 const Message = () => {
   const [messages, setMessages] = useState([
     { id: '1', text: 'Xin chào! Bạn có khỏe không?', fromUser: false },
-    { id: '2', text: 'Hẹn gặp lại vào cuối tuần nhé!', fromUser: false },
-    { id: '3', text: 'Bạn đã hoàn thành nhiệm vụ chưa?', fromUser: false },
   ]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [dots, setDots] = useState('');
   const flatListRef = useRef(null);
-
-  const suggestions = [
-    'xin chao',
-    'ban co khoe',
-  ];
 
   const handleSend = () => {
     if (newMessage.trim()) {
@@ -30,29 +37,21 @@ const Message = () => {
     setIsTyping(true);
     setDots('');
 
-    let dotInterval = setInterval(() => {
-      setDots(prev => (prev.length < 3 ? prev + '.' : ''));
-    }, 200);
+    const interval = setInterval(() => {
+      setDots(prevDots => (prevDots.length < 3 ? prevDots + '.' : '')); 
+    }, 100);
 
     setTimeout(() => {
-      clearInterval(dotInterval);
-      const replyText = getAutoReply(userMessage);
-      const replyMessageItem = { id: (messages.length + 2).toString(), text: replyText, fromUser: false };
+      clearInterval(interval); 
+      const replyMessageItem = {
+        id: (messages.length + 2).toString(),
+        text: 'Cảm ơn bạn đã gửi tin nhắn! Hệ thống sẽ xem xét và phản hồi.',
+        fromUser: false,
+      };
       setMessages(prevMessages => [...prevMessages, replyMessageItem]);
       setIsTyping(false);
       flatListRef.current.scrollToEnd({ animated: true });
     }, 2000);
-  };
-
-  const getAutoReply = (message) => {
-    switch (message.toLowerCase()) {
-      case 'xin chao':
-        return 'Chào bạn! Tôi có thể giúp gì cho bạn?';
-      case 'ban co khoe khong':
-        return 'Tôi rất tốt, cảm ơn bạn!';
-      default:
-        return 'Xin lỗi, tôi không hiểu bạn nói gì. Vui lòng thử lại.';
-    }
   };
 
   const renderMessage = ({ item }) => (
@@ -61,17 +60,9 @@ const Message = () => {
     </View>
   );
 
-  const handleSuggestionPress = (suggestion) => {
-    setNewMessage(suggestion);
-  };
-
-  useEffect(() => {
-    flatListRef.current.scrollToEnd({ animated: true });
-  }, [messages]);
-
   return (
-    <KeyboardAvoidingView 
-      style={styles.container} 
+    <KeyboardAvoidingView
+      style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
@@ -91,13 +82,6 @@ const Message = () => {
               <Text style={styles.typingText}>Hệ thống đang phản hồi{dots}</Text>
             </View>
           )}
-          <View style={styles.suggestionsContainer}>
-            {suggestions.map((suggestion, index) => (
-              <TouchableOpacity key={index} style={styles.suggestionButton} onPress={() => handleSuggestionPress(suggestion)}>
-                <Text style={styles.suggestionText}>{suggestion}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
           <View style={styles.inputContainer}>
             <TextInput
               style={styles.input}
@@ -132,7 +116,6 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 20,
     alignSelf: 'center',
-    fontFamily: 'Playfair_me'
   },
   messageList: {
     flexGrow: 1,
@@ -166,20 +149,6 @@ const styles = StyleSheet.create({
   systemText: {
     color: '#333',
   },
-  suggestionsContainer: {
-    flexDirection: 'row',
-    marginBottom: 10,
-    justifyContent: 'flex-start',
-  },
-  suggestionButton: {
-    backgroundColor: '#e0e0e0',
-    borderRadius: 15,
-    padding: 10,
-    marginRight: 5,
-  },
-  suggestionText: {
-    color: '#333',
-  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -194,7 +163,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
     backgroundColor: '#fff',
     elevation: 5,
-    fontFamily: 'Playfair_me'
   },
   sendButton: {
     backgroundColor: '#007bff',
@@ -206,7 +174,6 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
-    fontFamily: 'Playfair_me'
   },
   typingContainer: {
     flexDirection: 'row',
@@ -216,6 +183,5 @@ const styles = StyleSheet.create({
   typingText: {
     color: '#999',
     marginRight: 5,
-    fontFamily: 'Playfair-re'
   },
 });
