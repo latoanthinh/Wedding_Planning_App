@@ -5,7 +5,7 @@ export const HallTheoWedding = createAsyncThunk(
   async (productId, { rejectWithValue }) => {
     try {
       // Gọi API lấy danh sách sảnh theo productId
-      const response = await fetch(`https://apidatn.onrender.com/lobby/by-hall/${productId}`, {
+      const response = await fetch(`https://apidatn.onrender.com/lobby/${productId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,5 @@
 import {
-    StyleSheet, Text, View, Image, FlatList,
+    StyleSheet, Text, View, Image,
     TouchableOpacity, Dimensions, Pressable
 } from 'react-native';
 import React, { useEffect } from 'react';
@@ -19,30 +19,10 @@ const HallWeddings = ({ navigation, route }) => {
             dispatch(HallTheoWedding(productIdHall));
         }
     }, [productIdHall, dispatch]);
-    // dấu chấm động
-    const formatPrice = (price) => {
-        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-    };
 
-    const renderHallItem = ({ item }) => {
-        return (
-            <Pressable>
-                <View style={styles.backgroudhall}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
-                    <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
-                    <View style={styles.bottomhall}>
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
-                            <Text>{item.SoLuongKhach} Khách</Text>
-                        </View>
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <Image source={require('../Assets/Images/price.png')} style={styles.iconSmall} />
-                            <Text> {formatPrice(item.price)} VNĐ</Text>
-                        </View>
-                    </View>
-                </View>
-            </Pressable>
-        );
+    // Hàm định dạng giá tiền
+    const formatPrice = (price) => {
+        return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
     };
 
     const renderLoading = () => (
@@ -59,27 +39,42 @@ const HallWeddings = ({ navigation, route }) => {
 
     return (
         <View style={styles.container}>
+            {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
-                <Text style={styles.title}>WEDDING HALLS</Text>
+                <Text style={styles.title}>Chi Tiết Sảnh</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
                     <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
                 </TouchableOpacity>
             </View>
 
+            {/* Loading */}
             {HallTheoWeddingFlowersStatus === 'loading' && renderLoading()}
-            {HallTheoWeddingFlowersStatus === 'succeeded' && (
-                <FlatList
-                    data={Array.isArray(HallTheoWeddingFlowersData) ? HallTheoWeddingFlowersData : [HallTheoWeddingFlowersData]}
-                    renderItem={renderHallItem}
-                    keyExtractor={(item) => item._id.toString()}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.flatListContent}
-                />
+
+            {/* Nếu có dữ liệu, hiển thị item đầu tiên */}
+            {HallTheoWeddingFlowersStatus === 'succeeded' && HallTheoWeddingFlowersData && (
+                <Pressable style={styles.cardContainer}>
+                    <Image source={{ uri: HallTheoWeddingFlowersData.imageUrl }} style={styles.imghall} />
+                    <View style={styles.cardContent}>
+                        <Text style={styles.namehall} numberOfLines={1}>{HallTheoWeddingFlowersData.name}</Text>
+                        <View style={styles.bottomhall}>
+                            <View style={styles.infoRow}>
+                                <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
+                                <Text style={styles.infoText}>{HallTheoWeddingFlowersData.SoLuongKhach} Khách</Text>
+                            </View>
+                            <View style={styles.infoRow}>
+                                <Image source={require('../Assets/Images/price.png')} style={styles.iconSmall} />
+                                <Text style={styles.priceText}>{formatPrice(HallTheoWeddingFlowersData.price)}</Text>
+                            </View>
+                        </View>
+                    </View>
+                </Pressable>
             )}
-            {HallTheoWeddingFlowersStatus === 'failed' && <Text>Không thể tải dữ liệu!</Text>}
+
+            {/* Trường hợp lỗi hoặc không có dữ liệu */}
+            {HallTheoWeddingFlowersStatus === 'failed' && <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>}
         </View>
     );
 };
@@ -87,79 +82,101 @@ const HallWeddings = ({ navigation, route }) => {
 export default HallWeddings;
 
 const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#F8F8F8',
+        paddingTop: 10,
+    },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        width: '100%',
-        paddingTop: 30,
-        paddingBottom: 10,
-        paddingHorizontal: 10
+        paddingHorizontal: 15,
+        paddingVertical: 15,
+        backgroundColor: '#fff',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0',
+        elevation: 3,
+        marginTop:30
     },
-    icon: { width: 24, height: 24 },
-    title: { fontSize: 24, fontWeight: 'bold', color: '#333' },
+    icon: {
+        width: 28,
+        height: 28,
+    },
+    title: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    cardContainer: {
+        backgroundColor: '#fff',
+        borderRadius: 15,
+        marginHorizontal: 15,
+        marginTop: 20,
+        overflow: 'hidden',
+        elevation: 4,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+    },
+    imghall: {
+        width: '100%',
+        height: width * 0.5,
+        borderTopLeftRadius: 15,
+        borderTopRightRadius: 15,
+    },
+    cardContent: {
+        padding: 15,
+    },
+    namehall: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        color: '#333',
+        marginBottom: 8,
+    },
     bottomhall: {
         flexDirection: "row",
         justifyContent: 'space-between',
-        padding: 10,
-        width: "100%"
+        alignItems: 'center',
+        marginTop: 10,
     },
-    namehall: {
-        fontSize: 18,
-        fontWeight: "bold",
-        marginTop: 5,
-        color: '#555'
-    },
-    imghall: {
-        width: "99%",
-        height: width * 0.35,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
-    },
-    backgroudhall: {
-        width: "auto",
-        height: width * 0.55,
-        marginRight: 10,
-        borderRadius: 15,
-        overflow: "hidden",
-        backgroundColor: "#fff",
-        elevation: 3,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-        marginTop: 15,
+    infoRow: {
+        flexDirection: "row",
         alignItems: "center",
-        marginLeft: 10
-    },
-    container: {
-        width: '100%',
-        height: '100%',
-        padding: 10,
-        backgroundColor: '#fff',
-        alignItems: "center",
-        justifyContent: "center",
     },
     iconSmall: {
-        width: 15,
-        height: 15,
-        marginRight: 5
+        width: 18,
+        height: 18,
+        marginRight: 5,
     },
-    flatListContent: {
-        paddingBottom: 20
+    infoText: {
+        fontSize: 16,
+        color: '#555',
+    },
+    priceText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#E53935',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     loadingAnimation: {
-        width: 100,
-        height: 100,
+        width: 120,
+        height: 120,
     },
     loadingText: {
         marginTop: 10,
         fontSize: 16,
-        color: '#555',
-    }
+        color: '#666',
+    },
+    errorText: {
+        textAlign: 'center',
+        fontSize: 16,
+        color: '#E53935',
+        marginTop: 20,
+    },
 });

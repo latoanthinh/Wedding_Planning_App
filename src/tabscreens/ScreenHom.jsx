@@ -80,13 +80,7 @@ const ScreenHome = ({ navigation }) => {
         <View style={styles.backgroudhall}>
           <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
           <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
-          <View style={styles.bottomhall}>
-            <View style={styles.detailRow}>
-              <Image source={require('../Assets/Images/house.png')} style={styles.icon} />
-              <Text style={styles.detailText}>{item.sanh} Sảnh</Text>
-            </View>
-          </View>
+          <Text style={styles.locationText} numberOfLines={1}>{item.SoLuongKhach}</Text>
         </View>
       </Pressable>
     ),
@@ -207,14 +201,14 @@ const ScreenHome = ({ navigation }) => {
           {/* Recommended Section */}
           <View style={styles.recommendedHeader}>
             <Text style={styles.recommendedTitle}>Nổi bật</Text>
-            <TouchableOpacity>
+            <TouchableOpacity onPress={() => navigation.navigate("AllLobyy")}>
               <Text style={styles.viewAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
           {HallStatus === 'succeeded' && (
             <FlatList
-              data={HallData}
+              data={HallData.slice(0, 3)}
               renderItem={renderHallItem}
               keyExtractor={item => item._id.toString()}
               horizontal
