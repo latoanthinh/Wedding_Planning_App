@@ -17,7 +17,7 @@ const DetailFlowers = ({ navigation, route }) => {
                 <TouchableOpacity onPress={() => navigation.canGoBack() && navigation.goBack()}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Detail Flowers</Text>
+                <Text style={styles.title}>Chi tiết Hoa cưới</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
                     <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
                 </TouchableOpacity>
@@ -29,8 +29,27 @@ const DetailFlowers = ({ navigation, route }) => {
 export default DetailFlowers
 
 const styles = StyleSheet.create({
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingTop: 20, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' },
-    icon: { width: 24, height: 24 },
-    container: { backgroundColor: '#FFFFFF', flex: 1, alignItems: 'center', paddingHorizontal: 20 },
+    header:
+    {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        width: '100%',
+        paddingTop: 20,
+        paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd'
+    },
+    icon:
+    {
+        width: 24,
+        height: 24
+    },
+    container: {
+        backgroundColor: '#FFFFFF',
+        flex: 1,
+        alignItems: 'center',
+        paddingHorizontal: 20
+    },
 
 })

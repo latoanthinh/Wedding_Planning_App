@@ -14,13 +14,13 @@ const AllPlan = ({ navigation }) => {
 
     // Component ProductCard với TouchableOpacity có onPress
     const ProductCard = useCallback(({ item }) => (
-        <TouchableOpacity 
+        <TouchableOpacity
             onPress={() => navigation.navigate('PlanDetail', { planId: item._id })} // Điều hướng đến chi tiết kế hoạch (có thể tùy chỉnh)
         >
             <View style={styles.card}>
                 <Text style={styles.productName}>{item.name}</Text>
                 <Text style={styles.productPrice}>{item.totalPrice}đ</Text>
-                
+
                 <View style={styles.ratingContainer}>
                     <Text style={styles.ratingText}>{item.status || 'Chưa có trạng thái'}</Text>
                 </View>
@@ -62,8 +62,8 @@ const AllPlan = ({ navigation }) => {
                 return (
                     <View style={styles.statusContainer}>
                         <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
-                        <TouchableOpacity 
-                            style={styles.retryButton} 
+                        <TouchableOpacity
+                            style={styles.retryButton}
                             onPress={() => dispatch(Plan())}
                         >
                             <Text style={styles.retryButtonText}>Thử lại</Text>
@@ -75,15 +75,15 @@ const AllPlan = ({ navigation }) => {
         }
     }, [AllPlanData, AllPlanStatus, dispatch, ProductCard]);
 
-    
+
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={()=>navigation.navigate("TabNavigation")}>
+                <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Plan</Text>
+                <Text style={styles.title}>Kế hoạch</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
                     <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
                 </TouchableOpacity>
@@ -148,13 +148,13 @@ const styles = StyleSheet.create({
         shadowRadius: 6,
     },
     productName: {
-        fontSize: 18, // Giảm kích thước font để tránh tràn giao diện
+        fontSize: 18, 
         fontWeight: '600',
         color: '#1A1A1A',
         marginBottom: 5,
     },
     productPrice: {
-        fontSize: 16, // Điều chỉnh kích thước font cho giá
+        fontSize: 16, 
         fontWeight: 'bold',
         color: '#FF3B30',
         marginBottom: 5,

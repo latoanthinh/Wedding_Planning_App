@@ -1,3 +1,4 @@
+import React, { useRef, useState, useEffect, useCallback, useContext } from 'react';
 import {
   Text,
   View,
@@ -10,13 +11,6 @@ import {
   Pressable,
   Animated,
 } from 'react-native';
-import React, {
-  useRef,
-  useState,
-  useEffect,
-  useCallback,
-  useContext,
-} from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Lottie from 'lottie-react-native';
 import { Hall } from '../redux/HallSlice';
@@ -44,9 +38,8 @@ const ScreenHome = ({ navigation }) => {
   const flatListRef = useRef(null);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSearchClicked, setIsSearchClicked] = useState(false);
   const scrollX = useRef(new Animated.Value(0)).current;
-
+  
   const { user } = useContext(AppContext);
   const dispatch = useDispatch();
   const { HallData, HallStatus } = useSelector(state => state.hall);
@@ -62,17 +55,10 @@ const ScreenHome = ({ navigation }) => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      if (currentIndex < slides.length - 1) {
-        flatListRef.current?.scrollToIndex({
-          index: currentIndex + 1,
-          animated: true,
-        });
-      } else {
-        flatListRef.current?.scrollToIndex({
-          index: 0,
-          animated: true,
-        });
-      }
+      flatListRef.current?.scrollToIndex({
+        index: (currentIndex + 1) % slides.length,
+        animated: true,
+      });
     }, 5000);
 
     return () => clearInterval(timer);
@@ -90,25 +76,15 @@ const ScreenHome = ({ navigation }) => {
 
   const renderHallItem = useCallback(
     ({ item }) => (
-      <Pressable
-        onPress={() =>
-          navigation.navigate('HallWeddings', { productIdHall: item._id })
-        }>
+      <Pressable onPress={() => navigation.navigate('HallWeddings', { productIdHall: item._id })}>
         <View style={styles.backgroudhall}>
           <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
-          <Text style={styles.namehall} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.locationText} numberOfLines={1}>
-            {item.location}
-          </Text>
+          <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
+          <Text style={styles.locationText} numberOfLines={1}>{item.location}</Text>
           <View style={styles.bottomhall}>
             <View style={styles.detailRow}>
-              <Image
-                source={require('../Assets/Images/house.png')}
-                style={styles.icon}
-              />
-              <Text style={styles.detailText}> {item.sanh} Sảnh</Text>
+              <Image source={require('../Assets/Images/house.png')} style={styles.icon} />
+              <Text style={styles.detailText}>{item.sanh} Sảnh</Text>
             </View>
           </View>
         </View>
@@ -119,12 +95,7 @@ const ScreenHome = ({ navigation }) => {
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <Lottie
-        source={require('../Assets/Animations/loading.json')}
-        autoPlay
-        loop
-        style={styles.loadingAnimation}
-      />
+      <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
       <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
     </View>
   );
@@ -143,38 +114,25 @@ const ScreenHome = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar
-        translucent
-        backgroundColor="transparent"
-        barStyle="dark-content"
-      />
+      <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
       {isLoading ? (
         renderLoading()
       ) : (
-        <ScrollView
-          contentContainerStyle={styles.scrollViewContent}
-          showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
           {/* Header */}
           <View style={styles.header}>
-            <TouchableOpacity
-              onPress={() => setIsSearchClicked(!isSearchClicked)}>
-              <Image
-                source={require('../Assets/Images/search.png')}
-                style={styles.searchIcon} />
+            <TouchableOpacity onPress={() => setIsSearchClicked(!isSearchClicked)}>
+              <Image source={require('../Assets/Images/search.png')} style={styles.searchIcon} />
             </TouchableOpacity>
           </View>
 
           {/* Greeting */}
-          <Text style={styles.greetingText}>
-            Xin chào, {'\n'} {user.name}
-          </Text>
-          <Text style={styles.welcomeText}>
-            Hãy lên kế hoạch cho ngày cưới hoàn hảo
-          </Text>
+          <Text style={styles.greetingText}>Xin chào, {'\n'} {user.name}</Text>
+          <Text style={styles.welcomeText}>Hãy lên kế hoạch cho ngày cưới hoàn hảo</Text>
 
           {/* Deals of the day */}
-          <Text style={styles.dealsTitle}>Deals of the day</Text>
+          <Text style={styles.dealsTitle}>Ưu đãi tốt</Text>
 
           {/* Carousel */}
           <View style={styles.sliderContainer}>
@@ -189,10 +147,6 @@ const ScreenHome = ({ navigation }) => {
               renderItem={renderCarouselItem}
               snapToInterval={width}
               decelerationRate="fast"
-              onScroll={Animated.event(
-                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-                { useNativeDriver: false }
-              )}
             />
             <View style={styles.indicatorContainer}>
               {slides.map((_, index) => {
@@ -216,25 +170,20 @@ const ScreenHome = ({ navigation }) => {
 
                 const dotColor = scrollX.interpolate({
                   inputRange,
-                  outputRange: ['#ccc', '#f3f6f4', '#ccc'], 
+                  outputRange: ['#ccc', '#f3f6f4', '#ccc'],
                   extrapolate: 'clamp',
                 });
 
                 return (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() =>
-                      flatListRef.current?.scrollToIndex({ index, animated: true })
-                    }>
+                  <TouchableOpacity key={index} onPress={() => flatListRef.current?.scrollToIndex({ index, animated: true })}>
                     <Animated.View
                       style={[
                         styles.dot,
                         {
                           opacity: dotOpacity,
                           transform: [{ scale: dotBounce }],
-                          backgroundColor: dotColor, 
+                          backgroundColor: dotColor,
                         },
-                        currentIndex === index && styles.activeDot,
                       ]}
                     />
                   </TouchableOpacity>
@@ -243,30 +192,23 @@ const ScreenHome = ({ navigation }) => {
             </View>
           </View>
 
+          {/* Survey Section */}
           <View style={styles.surveyContainer}>
-            <Image
-              source={require('../Assets/Images/servey.png')}
-              style={styles.surveyIcon}
-            />
+            <Image source={require('../Assets/Images/servey.png')} style={styles.surveyIcon} />
             <View style={styles.surveyContent}>
               <Text style={styles.surveyText}>Ngày vui với 1 chạm!!</Text>
-              <TouchableOpacity
-                style={styles.surveyButton}
-                onPress={() => navigation.navigate('Thongtincoban')}>
-                <Image
-                  source={require('../Assets/Images/edit.png')}
-                  style={styles.surveyButtonIcon}
-                />
+              <TouchableOpacity style={styles.surveyButton} onPress={() => navigation.navigate('Thongtincoban')}>
+                <Image source={require('../Assets/Images/edit.png')} style={styles.surveyButtonIcon} />
                 <Text style={styles.surveyButtonText}>Thực hiện khảo sát</Text>
               </TouchableOpacity>
             </View>
           </View>
 
-          {/* Recommended */}
+          {/* Recommended Section */}
           <View style={styles.recommendedHeader}>
-            <Text style={styles.recommendedTitle}>Recommended</Text>
+            <Text style={styles.recommendedTitle}>Nổi bật</Text>
             <TouchableOpacity>
-              <Text style={styles.viewAll}>View all</Text>
+              <Text style={styles.viewAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
@@ -287,11 +229,11 @@ const ScreenHome = ({ navigation }) => {
             </View>
           )}
 
-          {/* Wedding Dresses */}
+          {/* Wedding Dresses Section */}
           <View style={styles.dressContainer}>
             <Text style={styles.sectionTitle}>Váy Cưới</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Dress')}>
-              <Text style={styles.viewAll}>View all</Text>
+              <Text style={styles.viewAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
@@ -303,49 +245,35 @@ const ScreenHome = ({ navigation }) => {
               style={styles.dressImage}
             />
             <View style={styles.dressTextOverlay}>
-              <Text style={styles.dressCollectionText}>
-                Bộ sưu tập váy cưới 2025
-              </Text>
+              <Text style={styles.dressCollectionText}>Bộ sưu tập váy cưới 2025</Text>
               <Text style={styles.dressSubtitle}>100+ mẫu đang có sẵn</Text>
             </View>
           </TouchableOpacity>
 
-          {/* Services */}
-          <Text style={[styles.sectionTitle, { marginLeft: 20, marginTop: 20 }]}>
-            Dịch vụ khác
-          </Text>
+          {/* Services Section */}
+          <Text style={[styles.sectionTitle, { marginLeft: 20, marginTop: 20 }]}>Dịch vụ khác</Text>
 
           <View style={styles.locationRow}>
-            <TouchableOpacity style={styles.locationItem} onPress={()=> navigation.navigate("InvitationsScreen")}>
-              <Image
-                source={require('../Assets/Images/thiepcuoi.png')}
-                style={styles.serviceIcon}
-              />
+            <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("InvitationsScreen")}>
+              <Image source={require('../Assets/Images/thiepcuoi.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Thiệp Cưới</Text>
               <Text style={styles.statusText}>Status</Text>
             </TouchableOpacity>
 
             <View style={styles.locationItem}>
-              <Image
-                source={require('../Assets/Images/diadiem.png')}
-                style={styles.serviceIcon}
-              />
+              <Image source={require('../Assets/Images/diadiem.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Địa Điểm</Text>
-              <Text style={styles.statusText}>Status</Text>
             </View>
           </View>
 
           <TouchableOpacity
             style={styles.flowerContainer}
             onPress={() => navigation.navigate('FlowersScreen')}>
-            <Image
-              source={require('../Assets/Images/hoacuoi.jpeg')}
-              style={styles.flowerImage}
-            />
+            <Image source={require('../Assets/Images/hoacuoi.jpeg')} style={styles.flowerImage} />
             <View style={styles.overlay}>
               <View style={styles.textContainer}>
-                <Text style={styles.flowerTitle}>Flowers</Text>
-                <Text style={styles.statusText}>Status</Text>
+                <Text style={styles.flowerTitle}>Hoa</Text>
+                <Text style={styles.statusText}>Xem mẫu hoa</Text>
               </View>
             </View>
           </TouchableOpacity>

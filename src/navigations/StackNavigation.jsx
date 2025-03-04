@@ -29,7 +29,7 @@ const GuestStackNavigation = () => {
   )
 }
 // END: dành cho user chưa đăng nhập
-
+// sk-1dbacd7358dc4f65a5ee8cb0f31afb38
 
 // START: Stack dành cho user đã đăng nhập
 import TabNavigation from './TabNavigation'

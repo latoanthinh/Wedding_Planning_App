@@ -30,8 +30,8 @@ const DetailClothes = ({ navigation, route }) => {
     );
 
     if (ChitietStatus === 'loading') return <ActivityIndicator size="large" color="#0000ff" style={styles.loader} />;
-    if (ChitietStatus === 'failed') return <Text style={styles.errorText}>Error: {error}</Text>;
-    if (!ChitietData?.imageUrl) return <Text style={styles.errorText}>No data available</Text>;
+    if (ChitietStatus === 'failed') return <Text style={styles.errorText}>Lỗi: {error}</Text>;
+    if (!ChitietData?.imageUrl) return <Text style={styles.errorText}>Không thể tải dữ liệu</Text>;
 
     return (
         <View style={styles.container}>
@@ -39,7 +39,7 @@ const DetailClothes = ({ navigation, route }) => {
                 <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Detail</Text>
+                <Text style={styles.title}>Chi tiết sản phẩm</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
                     <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
                 </TouchableOpacity>
@@ -62,7 +62,7 @@ const DetailClothes = ({ navigation, route }) => {
 
             <Text style={styles.productName}>{ChitietData.name}</Text>
             <Text style={styles.categoryText}>Pre Wedding / Wedding Day</Text>
-            <Text style={styles.sectionTitle}>More Information</Text>
+            <Text style={styles.sectionTitle}>Thông tin thêm</Text>
 
             <View style={styles.infoContainer}>
                 {Object.entries({
@@ -79,8 +79,8 @@ const DetailClothes = ({ navigation, route }) => {
                 ))}
             </View>
 
-            <TouchableOpacity><Text style={styles.viewSizeGuide}>View size guide</Text></TouchableOpacity>
-            <TouchableOpacity style={styles.contactButton}><Text style={styles.contactText}>Contact</Text></TouchableOpacity>
+            <TouchableOpacity><Text style={styles.viewSizeGuide}>Xem hướng dẫn size</Text></TouchableOpacity>
+            <TouchableOpacity style={styles.contactButton}><Text style={styles.contactText}>Liên hệ</Text></TouchableOpacity>
         </View>
     );
 };
@@ -88,8 +88,19 @@ const DetailClothes = ({ navigation, route }) => {
 export default DetailClothes;
 
 const styles = StyleSheet.create({
-    container: { backgroundColor: '#FFFFFF', flex: 1, alignItems: 'center', paddingHorizontal: 20 },
-    header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', width: '100%', paddingTop: 20, paddingBottom: 10, borderBottomWidth: 1, borderBottomColor: '#ddd' },
+    container: {
+        backgroundColor: '#FFFFFF',
+        flex: 1, alignItems: 'center',
+        paddingHorizontal: 20
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center', width: '100%',
+        paddingTop: 20, paddingBottom: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: '#ddd'
+    },
     icon: { width: 24, height: 24 },
     title: { fontSize: 22, fontWeight: 'bold', color: 'black' },
     imageContainer: { marginTop: 15, width: 370, height: 360, borderRadius: 80, overflow: 'hidden', justifyContent: 'center', alignItems: 'center' },

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useContext } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { 
   View, 
   Text, 
@@ -8,16 +8,14 @@ import {
   Image,
   Animated,
   Dimensions,
-  Keyboard,
-  ActivityIndicator
+  Keyboard
 } from "react-native";
 import Sound from "react-native-sound";
 import Video from "react-native-video";
 import DatePicker from "react-native-date-picker";
 import { useNavigation } from "@react-navigation/native";
-// Đã loại bỏ các import liên quan đến API
-// import { useDispatch, useSelector } from "react-redux";
-// import { createPlan } from "../redux/CreatePlanSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { createPlan } from "../redux/CreatePlanSlice";
 import { AppContext } from "../AppContext";
 
 const screenWidth = Dimensions.get("window").width;
@@ -58,26 +56,22 @@ const surveyData = [
   },
 ];
 
-const Thongtincoban = (props) => {
+const Thongtincoban = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  // State answers lưu thông tin của từng câu hỏi
   const [answers, setAnswers] = useState({
     eventDate: new Date(),
     guestCount: "",
     budget: "",
     planLocation: "",
-    userId: "",
   });
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [videoPlayed, setVideoPlayed] = useState(false);
   const [ttsPlayed, setTtsPlayed] = useState(false);
-  // Loại bỏ loading vì không còn gọi API
-  // const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-  // Loại bỏ dispatch và error
-  // const dispatch = useDispatch();
+  const dispatch = useDispatch();
   const { user } = useContext(AppContext);
-  // const { error } = useSelector((state) => state.createplan);
+  const { error } = useSelector((state) => state.createplan);
 
   // Nếu có user, cập nhật userId vào answers
   useEffect(() => {
@@ -86,11 +80,13 @@ const Thongtincoban = (props) => {
     }
   }, [user]);
 
+  // Vì giờ phần chọn địa điểm đã được hiển thị dưới dạng TextInput,
+  // nên không cần danh sách lựa chọn (locationOptions) nữa.
+
   // Animated value cho hiệu ứng slide của card
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    setTtsPlayed(false);
     setVideoPlayed(false);
     playTTS(surveyData[currentIndex].ttsFile);
   }, [currentIndex]);
@@ -102,9 +98,7 @@ const Thongtincoban = (props) => {
         return;
       }
       sound.play((success) => {
-        if (success) {
-          setTtsPlayed(true);
-        } else {
+        if (!success) {
           console.log("TTS playback failed");
         }
       });
@@ -114,24 +108,39 @@ const Thongtincoban = (props) => {
 
   const handleNext = () => {
     Keyboard.dismiss();
-    // Nếu là câu hỏi về ngân sách, chuyển đổi định dạng số (loại bỏ dấu chấm)
-    if (surveyData[currentIndex].question.includes("Ngân sách")) {
-      setAnswers((prev) => ({
-        ...prev,
-        budget: Number(prev.budget.replace(/\./g, "")),
-      }));
-    }
-    Animated.timing(slideAnim, {
-      toValue: -screenWidth,
-      duration: 300,
-      useNativeDriver: true,
-    }).start(() => {
-      if (currentIndex < surveyData.length - 1) {
+    
+    if (currentIndex === surveyData.length - 1) {
+      const plan = generatePlanFromBudget(answers.budget);
+      navigation.navigate("GenPlan", { plan });
+    } else {
+      Animated.timing(slideAnim, {
+        toValue: -screenWidth,
+        duration: 300,
+        useNativeDriver: true,
+      }).start(() => {
         setCurrentIndex(currentIndex + 1);
-        // Giữ nguyên thông tin đã nhập
+        // Không reset giá trị ở đây, giữ nguyên thông tin đã nhập
       } else {
-        // Thay vì gọi API, chỉ điều hướng đến màn GenPlan với dữ liệu mẫu
-        navigation.navigate("GenPlan", { planId: "dummyId" });
+        setLoading(true);
+        dispatch(
+          createPlan({
+            eventDate: answers.eventDate.toISOString(),
+            guestCount: answers.guestCount,
+            budget: answers.budget,
+            planLocation: answers.planLocation,
+            userId: answers.userId,
+          })
+        )
+          .unwrap()
+          .then((data) => {
+            setLoading(false);
+            alert("Tạo kế hoạch thành công!");
+            navigation.navigate("GenPlan", { planId: data.plan._id });
+          })
+          .catch((err) => {
+            setLoading(false);
+            alert("Lỗi: " + err);
+          });
       }
       slideAnim.setValue(screenWidth);
       Animated.timing(slideAnim, {
@@ -142,7 +151,7 @@ const Thongtincoban = (props) => {
     });
   };
 
-  // Xác định các trường bắt buộc nhập (với loại "text" ngoại trừ câu "Chúng tôi đã gợi ý..." )
+  // Xác định các trường bắt buộc nhập (với loại "text" ngoại trừ câu "Chúng tôi đã gợi ý...")
   const isTextRequired =
     surveyData[currentIndex].type === "text" &&
     surveyData[currentIndex].question !==
@@ -163,7 +172,7 @@ const Thongtincoban = (props) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.header}>Thông tin cơ bản</Text>
+      <Text style={styles.header}>Khảo sát</Text>
       <View style={styles.topContainer}>
         <Video
           source={surveyData[currentIndex].videoFile}
@@ -175,7 +184,6 @@ const Thongtincoban = (props) => {
         />
       </View>
       <View style={styles.bottomContainer}>
-        {/* Progress Indicator */}
         <View style={styles.progressContainer}>
           {surveyData.map((_, index) => (
             <View
@@ -188,62 +196,38 @@ const Thongtincoban = (props) => {
           ))}
         </View>
         <Animated.View style={[styles.card, { transform: [{ translateX: slideAnim }] }]}>
-          <Text style={styles.question}>
-            {surveyData[currentIndex].question}
-          </Text>
+          <Text style={styles.question}>{surveyData[currentIndex].question}</Text>
+          
           {surveyData[currentIndex].type === "text" ? (
             <TextInput
               style={styles.input}
               placeholder="Nhập câu trả lời của bạn..."
-              onChangeText={(text) => {
-                if (surveyData[currentIndex].numericOnly) {
-                  const numericText = text.replace(/[^0-9]/g, "");
-                  if (surveyData[currentIndex].question.includes("Ngân sách")) {
-                    const formattedText = numericText.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
-                    setAnswers((prev) => ({ ...prev, budget: formattedText }));
-                  } else {
-                    setAnswers((prev) => ({ ...prev, guestCount: numericText }));
-                  }
-                } else {
-                  setAnswers((prev) => ({ ...prev, planLocation: text }));
-                }
-              }}
-              value={
-                currentIndex === 1
-                  ? answers.guestCount
-                  : currentIndex === 2
-                  ? answers.budget
-                  : answers.planLocation
-              }
-              keyboardType={
-                surveyData[currentIndex].numericOnly ? "numeric" : "default"
-              }
+              onChangeText={setAnswer}
+              value={answer}
+              keyboardType={surveyData[currentIndex].numericOnly ? "numeric" : "default"}
             />
           ) : surveyData[currentIndex].type === "date" ? (
-            <TouchableOpacity
-              onPress={() => setOpenDatePicker(true)}
-              style={styles.datePickerButton}
-            >
+            <TouchableOpacity onPress={() => setOpenDatePicker(true)} style={styles.datePickerButton}>
               <Image
                 source={require("../Assets/Images/calendar.png")}
                 style={styles.calendarIcon}
               />
-              <Text style={styles.dateText}>
-                {`${answers.eventDate.getDate()}/${
-                  answers.eventDate.getMonth() + 1
-                }/${answers.eventDate.getFullYear()}`}
-              </Text>
+              <Text style={styles.dateText}>{`${answers.eventDate.getDate()}/${answers.eventDate.getMonth() + 1}/${answers.eventDate.getFullYear()}`}</Text>
             </TouchableOpacity>
           ) : null}
+
           <TouchableOpacity
             style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
             onPress={handleNext}
-            disabled={isNextDisabled /* || loading */}  // Loading đã loại bỏ
+            disabled={isNextDisabled || loading}
           >
-            {/* Nếu có loading, bạn có thể hiển thị ActivityIndicator, ở đây ta bỏ qua */}
-            <Text style={styles.buttonText}>
-              {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <Text style={styles.buttonText}>
+                {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
+              </Text>
+            )}
           </TouchableOpacity>
         </Animated.View>
         <DatePicker
@@ -257,8 +241,7 @@ const Thongtincoban = (props) => {
           }}
           onCancel={() => setOpenDatePicker(false)}
         />
-        {/* Loại bỏ thông báo lỗi vì không còn API */}
-        {/* {error && <Text style={styles.errorText}>{error}</Text>} */}
+        {error && <Text style={styles.errorText}>{error}</Text>}
       </View>
     </View>
   );
@@ -302,9 +285,9 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: "#e0e0e0",
     marginHorizontal: 4,
   },
@@ -336,7 +319,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderWidth: 1,
     borderColor: "#ced4da",
-    borderRadius: 10,
+    borderRadius: 8,
     backgroundColor: "#fff",
     fontSize: 18,
   },
@@ -346,18 +329,13 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#f0f0f0",
     padding: 12,
-    borderRadius: 10,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: "#ced4da",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
   },
   calendarIcon: {
-    width: 24,
-    height: 24,
+    width: 20,
+    height: 20,
     marginRight: 8,
     tintColor: "#333",
   },
@@ -369,9 +347,9 @@ const styles = StyleSheet.create({
   },
   nextButton: {
     backgroundColor: "#333",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 8,
     marginTop: 20,
     alignSelf: "center",
   },
@@ -379,45 +357,9 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   buttonText: {
-    color: "#fff",
+    color: "white",
     fontSize: 18,
     fontWeight: "bold",
-    textAlign: "center",
-  },
-  optionsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    marginVertical: 12,
-  },
-  optionButton: {
-    backgroundColor: "#e0e0e0",
-    paddingVertical: 16,
-    paddingHorizontal: 28,
-    borderRadius: 12,
-    marginVertical: 8,
-    width: "45%",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  optionButtonSelected: {
-    backgroundColor: "#333",
-  },
-  optionButtonText: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "600",
-  },
-  optionButtonTextSelected: {
-    color: "#fff",
-  },
-  errorText: {
-    color: "red",
-    fontSize: 14,
-    marginTop: 6,
     textAlign: "center",
   },
 });

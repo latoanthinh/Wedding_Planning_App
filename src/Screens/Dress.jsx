@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Pressable,
 } from "react-native";
 import Icon from "react-native-vector-icons/FontAwesome";
 import { useDispatch, useSelector } from "react-redux";
@@ -23,29 +24,29 @@ const Dress = (props) => {
   }, [dispatch]);
 
   const categories = [
-    { title: "FOR SALE" },
-    { title: "OUTDOOR" },
-    { title: "SIGNATURE" },
+    { title: "LỰA CHỌN HÀNG ĐẦU" },
+    { title: "NGOÀI TRỜI" },
+    { title: "THƯƠNG HIỆU" },
   ];
 
 
 
   const ProductCard = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate("DetailClothes", { productIdClo: item._id })}>
+    <Pressable onPress={() => navigation.navigate("DetailClothes", { productIdClo: item._id })}>
       <View style={styles.card}>
         <Image source={{ uri: item.imageUrl[0] }} style={styles.image} />
         <View style={styles.discountBadge}>
-          <Text style={styles.discountText}>45% OFF</Text>
+          <Text style={styles.discountText}>Giảm giá 40%</Text>
         </View>
         <Text style={styles.productName}>{item.name}</Text>
         <Text style={styles.productPrice}>{item.price}đ</Text>
-        <Text style={styles.oldPrice}>4.999.999đ</Text>
+        <Text style={styles.oldPrice}>4.999.999 VNĐ</Text>
         <View style={styles.ratingContainer}>
           <Icon name="star" size={16} color="#facc15" />
           <Text style={styles.ratingText}>4.9 (256)</Text>
         </View>
       </View>
-    </TouchableOpacity>
+    </Pressable>
   );
 
   return (
@@ -54,7 +55,7 @@ const Dress = (props) => {
         <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
           <Icon name="arrow-left" size={20} color="#000" />
         </TouchableOpacity>
-        <Text style={styles.title}>Dress</Text>
+        <Text style={styles.title}>Váy cưới</Text>
         <TouchableOpacity>
           <Icon name="home" size={20} color="#000" />
         </TouchableOpacity>
@@ -86,14 +87,23 @@ const Dress = (props) => {
 export default Dress
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#f5f5f5", paddingHorizontal: 16 },
+  container: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: "#f5f5f5",
+    padding: 20
+  },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
     paddingVertical: 16,
   },
-  title: { fontSize: 22, fontWeight: "bold", color: "black" },
+  title: {
+    fontSize: 22,
+    fontWeight: "bold",
+    color: "black"
+  },
   searchBox: {
     backgroundColor: "#fff",
     borderRadius: 10,
@@ -128,12 +138,36 @@ const styles = StyleSheet.create({
     paddingVertical: 3,
     borderRadius: 5,
   },
-  discountText: { color: "#fff", fontSize: 12, fontWeight: "bold" },
-  productName: { fontSize: 14, fontWeight: "bold", marginTop: 10 },
-  productPrice: { fontSize: 16, fontWeight: "bold", color: "#111", marginTop: 5 },
-  oldPrice: { fontSize: 14, textDecorationLine: "line-through", color: "#a1a1a1" },
-  ratingContainer: { flexDirection: "row", alignItems: "center", marginTop: 5 },
-  ratingText: { fontSize: 14, marginLeft: 5 },
+  discountText: {
+    color: "#fff",
+    fontSize: 12,
+    fontWeight: "bold"
+  },
+  productName: {
+    fontSize: 14,
+    fontWeight: "bold",
+    marginTop: 10
+  },
+  productPrice: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#111",
+    marginTop: 5
+  },
+  oldPrice: {
+    fontSize: 14,
+    textDecorationLine: "line-through",
+    color: "#a1a1a1"
+  },
+  ratingContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginTop: 5
+  },
+  ratingText: {
+    fontSize: 14,
+    marginLeft: 5
+  },
 });
 
 
