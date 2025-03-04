@@ -15,8 +15,9 @@ import Sound from "react-native-sound";
 import Video from "react-native-video";
 import DatePicker from "react-native-date-picker";
 import { useNavigation } from "@react-navigation/native";
-import { useDispatch, useSelector } from "react-redux";
-import { createPlan } from "../redux/CreatePlanSlice";
+// Đã loại bỏ các import liên quan đến API
+// import { useDispatch, useSelector } from "react-redux";
+// import { createPlan } from "../redux/CreatePlanSlice";
 import { AppContext } from "../AppContext";
 
 const screenWidth = Dimensions.get("window").width;
@@ -70,11 +71,13 @@ const Thongtincoban = (props) => {
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [videoPlayed, setVideoPlayed] = useState(false);
   const [ttsPlayed, setTtsPlayed] = useState(false);
-  const [loading, setLoading] = useState(false);
+  // Loại bỏ loading vì không còn gọi API
+  // const [loading, setLoading] = useState(false);
   const navigation = useNavigation();
-  const dispatch = useDispatch();
+  // Loại bỏ dispatch và error
+  // const dispatch = useDispatch();
   const { user } = useContext(AppContext);
-  const { error } = useSelector((state) => state.createplan);
+  // const { error } = useSelector((state) => state.createplan);
 
   // Nếu có user, cập nhật userId vào answers
   useEffect(() => {
@@ -82,9 +85,6 @@ const Thongtincoban = (props) => {
       setAnswers((prev) => ({ ...prev, userId: user._id }));
     }
   }, [user]);
-
-  // Vì giờ phần chọn địa điểm đã được hiển thị dưới dạng TextInput,
-  // nên không cần danh sách lựa chọn (locationOptions) nữa.
 
   // Animated value cho hiệu ứng slide của card
   const slideAnim = useRef(new Animated.Value(0)).current;
@@ -128,28 +128,10 @@ const Thongtincoban = (props) => {
     }).start(() => {
       if (currentIndex < surveyData.length - 1) {
         setCurrentIndex(currentIndex + 1);
-        // Không reset giá trị ở đây, giữ nguyên thông tin đã nhập
+        // Giữ nguyên thông tin đã nhập
       } else {
-        setLoading(true);
-        dispatch(
-          createPlan({
-            eventDate: answers.eventDate.toISOString(),
-            guestCount: answers.guestCount,
-            budget: answers.budget,
-            planLocation: answers.planLocation,
-            userId: answers.userId,
-          })
-        )
-          .unwrap()
-          .then((data) => {
-            setLoading(false);
-            alert("Tạo kế hoạch thành công!");
-            navigation.navigate("GenPlan", { planId: data.plan._id });
-          })
-          .catch((err) => {
-            setLoading(false);
-            alert("Lỗi: " + err);
-          });
+        // Thay vì gọi API, chỉ điều hướng đến màn GenPlan với dữ liệu mẫu
+        navigation.navigate("GenPlan", { planId: "dummyId" });
       }
       slideAnim.setValue(screenWidth);
       Animated.timing(slideAnim, {
@@ -160,7 +142,7 @@ const Thongtincoban = (props) => {
     });
   };
 
-  // Xác định các trường bắt buộc nhập (với loại "text" ngoại trừ câu "Chúng tôi đã gợi ý...")
+  // Xác định các trường bắt buộc nhập (với loại "text" ngoại trừ câu "Chúng tôi đã gợi ý..." )
   const isTextRequired =
     surveyData[currentIndex].type === "text" &&
     surveyData[currentIndex].question !==
@@ -256,15 +238,12 @@ const Thongtincoban = (props) => {
           <TouchableOpacity
             style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
             onPress={handleNext}
-            disabled={isNextDisabled || loading}
+            disabled={isNextDisabled /* || loading */}  // Loading đã loại bỏ
           >
-            {loading ? (
-              <ActivityIndicator color="white" />
-            ) : (
-              <Text style={styles.buttonText}>
-                {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
-              </Text>
-            )}
+            {/* Nếu có loading, bạn có thể hiển thị ActivityIndicator, ở đây ta bỏ qua */}
+            <Text style={styles.buttonText}>
+              {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
+            </Text>
           </TouchableOpacity>
         </Animated.View>
         <DatePicker
@@ -278,7 +257,8 @@ const Thongtincoban = (props) => {
           }}
           onCancel={() => setOpenDatePicker(false)}
         />
-        {error && <Text style={styles.errorText}>{error}</Text>}
+        {/* Loại bỏ thông báo lỗi vì không còn API */}
+        {/* {error && <Text style={styles.errorText}>{error}</Text>} */}
       </View>
     </View>
   );

@@ -14,7 +14,7 @@ import GenPlan from '../Screens/GenPlan'
 import HallWeddings from '../Screens/HallWeddings'
 import AllPlan from '../Screens/AllPlan'
 import InvitationsScreen from '../Screens/InvitationsScreen'
-
+import ComboDetail from '../Screens/ComboDetail'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -52,6 +52,7 @@ const StackNavigation = () => {
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="AllPlan" component={AllPlan} />
       <Stack.Screen name="InvitationsScreen" component={InvitationsScreen} />
+      <Stack.Screen name="ComboDetail" component={ComboDetail} />
 
 
     </Stack.Navigator>
