@@ -4,7 +4,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 // Hàm async gọi API
 export const Invitations = createAsyncThunk('plan/all', async () => {
     try {
-      const response = await fetch('https://apidatn.onrender.com/invitation/all', {
+      const response = await fetch('https://apidatn.onrender.com/present/all', {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
