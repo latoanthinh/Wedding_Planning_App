@@ -266,8 +266,8 @@ const ScreenHome = ({ navigation }) => {
             <Image source={require('../Assets/Images/hoacuoi.jpeg')} style={styles.flowerImage} />
             <View style={styles.overlay}>
               <View style={styles.textContainer}>
-                <Text style={styles.flowerTitle}>Hoa</Text>
-                <Text style={styles.statusText}>Xem mẫu hoa</Text>
+                <Text style={styles.flowerTitle}>Đồ ăn</Text>
+                <Text style={styles.statusText}>Xem mẫu đồ ăn</Text>
               </View>
             </View>
           </TouchableOpacity>
