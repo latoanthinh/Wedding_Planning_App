@@ -1,9 +1,7 @@
 import React from 'react'
 
-import Intro from '../Screens/Intro'
 import SignIn from '../Screens/SignIn'
 import SignUp from '../Screens/SignUp'
-import Welcome from '../Screens/Welcome'
 import EditProfile from '../Screens/EditProfile'
 import Thongtincoban from '../Screens/Thongtincoban'
 import DetailClothes from '../Screens/DetailClothes'
@@ -13,10 +11,10 @@ import DetailFlowers from '../Screens/DetailFlowers'
 import GenPlan from '../Screens/GenPlan'
 import HallWeddings from '../Screens/HallWeddings'
 import AllPlan from '../Screens/AllPlan'
-import InvitationsScreen from '../Screens/InvitationsScreen'
+import Gift_Screen from '../Screens/Gift_Screen'
 import ComboDetail from '../Screens/ComboDetail'
 import AllLobyy from '../Screens/AllLobyy'
-import DiaDienCreen from '../Screens/DiaDienCreen'
+import DiaDiem_Screen from '../Screens/DiaDiem_Screen'
 import TransitionLoading from '../transitions/Loading'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -32,7 +30,6 @@ const GuestStackNavigation = () => {
   )
 }
 // END: dành cho user chưa đăng nhập
-// sk-1dbacd7358dc4f65a5ee8cb0f31afb38
 
 // START: Stack dành cho user đã đăng nhập
 import TabNavigation from './TabNavigation'
@@ -54,10 +51,10 @@ const StackNavigation = () => {
       <Stack.Screen name="HallWeddings" component={HallWeddings} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="AllPlan" component={AllPlan} />
-      <Stack.Screen name="InvitationsScreen" component={InvitationsScreen} />
+      <Stack.Screen name="Gift_Screen" component={Gift_Screen} />
       <Stack.Screen name="ComboDetail" component={ComboDetail} />
       <Stack.Screen name="AllLobyy" component={AllLobyy} />
-      <Stack.Screen name="DiaDienCreen" component={DiaDienCreen} />
+      <Stack.Screen name="DiaDiem_Screen" component={DiaDiem_Screen} />
       <Stack.Screen name="TransitionLoading" component={TransitionLoading} />
 
     </Stack.Navigator>

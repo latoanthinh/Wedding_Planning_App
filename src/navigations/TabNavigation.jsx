@@ -6,7 +6,7 @@ import { Animated } from 'react-native';
 
 import Favorites from '../tabscreens/Favorites';
 import Settings from '../tabscreens/Settings';
-import ScreenHom from '../tabscreens/ScreenHom';
+import Home from '../tabscreens/Home';
 import Message from '../tabscreens/Message';
 
 const Tab = createBottomTabNavigator();
@@ -57,7 +57,7 @@ const TabNavigation = () => {
         },
         tabBarShowLabel: true,
       })}>
-      <Tab.Screen name="Home" component={ScreenHom} options={{ headerShown: false }} />
+      <Tab.Screen name="Home" component={Home} options={{ headerShown: false }} />
       <Tab.Screen name="Message" component={Message} options={{ headerShown: false }} />
       <Tab.Screen name="Favorites" component={Favorites} options={{ headerShown: false }} />
       <Tab.Screen name="Setting" component={Settings} options={{ headerShown: false }} />
@@ -67,8 +67,3 @@ const TabNavigation = () => {
 
 export default TabNavigation;
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-});

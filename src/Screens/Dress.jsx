@@ -53,14 +53,14 @@ const Dress = (props) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
-          <Icon name="arrow-left" size={20} color="#000" />
+          <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
         </TouchableOpacity>
         <Text style={styles.title}>Váy cưới</Text>
         <TouchableOpacity>
-          <Icon name="home" size={20} color="#000" />
+          <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
         </TouchableOpacity>
       </View>
-      <TextInput style={styles.searchBox} placeholder="Search..." />
+      <TextInput style={styles.searchBox} placeholder="Tìm váy cưới..." />
       {ClothesStatus === "loading" && <ActivityIndicator size="large" color="#0000ff" />}
       {ClothesStatus === "succeeded" && (
         <FlatList
@@ -90,7 +90,7 @@ const styles = StyleSheet.create({
   container: {
     width: '100%',
     height: '100%',
-    backgroundColor: "#f5f5f5",
+    backgroundColor: "#fff",
     padding: 20
   },
   header: {
@@ -101,14 +101,25 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 22,
-    fontWeight: "bold",
-    color: "black"
+    color: "black",
+    fontFamily: 'Playfair-re'
   },
   searchBox: {
     backgroundColor: "#fff",
-    borderRadius: 10,
+    borderRadius: 8,
     padding: 10,
     marginBottom: 10,
+    borderWidth: 1,
+    borderColor: "#000",
+    borderWidth: 0.5,
+  },
+  icon: {
+    width: 24,
+    height: 24,
+  },
+  icon_1: {
+    width: 20,
+    height: 15,
   },
   categoryTitle: {
     fontSize: 18,

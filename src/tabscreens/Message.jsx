@@ -17,7 +17,7 @@ const { width, height } = Dimensions.get('window');
 
 const Message = () => {
   const [messages, setMessages] = useState([
-    { id: '1', text: 'Xin chào! Bạn có khỏe không?', fromUser: false },
+    { id: '1', text: 'Xin chào! Hôm nay bạn cần tư vấn gì nào?', fromUser: false },
   ]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -116,6 +116,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 20,
     alignSelf: 'center',
+    fontFamily:'Playfair_me'
   },
   messageList: {
     flexGrow: 1,

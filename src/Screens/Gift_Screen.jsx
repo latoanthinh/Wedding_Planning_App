@@ -1,15 +1,54 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
-import React, { useEffect, useCallback } from 'react';
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator, Animated } from 'react-native';
+import React, { useEffect, useCallback, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Invitations } from '../redux/InvitationsSlice';
+import Lottie from 'lottie-react-native';
 
 const InvitationsScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { AllPlanData, AllPlanStatus } = useSelector((state) => state.allplan);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     dispatch(Invitations());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (AllPlanStatus === 'loading') {
+      Animated.loop(
+        Animated.sequence([
+          Animated.timing(fadeAnim, {
+            toValue: 1,
+            duration: 1000,
+            useNativeDriver: true,
+          }),
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 3000,
+            useNativeDriver: true,
+          }),
+        ])
+      ).start();
+    }
+  }, [AllPlanStatus, fadeAnim]);
+
+  const formatPrice = (price) => {
+    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
+  };
+
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <Animated.View style={{ opacity: fadeAnim }}>
+        <Lottie
+          source={require('../Assets/Animations/loading.json')}
+          autoPlay
+          loop
+          style={styles.loadingAnimation}
+        />
+      </Animated.View>
+      <Text style={styles.loadingText}>Chờ xíu...</Text>
+    </View>
+  );
 
   const InvitationCard = useCallback(
     ({ item }) => (
@@ -17,10 +56,10 @@ const InvitationsScreen = ({ navigation }) => {
         style={styles.card}
         onPress={() => navigation.navigate('InvitationDetail', { invitationId: item._id })}
       >
-        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} resizeMode="cover" />
+        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
         <View style={styles.cardContent}>
           <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.cardPrice}>${item.price}</Text>
+          <Text style={styles.cardPrice}>{formatPrice(item.price)}</Text>
           <Text style={styles.cardDescription} numberOfLines={2}>{item.Description}</Text>
           <TouchableOpacity style={styles.viewButton}>
             <Text style={styles.viewButtonText}>View</Text>
@@ -34,18 +73,9 @@ const InvitationsScreen = ({ navigation }) => {
   const renderContent = useCallback(() => {
     switch (AllPlanStatus) {
       case 'idle':
-        return (
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>Đang chờ dữ liệu...</Text>
-          </View>
-        );
+        return <Text style={styles.statusText}>Đang chờ dữ liệu...</Text>;
       case 'loading':
-        return (
-          <View style={styles.statusContainer}>
-            <ActivityIndicator size="large" color="#FF6F61" />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-          </View>
-        );
+        return renderLoading();
       case 'succeeded':
         return AllPlanData && AllPlanData.length > 0 ? (
           <FlatList
@@ -57,9 +87,7 @@ const InvitationsScreen = ({ navigation }) => {
             contentContainerStyle={styles.flatListContent}
           />
         ) : (
-          <View style={styles.statusContainer}>
-            <Text style={styles.statusText}>Không có lời mời nào để hiển thị!</Text>
-          </View>
+          <Text style={styles.statusText}>Không có lời mời nào để hiển thị!</Text>
         );
       case 'failed':
         return (
@@ -79,7 +107,7 @@ const InvitationsScreen = ({ navigation }) => {
     <View style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
-          <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
+          <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
         </TouchableOpacity>
         <Text style={styles.title}>QUÀ TẶNG</Text>
         <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
@@ -96,7 +124,7 @@ export default InvitationsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB', // Màu nền nhẹ nhàng
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -104,21 +132,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    elevation: 5,
-    marginTop:50
+    marginTop: 30,
   },
   icon: {
     width: 24,
     height: 24,
-    tintColor: '#FF6F61', // Màu cam nổi bật
+  },
+  icon_1: {
+    width: 20,
+    height: 15,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2D2D2D',
+    fontFamily: 'Playfair_me',
+    color: '#000',
     letterSpacing: 1,
   },
   listContainer: {
@@ -132,7 +159,7 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-    borderRadius: 15, // Bo góc mềm mại hơn
+    borderRadius: 15,
     margin: 8,
     elevation: 4,
     shadowColor: '#000',
@@ -143,7 +170,7 @@ const styles = StyleSheet.create({
   },
   cardImage: {
     width: '100%',
-    height: 150, // Giảm chiều cao để bố cục cân đối
+    height: 150,
     borderTopLeftRadius: 15,
     borderTopRightRadius: 15,
   },
@@ -152,15 +179,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cardTitle: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: 14,
+    fontFamily: 'Playfair-re',
     color: '#333',
     marginBottom: 4,
   },
   cardPrice: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF6F61', // Màu giá nổi bật
+    fontFamily: 'Playfair-re',
+    color: 'red',
     marginBottom: 6,
   },
   cardDescription: {
@@ -169,18 +196,19 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 16,
     marginBottom: 8,
+    fontFamily: 'Playfair-re',
   },
   viewButton: {
-    backgroundColor: '#FF6F61', // Màu nút đồng bộ với giao diện
+    backgroundColor: '#000',
     paddingVertical: 6,
     paddingHorizontal: 20,
-    borderRadius: 20, // Nút bo tròn hơn
+    borderRadius: 20,
     elevation: 2,
   },
   viewButtonText: {
     color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '600',
+    fontFamily: 'Playfair_me',
   },
   statusContainer: {
     flex: 1,
@@ -189,13 +217,13 @@ const styles = StyleSheet.create({
   },
   statusText: {
     fontSize: 16,
-    color: '#555',
+    color: '#000',
     textAlign: 'center',
     fontWeight: '500',
   },
   loadingText: {
     fontSize: 16,
-    color: '#FF6F61',
+    color: '#000',
     marginTop: 10,
     fontWeight: '500',
   },
@@ -204,7 +232,7 @@ const styles = StyleSheet.create({
     color: '#FF3B30',
     textAlign: 'center',
     marginBottom: 15,
-    fontWeight: '500',
+    fontFamily: 'Playfair_me',
   },
   retryButton: {
     backgroundColor: '#FF6F61',
@@ -216,6 +244,21 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Playfair_me',
   },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+},
+loadingAnimation: {
+    width: 120,
+    height: 120,
+},
+loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+    fontFamily:'Playfair-re'
+},
 });

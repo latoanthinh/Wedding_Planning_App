@@ -20,7 +20,6 @@ const HallWeddings = ({ navigation, route }) => {
         }
     }, [productIdHall, dispatch]);
 
-    // Hàm định dạng giá tiền
     const formatPrice = (price) => {
         return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
     };
@@ -42,7 +41,7 @@ const HallWeddings = ({ navigation, route }) => {
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
+                    <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Chi Tiết Sảnh</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
@@ -84,8 +83,7 @@ export default HallWeddings;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F8F8',
-        paddingTop: 10,
+        backgroundColor: '#fff',
     },
     header: {
         flexDirection: 'row',
@@ -94,18 +92,19 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         paddingVertical: 15,
         backgroundColor: '#fff',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-        elevation: 3,
-        marginTop:30
+        marginTop: 20
     },
     icon: {
-        width: 28,
-        height: 28,
+        width: 24,
+        height: 24,
+    },
+    icon_1: {
+        width: 20,
+        height: 15,
     },
     title: {
         fontSize: 22,
-        fontWeight: 'bold',
+        fontFamily:'Playfair_me',
         color: '#333',
     },
     cardContainer: {
@@ -131,7 +130,7 @@ const styles = StyleSheet.create({
     },
     namehall: {
         fontSize: 20,
-        fontWeight: 'bold',
+        fontFamily:'Playfair_me',
         color: '#333',
         marginBottom: 8,
     },
@@ -153,10 +152,11 @@ const styles = StyleSheet.create({
     infoText: {
         fontSize: 16,
         color: '#555',
+        fontFamily:'Playfair-re'
     },
     priceText: {
         fontSize: 18,
-        fontWeight: 'bold',
+        fontFamily:'Playfair-re',
         color: '#E53935',
     },
     loadingContainer: {
@@ -172,6 +172,7 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 16,
         color: '#666',
+        fontFamily:'Playfair-re'
     },
     errorText: {
         textAlign: 'center',

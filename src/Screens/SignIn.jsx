@@ -85,8 +85,8 @@ const SignIn = (props) => {
 
     return (
         <View style={SignInPageStyles.container}>
-            <Text style={SignInPageStyles.welcomeText}>Welcome back!</Text>
-            <Text style={SignInPageStyles.instructionText}>Please, sign in to continue.</Text>
+            <Text style={SignInPageStyles.welcomeText}>Chào mừng bạn!</Text>
+            <Text style={SignInPageStyles.instructionText}>Vui lòng đăng nhập để tiếp tục.</Text>
             <View>
                 <TextInput
                     style={[SignInPageStyles.input, emailError ? { borderColor: 'red', borderWidth: 1 } : {}]}
