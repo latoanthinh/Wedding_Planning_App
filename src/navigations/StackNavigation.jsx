@@ -17,6 +17,7 @@ import InvitationsScreen from '../Screens/InvitationsScreen'
 import ComboDetail from '../Screens/ComboDetail'
 import AllLobyy from '../Screens/AllLobyy'
 import DiaDienCreen from '../Screens/DiaDienCreen'
+import TransitionLoading from '../transitions/Loading'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -57,7 +58,7 @@ const StackNavigation = () => {
       <Stack.Screen name="ComboDetail" component={ComboDetail} />
       <Stack.Screen name="AllLobyy" component={AllLobyy} />
       <Stack.Screen name="DiaDienCreen" component={DiaDienCreen} />
-
+      <Stack.Screen name="TransitionLoading" component={TransitionLoading} />
 
     </Stack.Navigator>
     

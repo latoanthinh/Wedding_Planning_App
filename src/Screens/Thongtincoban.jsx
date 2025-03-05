@@ -9,18 +9,17 @@ import {
   Animated,
   Dimensions,
   Keyboard,
-  ActivityIndicator
+  SafeAreaView,
+  ScrollView
 } from "react-native";
 import Sound from "react-native-sound";
 import Video from "react-native-video";
 import DatePicker from "react-native-date-picker";
 import { useNavigation } from "@react-navigation/native";
-// Đã loại bỏ các import liên quan đến API
-// import { useDispatch, useSelector } from "react-redux";
-// import { createPlan } from "../redux/CreatePlanSlice";
 import { AppContext } from "../AppContext";
+import LottieView from "lottie-react-native";
 
-const screenWidth = Dimensions.get("window").width;
+const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
 const surveyData = [
   {
@@ -60,7 +59,6 @@ const surveyData = [
 
 const Thongtincoban = (props) => {
   const [currentIndex, setCurrentIndex] = useState(0);
-  // State answers lưu thông tin của từng câu hỏi
   const [answers, setAnswers] = useState({
     eventDate: new Date(),
     guestCount: "",
@@ -71,23 +69,17 @@ const Thongtincoban = (props) => {
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [videoPlayed, setVideoPlayed] = useState(false);
   const [ttsPlayed, setTtsPlayed] = useState(false);
-  // Loại bỏ loading vì không còn gọi API
-  // const [loading, setLoading] = useState(false);
+  
   const navigation = useNavigation();
-  // Loại bỏ dispatch và error
-  // const dispatch = useDispatch();
   const { user } = useContext(AppContext);
-  // const { error } = useSelector((state) => state.createplan);
 
-  // Nếu có user, cập nhật userId vào answers
+  const slideAnim = useRef(new Animated.Value(0)).current;
+
   useEffect(() => {
     if (user && user._id) {
       setAnswers((prev) => ({ ...prev, userId: user._id }));
     }
   }, [user]);
-
-  // Animated value cho hiệu ứng slide của card
-  const slideAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     setTtsPlayed(false);
@@ -114,13 +106,13 @@ const Thongtincoban = (props) => {
 
   const handleNext = () => {
     Keyboard.dismiss();
-    // Nếu là câu hỏi về ngân sách, chuyển đổi định dạng số (loại bỏ dấu chấm)
     if (surveyData[currentIndex].question.includes("Ngân sách")) {
       setAnswers((prev) => ({
         ...prev,
         budget: Number(prev.budget.replace(/\./g, "")),
       }));
     }
+    
     Animated.timing(slideAnim, {
       toValue: -screenWidth,
       duration: 300,
@@ -128,10 +120,13 @@ const Thongtincoban = (props) => {
     }).start(() => {
       if (currentIndex < surveyData.length - 1) {
         setCurrentIndex(currentIndex + 1);
-        // Giữ nguyên thông tin đã nhập
       } else {
-        // Thay vì gọi API, chỉ điều hướng đến màn GenPlan với dữ liệu mẫu
-        navigation.navigate("GenPlan", { planId: "dummyId" });
+        navigation.navigate("TransitionLoading", { 
+          nextScreen: "GenPlan",
+          params:
+           { ...answers,
+             eventDate: answers.eventDate.toISOString() }
+        });
       }
       slideAnim.setValue(screenWidth);
       Animated.timing(slideAnim, {
@@ -142,13 +137,11 @@ const Thongtincoban = (props) => {
     });
   };
 
-  // Xác định các trường bắt buộc nhập (với loại "text" ngoại trừ câu "Chúng tôi đã gợi ý..." )
   const isTextRequired =
     surveyData[currentIndex].type === "text" &&
     surveyData[currentIndex].question !==
       "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!";
 
-  // Lấy giá trị bắt buộc dựa trên câu hỏi hiện tại
   let requiredValue = "";
   if (isTextRequired) {
     if (currentIndex === 1) requiredValue = answers.guestCount;
@@ -162,20 +155,24 @@ const Thongtincoban = (props) => {
       Number(answers.budget.toString().replace(/\./g, "")) < 50000000);
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.header}>Thông tin cơ bản</Text>
-      <View style={styles.topContainer}>
-        <Video
-          source={surveyData[currentIndex].videoFile}
-          style={styles.video}
-          resizeMode="cover"
-          muted={true}
-          onEnd={() => setVideoPlayed(true)}
-          paused={videoPlayed}
-        />
-      </View>
-      <View style={styles.bottomContainer}>
-        {/* Progress Indicator */}
+    <SafeAreaView style={styles.container}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+      >
+        <Text style={styles.header}>Thông tin cơ bản</Text>
+        
+        <View style={styles.videoContainer}>
+          <Video
+            source={surveyData[currentIndex].videoFile}
+            style={styles.video}
+            resizeMode="cover"
+            muted={true}
+            onEnd={() => setVideoPlayed(true)}
+            paused={videoPlayed}
+          />
+        </View>
+
         <View style={styles.progressContainer}>
           {surveyData.map((_, index) => (
             <View
@@ -187,14 +184,22 @@ const Thongtincoban = (props) => {
             />
           ))}
         </View>
-        <Animated.View style={[styles.card, { transform: [{ translateX: slideAnim }] }]}>
+
+        <Animated.View 
+          style={[
+            styles.card, 
+            { transform: [{ translateX: slideAnim }] }
+          ]}
+        >
           <Text style={styles.question}>
             {surveyData[currentIndex].question}
           </Text>
+          
           {surveyData[currentIndex].type === "text" ? (
             <TextInput
               style={styles.input}
               placeholder="Nhập câu trả lời của bạn..."
+              placeholderTextColor="#8C7F75"
               onChangeText={(text) => {
                 if (surveyData[currentIndex].numericOnly) {
                   const numericText = text.replace(/[^0-9]/g, "");
@@ -235,17 +240,21 @@ const Thongtincoban = (props) => {
               </Text>
             </TouchableOpacity>
           ) : null}
+          
           <TouchableOpacity
-            style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
+            style={[
+              styles.nextButton, 
+              isNextDisabled && styles.nextButtonDisabled
+            ]}
             onPress={handleNext}
-            disabled={isNextDisabled /* || loading */}  // Loading đã loại bỏ
+            disabled={isNextDisabled}
           >
-            {/* Nếu có loading, bạn có thể hiển thị ActivityIndicator, ở đây ta bỏ qua */}
             <Text style={styles.buttonText}>
               {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
             </Text>
           </TouchableOpacity>
         </Animated.View>
+
         <DatePicker
           modal
           open={openDatePicker}
@@ -257,167 +266,124 @@ const Thongtincoban = (props) => {
           }}
           onCancel={() => setOpenDatePicker(false)}
         />
-        {/* Loại bỏ thông báo lỗi vì không còn API */}
-        {/* {error && <Text style={styles.errorText}>{error}</Text>} */}
-      </View>
-    </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
-
-export default Thongtincoban;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
-    padding: 20,
+    backgroundColor: "#FAF5F0", 
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingHorizontal: 20,
+    paddingVertical: 30,
   },
   header: {
-    fontSize: 28,
-    fontWeight: "bold",
-    marginBottom: 20,
+    fontSize: 32,
+    fontWeight: "700",
+    marginBottom: 25,
     textAlign: "center",
-    color: "#333",
+    color: "#3E2723", 
   },
-  topContainer: {
-    height: "40%",
-    justifyContent: "center",
-    alignItems: "center",
+  videoContainer: {
+    width: '100%',
+    height: screenHeight * 0.35,
+    borderRadius: 20,
+    overflow: 'hidden',
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 5,
   },
   video: {
-    width: "100%",
-    height: "100%",
-    borderRadius: 10,
-    overflow: "hidden",
-  },
-  bottomContainer: {
-    height: "60%",
-    justifyContent: "flex-start",
-    alignItems: "center",
-    paddingTop: 20,
+    width: '100%',
+    height: '100%',
   },
   progressContainer: {
     flexDirection: "row",
     justifyContent: "center",
-    marginBottom: 10,
+    marginBottom: 15,
   },
   progressDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#e0e0e0",
-    marginHorizontal: 4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "#D7CCC8", 
+    marginHorizontal: 6,
   },
   progressDotActive: {
-    backgroundColor: "#333",
+    backgroundColor: "#3E2723", 
+    width: 24,
   },
   card: {
-    width: "100%",
-    height: "50%",
-    padding: 20,
-    backgroundColor: "#ffffff",
-    borderRadius: 10,
+    backgroundColor: "#EFEBE9", 
+    borderRadius: 20,
+    padding: 25,
     shadowColor: "#000",
-    shadowOpacity: 0.2,
-    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
     elevation: 5,
-    marginBottom: 20,
-    justifyContent: "space-between",
   },
   question: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 10,
+    fontSize: 22,
+    fontWeight: "600",
+    marginBottom: 20,
     textAlign: "center",
-    color: "#555",
+    color: "#4E342E", 
   },
   input: {
-    width: "100%",
-    padding: 12,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#ced4da",
-    borderRadius: 10,
-    backgroundColor: "#fff",
+    borderColor: "#8C7F75", 
+    borderRadius: 15,
+    paddingHorizontal: 15,
+    paddingVertical: 12,
     fontSize: 18,
+    marginBottom: 20,
+    color: "#3E2723", 
   },
   datePickerButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#f0f0f0",
-    padding: 12,
-    borderRadius: 10,
+    backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#ced4da",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
+    borderColor: "#8C7F75", 
+    borderRadius: 15,
+    paddingVertical: 12,
+    marginBottom: 20,
   },
   calendarIcon: {
-    width: 24,
-    height: 24,
-    marginRight: 8,
-    tintColor: "#333",
+    width: 28,
+    height: 28,
+    marginRight: 10,
+    tintColor: "#4E342E", 
   },
   dateText: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "bold",
-    textAlign: "center",
+    fontSize: 18,
+    color: "#220000", 
+    fontWeight: "600",
   },
   nextButton: {
-    backgroundColor: "#333",
-    paddingVertical: 14,
-    paddingHorizontal: 32,
-    borderRadius: 10,
-    marginTop: 20,
-    alignSelf: "center",
+    backgroundColor: "#220000",
+    paddingVertical: 15,
+    borderRadius: 15,
+    alignItems: "center",
   },
   nextButtonDisabled: {
     opacity: 0.5,
   },
   buttonText: {
-    color: "#fff",
-    fontSize: 18,
-    fontWeight: "bold",
-    textAlign: "center",
-  },
-  optionsContainer: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    justifyContent: "space-around",
-    marginVertical: 12,
-  },
-  optionButton: {
-    backgroundColor: "#e0e0e0",
-    paddingVertical: 16,
-    paddingHorizontal: 28,
-    borderRadius: 12,
-    marginVertical: 8,
-    width: "45%",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  optionButtonSelected: {
-    backgroundColor: "#333",
-  },
-  optionButtonText: {
-    fontSize: 16,
-    color: "#333",
-    fontWeight: "600",
-  },
-  optionButtonTextSelected: {
-    color: "#fff",
-  },
-  errorText: {
-    color: "red",
-    fontSize: 14,
-    marginTop: 6,
-    textAlign: "center",
+    color: "#FFFFFF",
+    fontSize: 20,
+    fontWeight: "700",
   },
 });
+
+export default Thongtincoban;
