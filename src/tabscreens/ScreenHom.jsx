@@ -250,14 +250,14 @@ const ScreenHome = ({ navigation }) => {
           <View style={styles.locationRow}>
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("InvitationsScreen")}>
               <Image source={require('../Assets/Images/thiepcuoi.png')} style={styles.serviceIcon} />
-              <Text style={styles.locationTitle}>Thiệp Cưới</Text>
+              <Text style={styles.locationTitle}>Quà Tặng</Text>
               <Text style={styles.statusText}>Status</Text>
             </TouchableOpacity>
 
-            <View style={styles.locationItem}>
+            <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("DiaDienCreen")}>
               <Image source={require('../Assets/Images/diadiem.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Địa Điểm</Text>
-            </View>
+            </TouchableOpacity>
           </View>
 
           <TouchableOpacity

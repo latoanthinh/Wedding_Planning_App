@@ -10,6 +10,8 @@ import  HallTheoWeddingHallsReducer  from './HallTheoWeddingHallsSlice';
 import  CreatePlanReducer  from './CreatePlanSlice';
 import  GetAllPlanReducer  from './GetAllPlanSlice';
 import  InvitationsReducer  from './InvitationsSlice';
+import  Cate_decoratesReducer  from './Cate_decoratesSlice';
+import  DecoratesByCateReducer  from './DecoratesByCateSlice';
 
 
 
@@ -18,6 +20,8 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    decoratesbyCate:DecoratesByCateReducer,
+    cate_decorates:Cate_decoratesReducer,
     invitations:InvitationsReducer,
     allplan:GetAllPlanReducer,
     createplan:CreatePlanReducer,
