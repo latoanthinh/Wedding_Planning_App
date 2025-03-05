@@ -133,7 +133,7 @@ export default InvitationsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -141,7 +141,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 10,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#fff',
+  },
+  title:{
+    fontSize: 20,
+    fontFamily: 'Playfair_me',
+    alignSelf:'center',
   },
   icon: {
     width: 24,
@@ -153,9 +158,7 @@ const styles = StyleSheet.create({
   },
   categoryContainer: {
     height: 48,
-    backgroundColor: '#F8F9FB',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E8ECEF',
+    backgroundColor: '#fff',
   },
   categoryListContent: {
     paddingHorizontal: 15,
@@ -168,26 +171,25 @@ const styles = StyleSheet.create({
     marginHorizontal: 4,
     borderRadius: 16,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    elevation: 1,
+    borderWidth: 0.5,
+    borderColor: '#000',
     justifyContent: 'center',
     minWidth: 70,
     height: 34,
   },
   selectedCategory: {
-    backgroundColor: '#FF6F61',
-    borderColor: '#FF6F61',
+    backgroundColor: '#000',
+    borderColor: '#000',
     elevation: 2,
   },
   categoryText: {
     fontSize: 13,
-    fontWeight: '600',
-    color: '#555',
+    fontFamily: 'Playfair_me',
+    color: '#000',
   },
   selectedCategoryText: {
     color: '#FFFFFF',
-    fontWeight: '700',
+    fontFamily: 'Playfair_me',
   },
   listContainer: {
     flex: 1,
@@ -221,14 +223,14 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#333',
+    fontFamily: 'Playfair_me',
+    color: '#000',
     marginBottom: 4,
   },
   productPrice: {
     fontSize: 14,
-    fontWeight: '700',
-    color: '#FF6F61',
+    fontFamily: 'Playfair_me',
+    color: 'red',
   },
   loadingContainer: {
     flex: 1,
@@ -242,7 +244,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#666',
+    color: '#000',
     fontFamily: 'Playfair-re',
   },
   emptyContainer: {
@@ -252,7 +254,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Playfair_me',
     color: '#666',
   },
   errorContainer: {

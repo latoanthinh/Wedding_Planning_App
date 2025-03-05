@@ -3,7 +3,11 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Cate_decorates } from '../redux/Cate_decoratesSlice';
 import { getProductsByDecorates } from '../redux/DecoratesByCateSlice';
+import Lottie from 'lottie-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 const { width } = Dimensions.get("window");
+
 const DiaDiem_Screen = ({ navigation }) => {
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
     const dispatch = useDispatch();
@@ -117,10 +121,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         paddingVertical: 10,
         backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-        elevation: 5,
-        marginTop:50
+        marginTop: 20,
     },
     icon: {
         width: 24,
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
     productListContent: {
         paddingTop: 10,
         paddingBottom: 20,
-        justifyContent:'space-around',
+        justifyContent: 'space-around',
     },
     itemContainer: {
         flex: 1,
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
-        width: width * 0.45, 
+        width: width * 0.45,
     },
     image: {
         width: '100%',
