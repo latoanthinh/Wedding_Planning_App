@@ -134,10 +134,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     paddingVertical: 10,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    elevation: 4,
+    backgroundColor: '#F8F9FB',
+   
+  
+   
   },
   title: {
     fontSize: 20,

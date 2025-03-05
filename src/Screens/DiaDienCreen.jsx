@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Cate_decorates } from '../redux/Cate_decoratesSlice';
 import { getProductsByDecorates } from '../redux/DecoratesByCateSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const DiaDienCreen = ({ navigation }) => {
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -54,7 +55,7 @@ const DiaDienCreen = ({ navigation }) => {
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
@@ -89,7 +90,7 @@ const DiaDienCreen = ({ navigation }) => {
                     contentContainerStyle={styles.productListContent} // Thêm để tối ưu khoảng cách
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -106,12 +107,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 15,
         paddingVertical: 10,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E0E0E0',
-        elevation: 5,
-        marginTop:50
-    },
+        backgroundColor: '#F8F9FB'
+      },
     icon: {
         width: 24,
         height: 24,

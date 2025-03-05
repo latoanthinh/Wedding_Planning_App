@@ -12,6 +12,7 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { FlowersAPI } from "../redux/FlowersSlice";
 import { Cate_catering } from "../redux/Cate_CateringSlice";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Lottie from 'lottie-react-native';
 
 const { width } = Dimensions.get("window");
@@ -124,7 +125,7 @@ const FlowersScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
           <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
@@ -156,7 +157,7 @@ const FlowersScreen = ({ navigation }) => {
       </View>
 
       {renderContent()}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -172,12 +173,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    elevation: 5,
-    marginTop: 50,
+    paddingVertical: 10,
+    backgroundColor: '#F8F9FB'
   },
   title: {
     fontSize: 22,
