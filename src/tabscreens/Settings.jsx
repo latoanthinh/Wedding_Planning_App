@@ -2,6 +2,7 @@ import { StyleSheet, Text, View, Image, TouchableOpacity } from 'react-native';
 import React, { useState, useContext } from 'react';
 import { languages } from '../Assets/languages';
 import { AppContext } from '../AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Settings = (props) => {
   const { navigation } = props;
@@ -15,7 +16,7 @@ const Settings = (props) => {
   const t = (key) => languages[language][key];
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <Image source={require('../Assets/Images/Sort.png')} style={styles.headerIcon} />
@@ -81,7 +82,7 @@ const Settings = (props) => {
         </View>
       </View>
 
-    </View>
+    </SafeAreaView>
   );
 };
 

@@ -3,9 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Cate_decorates } from '../redux/Cate_decoratesSlice';
 import { getProductsByDecorates } from '../redux/DecoratesByCateSlice';
-import Lottie from 'lottie-react-native';
-
-const { width } = Dimensions.get('window');
 
 const DiaDiem_Screen = ({ navigation }) => {
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
@@ -68,7 +65,7 @@ const DiaDiem_Screen = ({ navigation }) => {
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
@@ -102,7 +99,7 @@ const DiaDiem_Screen = ({ navigation }) => {
                     showsVerticalScrollIndicator={false}
                 />
             )}
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -119,7 +116,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingHorizontal: 15,
         paddingVertical: 10,
-        marginTop: 30,
+        backgroundColor: '#FFFFFF',
+        borderBottomWidth: 1,
+        borderBottomColor: '#E0E0E0',
+        elevation: 5,
+        marginTop:50
     },
     icon: {
         width: 24,

@@ -7,7 +7,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#f9f9f9',
-    paddingTop: 15
+    
   },
   scrollViewContent: {
     paddingBottom: 30,
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 30,
+      
   },
   rightHeader: {
     flexDirection: 'row',
