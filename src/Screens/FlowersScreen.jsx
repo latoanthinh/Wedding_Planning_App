@@ -172,14 +172,9 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-<<<<<<< HEAD
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
     marginTop: 30,
-=======
-    paddingVertical: 10,
-    backgroundColor: '#F8F9FB'
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c
   },
   title: {
     fontSize: 22,

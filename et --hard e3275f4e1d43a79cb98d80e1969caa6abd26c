@@ -1,0 +1,254 @@
+[33mcommit 06239b56f15ef3aac5c301864edafba51b59798a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mdev[m[33m, [m[1;31morigin/dev[m[33m, [m[1;31morigin/HEAD[m[33m)[m
+Merge: e332754 e1da134
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Mar 6 05:02:44 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit e3327541d162d3cb909d8e2091f69caa26ab02c6[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Mar 6 05:01:16 2025 +0700
+
+    Fix tất cả lỗi UI và điều chỉnh các giao diện khác
+
+[33mcommit e1da134e89d57dc747ba975bad3e66aebf25036c[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Mar 5 22:35:46 2025 +0700
+
+    Bikerrrrr
+
+[33mcommit 575b76a703d036ea504f8ca614fd9d613f87e0df[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Mar 5 22:31:06 2025 +0700
+
+    Bikerrrrr
+
+[33mcommit 8a2f18a8a065b7123917461cee6ba996d0921e5e[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Wed Mar 5 20:58:06 2025 +0700
+
+    thêm 1 loading
+    chỉnh sửa giao diện các màn
+
+[33mcommit 0d17e381ddd77309a69d950e299170920d9fe6a4[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Mar 5 15:42:36 2025 +0700
+
+    Update ScreenHom.jsx
+
+[33mcommit 310acbd14570359481773ccf83af744323bfcdc7[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Mar 5 15:41:48 2025 +0700
+
+    Bikerrrr
+    
+    xử lý đồ ăn theo loại
+
+[33mcommit e8edb308b98df955c98b1ef2e5c5b18a954fa9e2[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Mar 5 14:57:41 2025 +0700
+
+    Bikerrrr
+    
+    xử lý Qùa Tặng
+
+[33mcommit 330a1e3babd0107efe34b3d3c76f7d1feb969bf2[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Mar 5 14:49:59 2025 +0700
+
+    Bikerrrr
+    
+    xử lý decorates theo cate
+
+[33mcommit 40a3aba37e99b7ec86f52123853491ffed32287c[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Tue Mar 4 23:02:26 2025 +0700
+
+    Bikerrrr
+    
+    Chỉnh sửa list lobby và chi tiết lobby
+
+[33mcommit 4591b8b84abb4a01def593578b2bd58eabb2e4a4[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Tue Mar 4 07:25:40 2025 +0700
+
+    fix màn survey
+
+[33mcommit bb919ffc08a145ecd43a8a71decda7b7f8912322[m
+Merge: 165b5ed db991ee
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Tue Mar 4 07:24:20 2025 +0700
+
+    fix màn genplan
+
+[33mcommit 165b5edf66f45ac610ced0feb2adc96d53b95550[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Tue Mar 4 07:20:26 2025 +0700
+
+    bỏ api màn genplan và khảo sát, thêm màn mới tên là detailcombo
+
+[33mcommit db991eef9037767fcf42b9075c429d8af5c14e7b[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Tue Mar 4 02:17:09 2025 +0700
+
+    ok
+
+[33mcommit 7c2b22e66aede5e8f93a04bdd402f2b8cfdff186[m
+Merge: 864884f f943148
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Tue Mar 4 02:17:01 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 864884fd770d9261e16db668317b3754d948b012[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Tue Mar 4 00:12:53 2025 +0700
+
+    Done đồng bộ ngôn ngữ cho các giao diện, sửa giao diện shopping thành Message giống với figma và thêm logic tin nhắn trả lời tự động
+
+[33mcommit f943148b41111a154b0009b79f29cf4a0e229e05[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Sat Mar 1 04:53:32 2025 +0700
+
+    update genplan
+
+[33mcommit db3d8b967a809b3df550fc718aaf714b4f6af182[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Sat Mar 1 00:45:56 2025 +0700
+
+    update khaosat
+
+[33mcommit 224549aa92035161ad168cc9c763cb5fb01332ae[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Fri Feb 28 22:58:01 2025 +0700
+
+    Bikerrrrr
+    
+    xử lý InvitationsScreen
+
+[33mcommit b2ca5934fe2e1f3504d96b59119c5195f2f463d3[m
+Merge: 2983e24 d8c1761
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Feb 28 22:35:07 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 2983e24317ec3cf94a1b7ebb1bb70141c0dfd197[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Feb 28 22:35:05 2025 +0700
+
+    ok
+
+[33mcommit d8c1761fc478f7157700c515737536dfde67e353[m
+Merge: 20c3eb7 9f6c1c1
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Fri Feb 28 22:09:08 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 20c3eb70e28efb2b7181135b89fecc97373a400a[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Fri Feb 28 22:09:05 2025 +0700
+
+    update
+
+[33mcommit 9f6c1c134f172bd0cee8d3877858b5e62ebb9052[m
+Merge: dd9fbae 6a8c332
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Fri Feb 28 22:08:11 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit dd9fbaefdaac1e7088dc930eba2ec2e8ba90b902[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Fri Feb 28 22:07:55 2025 +0700
+
+    Bikerrrr
+    
+    xử lý getAll Plan
+
+[33mcommit 6a8c33201e390afba34790dfb4a7ab5e324eba48[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Fri Feb 28 22:05:37 2025 +0700
+
+    chỉnh sửa lại phần khảo sát
+
+[33mcommit 3d42cf9e4732041e84f954f7d763fe0fc35bf311[m
+Merge: 7587fd1 1d8d71e
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Fri Feb 28 19:11:25 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 7587fd17c3e43c7abfaf679153b6ea0f9625ce7f[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Fri Feb 28 19:11:22 2025 +0700
+
+    cập nhật hàm tss xóa các file dư thừa
+    Thêm cursorrules
+
+[33mcommit 1d8d71e621e79ee838eba580c10d2389521c66a2[m
+Merge: f7f7fdc faa9c72
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Fri Feb 28 16:48:54 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit f7f7fdc0b7151faa47301cf7e8ceaa613fa38ea2[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Fri Feb 28 16:48:51 2025 +0700
+
+    Bikerrrrr
+    
+    Xử lý LẤY KHẢO SÁT VÀ HIỂN THỊ PLAN
+
+[33mcommit faa9c72c12d8bf3dce142058b44964200892e302[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Feb 28 14:22:39 2025 +0700
+
+    thêm font chữ cho giao điện, điều chỉnh hiển thị theo kích thước của thiết bị
+
+[33mcommit d8cbefb7955a4a6a7c2734ac8a6eea58f79218ad[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Feb 28 10:08:54 2025 +0700
+
+    fix giao diện Flower và thêm fomat giá tiền
+
+[33mcommit 852c6501106f51a8f015e0b4ed32bb8068936069[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Feb 28 09:32:46 2025 +0700
+
+    Fix Home (bowr menu icon, notification icon), thêm dấu chấm động cho HallWedding
+
+[33mcommit 7f1602d15d5bed51d70d7b7ffa8f7deff7fa535a[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 27 22:39:49 2025 +0700
+
+    test Home Ui
+
+[33mcommit 7280592bf1c0682cde16dfb2b4cd4a672fc9c4d7[m
+Merge: 0656c91 aee6898
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 27 16:53:29 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 0656c9149d7adfd2e7630d62ca3dc66661239723[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 27 16:53:25 2025 +0700
+
+    ok
+
+[33mcommit aee68982ab0957475f55fb59e1282c40f9cd5d6c[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Thu Feb 27 16:52:44 2025 +0700
+
+    Update Settings.jsx
+
+[33mcommit 074067447bfc37914301b4997119298a8b92c801[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Thu Feb 27 07:12:03 2025 +0700
+
+    validate lại phần nhập số tiền
+    làm gọn code 2 phần profile
+

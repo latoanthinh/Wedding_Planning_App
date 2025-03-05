@@ -1,20 +1,9 @@
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator, Animated } from 'react-native';
-import React, { useEffect, useCallback, useRef } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Invitations } from '../redux/InvitationsSlice';
-import Lottie from 'lottie-react-native';
-
-const InvitationsScreen = ({ navigation }) => {
-  const dispatch = useDispatch();
-  const { AllPlanData, AllPlanStatus } = useSelector((state) => state.allplan);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-=======
 import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Dimensions, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState, useCallback } from 'react'; // Thay useMemo bằng useCallback
+import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Invitations } from '../redux/InvitationsSlice';
 import { Cate_present } from '../redux/Cate_PresentSlice';
+import Lottie from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get("window");
@@ -26,65 +15,12 @@ const InvitationsScreen = ({ navigation }) => {
   const { Cate_presentData = [], Cate_presentStatus } = useSelector((state) => state.cate_present);
   const { InvitationsData = [], InvitationsStatus } = useSelector((state) => state.invitations);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
 
   useEffect(() => {
     dispatch(Cate_present());
   }, [dispatch]);
 
   useEffect(() => {
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-    if (AllPlanStatus === 'loading') {
-      Animated.loop(
-        Animated.sequence([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 1000,
-            useNativeDriver: true,
-          }),
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 3000,
-            useNativeDriver: true,
-          }),
-        ])
-      ).start();
-    }
-  }, [AllPlanStatus, fadeAnim]);
-
-  const formatPrice = (price) => {
-    return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
-  };
-
-  const renderLoading = () => (
-    <View style={styles.loadingContainer}>
-      <Animated.View style={{ opacity: fadeAnim }}>
-        <Lottie
-          source={require('../Assets/Animations/loading.json')}
-          autoPlay
-          loop
-          style={styles.loadingAnimation}
-        />
-      </Animated.View>
-      <Text style={styles.loadingText}>Chờ xíu...</Text>
-    </View>
-  );
-
-  const InvitationCard = useCallback(
-    ({ item }) => (
-      <TouchableOpacity
-        style={styles.card}
-        onPress={() => navigation.navigate('InvitationDetail', { invitationId: item._id })}
-      >
-        <Image source={{ uri: item.imageUrl }} style={styles.cardImage} />
-        <View style={styles.cardContent}>
-          <Text style={styles.cardTitle} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.cardPrice}>{formatPrice(item.price)}</Text>
-          <Text style={styles.cardDescription} numberOfLines={2}>{item.Description}</Text>
-          <TouchableOpacity style={styles.viewButton}>
-            <Text style={styles.viewButtonText}>View</Text>
-          </TouchableOpacity>
-=======
     if (Cate_presentStatus === 'succeeded' && Cate_presentData.length > 0 && !selectedCategoryId) {
       setSelectedCategoryId(Cate_presentData[0]._id);
     }
@@ -102,7 +38,13 @@ const InvitationsScreen = ({ navigation }) => {
     }
   };
 
-  // Sử dụng useCallback thay vì useMemo cho renderCategoryItem
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
+      <Text style={styles.loadingText}>Chờ xíu...</Text>
+    </View>
+  );
+
   const renderCategoryItem = useCallback(({ item }) => (
     <TouchableOpacity onPress={() => handleSelect(item._id)} activeOpacity={0.7}>
       <View style={[styles.categoryItem, selectedCategoryId === item._id && styles.selectedCategory]}>
@@ -111,7 +53,7 @@ const InvitationsScreen = ({ navigation }) => {
         </Text>
       </View>
     </TouchableOpacity>
-  ), [selectedCategoryId, handleSelect]); // Thêm handleSelect vào dependency để đảm bảo tính nhất quán
+  ), [selectedCategoryId]);
 
   const renderItem = ({ item }) => (
     <TouchableOpacity onPress={() => navigation.navigate('InvitationDetail', { invitationId: item._id })}>
@@ -119,49 +61,15 @@ const InvitationsScreen = ({ navigation }) => {
         <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
           <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.productPrice}>{formatPrice(item.price)} đ</Text>
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
+          <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-  const renderContent = useCallback(() => {
-    switch (AllPlanStatus) {
-      case 'idle':
-        return <Text style={styles.statusText}>Đang chờ dữ liệu...</Text>;
-      case 'loading':
-        return renderLoading();
-      case 'succeeded':
-        return AllPlanData && AllPlanData.length > 0 ? (
-          <FlatList
-            data={AllPlanData}
-            keyExtractor={(item) => item._id || item.id.toString()}
-            renderItem={InvitationCard}
-            numColumns={2}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.flatListContent}
-          />
-        ) : (
-          <Text style={styles.statusText}>Không có lời mời nào để hiển thị!</Text>
-        );
-      case 'failed':
-        return (
-          <View style={styles.statusContainer}>
-            <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(Invitations())}>
-              <Text style={styles.retryButtonText}>Thử lại</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      default:
-        return null;
-=======
   const renderContent = () => {
     if (InvitationsStatus === 'loading') {
       return <ActivityIndicator size="large" color="#FF6F61" style={styles.loading} />;
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
     }
     if (InvitationsStatus === 'failed') {
       return (
@@ -225,50 +133,23 @@ export default InvitationsScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-    backgroundColor: '#fff',
-=======
     backgroundColor: '#F8F9FB',
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 15,
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-    paddingVertical: 12,
-    marginTop: 30,
-=======
     paddingVertical: 10,
     backgroundColor: '#F8F9FB',
-   
-  
-   
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2D2D2D',
-    letterSpacing: 0.2,
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
   },
   icon: {
     width: 24,
     height: 24,
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
   },
   icon_1: {
     width: 20,
     height: 15,
-  },
-  title: {
-    fontSize: 22,
-    fontFamily: 'Playfair_me',
-    color: '#000',
-    letterSpacing: 1,
-=======
-    tintColor: '#FF6F61',
   },
   categoryContainer: {
     height: 48,
@@ -307,7 +188,6 @@ const styles = StyleSheet.create({
   selectedCategoryText: {
     color: '#FFFFFF',
     fontWeight: '700',
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
   },
   listContainer: {
     flex: 1,
@@ -320,71 +200,25 @@ const styles = StyleSheet.create({
   card: {
     flex: 1,
     backgroundColor: '#FFFFFF',
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-    borderRadius: 15,
-    margin: 8,
-    elevation: 4,
-=======
     borderRadius: 12,
     margin: 6,
     elevation: 3,
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-    overflow: 'hidden',
     width: (width / 2) - 22,
   },
   image: {
     width: '100%',
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-    height: 150,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-=======
     height: 130,
     borderTopLeftRadius: 12,
     borderTopRightRadius: 12,
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
   },
   cardContent: {
     padding: 8,
     alignItems: 'center',
   },
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-  cardTitle: {
-    fontSize: 14,
-    fontFamily: 'Playfair-re',
-    color: '#333',
-    marginBottom: 4,
-  },
-  cardPrice: {
-    fontSize: 16,
-    fontFamily: 'Playfair-re',
-    color: 'red',
-    marginBottom: 6,
-  },
-  cardDescription: {
-    fontSize: 12,
-    color: '#888',
-    textAlign: 'center',
-    lineHeight: 16,
-    marginBottom: 8,
-    fontFamily: 'Playfair-re',
-  },
-  viewButton: {
-    backgroundColor: '#000',
-    paddingVertical: 6,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    elevation: 2,
-  },
-  viewButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontFamily: 'Playfair_me',
-=======
   productName: {
     fontSize: 15,
     fontWeight: '600',
@@ -395,11 +229,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
     color: '#FF6F61',
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
   },
-  loading: {
+  loadingContainer: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingAnimation: {
+    width: 120,
+    height: 120,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
+    fontFamily: 'Playfair-re',
   },
   emptyContainer: {
     flex: 1,
@@ -408,28 +252,9 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-    color: '#000',
-    textAlign: 'center',
-=======
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
     fontWeight: '500',
     color: '#666',
   },
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-  loadingText: {
-    fontSize: 16,
-    color: '#000',
-    marginTop: 10,
-    fontWeight: '500',
-  },
-  errorText: {
-    fontSize: 16,
-    color: '#FF3B30',
-    textAlign: 'center',
-    marginBottom: 15,
-    fontFamily: 'Playfair_me',
-=======
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -440,7 +265,6 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: '#FF3B30',
     marginBottom: 15,
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
   },
   retryButton: {
     backgroundColor: '#FF6F61',
@@ -451,27 +275,7 @@ const styles = StyleSheet.create({
   },
   retryButtonText: {
     color: '#FFFFFF',
-<<<<<<< HEAD:src/Screens/Gift_Screen.jsx
-    fontSize: 16,
-    fontFamily: 'Playfair_me',
-=======
     fontSize: 14,
     fontWeight: '600',
->>>>>>> e1da134e89d57dc747ba975bad3e66aebf25036c:src/Screens/InvitationsScreen.jsx
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-},
-loadingAnimation: {
-    width: 120,
-    height: 120,
-},
-loadingText: {
-    marginTop: 10,
-    fontSize: 16,
-    color: '#666',
-    fontFamily:'Playfair-re'
-},
 });

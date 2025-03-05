@@ -3,7 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Cate_decorates } from '../redux/Cate_decoratesSlice';
 import { getProductsByDecorates } from '../redux/DecoratesByCateSlice';
-
+const { width } = Dimensions.get("window");
 const DiaDiem_Screen = ({ navigation }) => {
     const [selectedCategoryId, setSelectedCategoryId] = useState(null);
     const dispatch = useDispatch();
