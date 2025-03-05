@@ -252,3 +252,430 @@ Date:   Thu Feb 27 07:12:03 2025 +0700
     validate lại phần nhập số tiền
     làm gọn code 2 phần profile
 
+[33mcommit e2e56ed14908a215cad8b3db4e85108a3a8a12be[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Thu Feb 27 07:02:49 2025 +0700
+
+    thêm fix back genplan
+    sửa giao diện khảo sát
+
+[33mcommit 3125ae484bf6a8ae0bdbcffa6a80fc593991a5bf[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Thu Feb 27 06:12:28 2025 +0700
+
+    update Home
+
+[33mcommit a9780f3af4d2b28178df4d2ef4f088475813dd92[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Thu Feb 27 01:07:24 2025 +0700
+
+    Bikerrrr
+    
+    Xử lý hiển thị name sau khi vừa đăng nhập ở home
+
+[33mcommit 090682424acf4fdb3db0116d9caa069827de4b20[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Feb 26 23:44:26 2025 +0700
+
+    Bikerrrr
+    
+    xử lý validate form đăng ký đăng nhập
+
+[33mcommit 15c2634010dc52bca876ed29656484e15476cc50[m
+Merge: a832689 a5d1d6d
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Wed Feb 26 22:57:42 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit a8326897f8cd9906a308ee6d1e51a6f5cff19e6c[m
+Merge: df49801 d94a068
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Wed Feb 26 22:57:39 2025 +0700
+
+    update
+
+[33mcommit a5d1d6d77efb9ccd77e32b14a3c6d8ac979c20bb[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Wed Feb 26 22:55:27 2025 +0700
+
+    fix Home (done)
+
+[33mcommit df4980161333ceeee4ba0feb3ce9a9e2003ba8ea[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Wed Feb 26 22:47:26 2025 +0700
+
+    sửa màn khảo sát thêm genplan
+
+[33mcommit d94a068f3a5c7bd3a2e32da5f525a6ebb79309b9[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Wed Feb 26 22:34:44 2025 +0700
+
+    thêm đa ngôn ngữ Giao diện Profile
+
+[33mcommit 7dcc5d1af9bd7ecde54bfef69b333707a44c212c[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Wed Feb 26 21:17:47 2025 +0700
+
+    fix giao diện Home, thêm hiệu ứng loading cho HOme và tối ưu hóa giao diện render nhanh hơn và không tốn nhiều tài nguyên
+
+[33mcommit e9da6e03541635642acd58af7323893f3e3770ef[m
+Merge: 58d12b6 451380e
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Wed Feb 26 19:30:02 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 58d12b6c411b5db0caa6467424430fb60e0c63c4[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Wed Feb 26 19:29:58 2025 +0700
+
+    ok
+
+[33mcommit 451380e212b0621c87bcb7c204c76d99633688b7[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Wed Feb 26 19:08:15 2025 +0700
+
+    Bikerrrr
+    
+    Xử lý WeddingHalls
+
+[33mcommit 28fc52d0c0012b78be4354e04e2f863163d4a741[m
+Merge: 2c3889e 9489eac
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Wed Feb 26 02:41:33 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 2c3889e1b754e06387c496f30ffe4baaca52432a[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Wed Feb 26 02:41:30 2025 +0700
+
+    thêm assets
+
+[33mcommit 9489eac56571df5f09a9fac82024ee48d2300489[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Tue Feb 25 21:10:06 2025 +0700
+
+    Bikerrrr
+    
+    xử lý chi tiết Flowers
+
+[33mcommit 2179402a05c17ff43ab0729b869284c82ad88b89[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Mon Feb 24 18:49:53 2025 +0700
+
+    bikerrrr
+
+[33mcommit ce53851944ac6f0d79b40e45387956d05f3a9890[m[33m ([m[1;31morigin/main[m[33m)[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Sun Feb 23 18:16:06 2025 +0700
+
+    bikerrr
+
+[33mcommit a525a15a972619dcd45cf344ee7b8e2e58440d3b[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Sun Feb 23 17:03:25 2025 +0700
+
+    Update ScreenHom.jsx
+
+[33mcommit cd6ab1a27922e2264a833aec250be3385509ecb5[m
+Merge: 9d4490a 919ed04
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Sun Feb 23 16:57:51 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 9d4490afc407811a580e38e166f8346f809185be[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Sun Feb 23 16:54:38 2025 +0700
+
+    xử lý chittiet và dress clothes
+
+[33mcommit 919ed04fe75bd53f96dc9d969ee11a06db3249c1[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Sat Feb 22 19:56:28 2025 +0700
+
+    UpdateGiaoDienList
+
+[33mcommit 09117d11dac0e6ccb2cc7b0fc540d4579b3b0618[m
+Merge: e9d137e 8eb5de0
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Feb 21 23:05:10 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit e9d137ef578607a50942e942cd8c2511936b3f53[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Feb 21 23:05:08 2025 +0700
+
+    test giao diện
+
+[33mcommit 8eb5de022899938c81d0b8d36c063b80e4e02b31[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Fri Feb 21 18:54:58 2025 +0700
+
+    xử lý đăng ký đăng nhập
+
+[33mcommit 54d4d4130ef193ffb0ee0da0e67c66a7a82795c9[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Thu Feb 20 16:50:51 2025 +0700
+
+    xử lý home
+
+[33mcommit 50eae5333f95764132b28a95b4a5ce73659ee5ef[m
+Merge: 4ac6ba3 3412f21
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Mon Feb 17 14:49:23 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 4ac6ba372fab0d7eef08887b51430db2b9baa4ad[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Mon Feb 17 14:49:15 2025 +0700
+
+    bikerrrr
+
+[33mcommit 3412f2103ef5193c619fd16557735b605d786b8d[m
+Merge: 029e366 8602d09
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Mon Feb 17 14:34:55 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit 029e36606435f9456074f9b46c2d4b60a5fc5fa8[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Mon Feb 17 14:32:15 2025 +0700
+
+    ok
+
+[33mcommit 8602d09bb50d90dcbbce6ec1ba16b5070b5be171[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Mon Feb 17 14:28:59 2025 +0700
+
+    bikerrrrr
+
+[33mcommit 23b644a36abb7de63895ec97113370da64e8fbeb[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Mon Feb 17 13:27:18 2025 +0700
+
+    bikerrrrr
+    
+    update giao diện khảo sát
+
+[33mcommit 8898f804f7e2ed11997045a901d0b8194148613d[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Fri Feb 14 00:48:42 2025 +0700
+
+    Update_Home_Search
+
+[33mcommit 7e6fec9c1d8368bd6a9b288d4fad81d77db79e79[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Thu Feb 13 22:55:24 2025 +0700
+
+    Update_ScreenProfile
+
+[33mcommit bc7f21664232724a45cf496a65172bf54f25416a[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Thu Feb 13 21:05:04 2025 +0700
+
+    Update_ScreenHome
+
+[33mcommit e14534e3e869cf963dd808c469ac3a598231962c[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Thu Feb 13 13:15:36 2025 +0700
+
+    Update SignUp.jsx
+
+[33mcommit 9fb2afb5973ceb895bf8da130b8f248752e74cd5[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Thu Feb 13 13:15:25 2025 +0700
+
+    Update SignUp.jsx
+
+[33mcommit 36cbd951c7f40d31e5e33fec94059245e9d94b47[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Thu Feb 13 12:46:03 2025 +0700
+
+    bikerrrr
+    
+    đã xong stack và bottomtab
+
+[33mcommit d3b8d8e4509bc6083be29779dfdbfdd4e6e5fa1b[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Wed Feb 12 00:02:47 2025 +0700
+
+    Update_SignIn_SignUp
+
+[33mcommit 32d6287c9275d0d37cb6ea74f7716fa2bd6474f9[m
+Merge: 4921162 db7d734
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Tue Feb 11 23:06:38 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit db7d73446b3018c89e122335361f5bab59505c89[m
+Author: Hoàng Triệu Tâm Nhân <93330486+nhanluxu@users.noreply.github.com>
+Date:   Tue Feb 11 23:07:48 2025 +0700
+
+    ok
+
+[33mcommit 49211628e28cc5222b739f96c3df8f4cc0dd7ba7[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Tue Feb 11 23:06:35 2025 +0700
+
+    ok
+
+[33mcommit c0e868419e1cdca5af7272e40809793479fd2bd4[m
+Author: Hoang0810 <tuanhaps37570@fpt.edu.vn>
+Date:   Tue Feb 11 21:57:21 2025 +0700
+
+    Update_Wellcome
+
+[33mcommit 5485b4f350fbb0dd0e56ca60a4ffb9a214a11bcd[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Tue Feb 11 21:17:21 2025 +0700
+
+    bikerrrr
+    
+    sua loi
+
+[33mcommit 81d08061fbdc00566ab03735e535fdf79fee25b7[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Tue Feb 11 13:41:33 2025 +0700
+
+    bikerrr
+    
+    xong màn hình intro và font chử
+
+[33mcommit ecc287906c7f3055bea95f01776c5fe83e353b79[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Mon Feb 10 19:37:13 2025 +0700
+
+    test
+
+[33mcommit cc2e252352b9ab9b5d5f364a9473feed237ed3b3[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 22:27:33 2025 +0700
+
+    done Login UI
+
+[33mcommit 81b8df4e2089e3dee234e0a460680d9de2641a08[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 20:25:07 2025 +0700
+
+    fix App.js
+
+[33mcommit 2a14ce6669233f5dbe876fe254fb3983625d56a7[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 18:07:39 2025 +0700
+
+    chuyển src public
+
+[33mcommit f2ef910bb0e0cc1e0a54c923a2f9f4a2fc98cad8[m
+Merge: d5e53fb 9b95425
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 17:58:51 2025 +0700
+
+    Merge branch 'dev' of https://github.com/latoanthinh/Wedding_Planning_App into dev
+
+[33mcommit d5e53fbb80e6b0690d77024bf132030bda8da6e0[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 17:58:48 2025 +0700
+
+    ok
+
+[33mcommit ac9d3a3dbc1ef62aed870c3febd7517044455c1a[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 17:58:44 2025 +0700
+
+    ok
+
+[33mcommit 9b95425a9bda600b14815026e8c029190398bbb1[m
+Author: Bikerrrr <hieuttps37551@edu.fpt.vn>
+Date:   Sat Feb 8 17:57:42 2025 +0700
+
+    test
+
+[33mcommit ca274cdd98489df196f47cb73dfd4b36b3af1643[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 17:22:29 2025 +0700
+
+    tạo screen Đăng Nhập
+
+[33mcommit 563d86bf5ed6ab5940fae70bf22738e025267b39[m[33m ([m[1;31morigin/biker[m[33m)[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 17:13:45 2025 +0700
+
+    ok
+
+[33mcommit 2adbbe39fb171f4e3eadb6c1b33d2a5480914986[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Sat Feb 8 14:31:51 2025 +0700
+
+    test commit
+
+[33mcommit 6203a8ebea18c2bf6d497b30b57bf8568ff215b1[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 6 22:43:41 2025 +0700
+
+    ok
+
+[33mcommit 1d73b44658f7238424b52e382b6e6d62823f4806[m
+Merge: cc14cc5 18dfc66
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 6 22:27:39 2025 +0700
+
+    Merge pull request #1 from LIMBOZ303/dev
+    
+    Dev
+
+[33mcommit 18dfc66ce9ed25abc4354f64ee7f1b6797a44a1b[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Thu Feb 6 22:25:00 2025 +0700
+
+    test
+
+[33mcommit cc14cc59984a3a439b643931b35e77798f7c7008[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 6 22:20:11 2025 +0700
+
+    ok
+
+[33mcommit cef4e04c0198a30b125445047454a4d25cd58622[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Thu Feb 6 22:19:57 2025 +0700
+
+    test
+
+[33mcommit c7b7a68aa75bc1157bc8dd8c2fcb06abf6fcbba3[m
+Author: Illusion1 <nguyencuong.20082009@gmail.com>
+Date:   Thu Feb 6 22:17:49 2025 +0700
+
+    lmao test
+
+[33mcommit ba8b56f01a617f534a918ffc0fc4ef6bda6ed8f0[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 6 21:53:08 2025 +0700
+
+    Fix App.js
+
+[33mcommit a7310a653f6fbd3bfc10dbda880da9232afaa17f[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Feb 6 21:51:57 2025 +0700
+
+    test commit
+
+[33mcommit e1371af31ccca7d2c1d6fe13c0a5515e1329bea5[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Fri Jan 24 09:01:44 2025 +0700
+
+    ok
+
+[33mcommit 11d81db169d6286acd0c9a9832a7898d39e012ed[m
+Author: latoanthinh <140524248+latoanthinh@users.noreply.github.com>
+Date:   Thu Jan 16 16:36:29 2025 +0700
+
+    Initial commit
+    
+    Generated by react-native@0.76.6
