@@ -16,6 +16,8 @@ import Lottie from 'lottie-react-native';
 import { Hall } from '../redux/HallSlice';
 import styles from '../Styles/Home_Style';
 import { AppContext } from '../AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const { width } = Dimensions.get('window');
 
@@ -107,7 +109,7 @@ const ScreenHome = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
       {isLoading ? (
@@ -273,7 +275,7 @@ const ScreenHome = ({ navigation }) => {
           </TouchableOpacity>
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
