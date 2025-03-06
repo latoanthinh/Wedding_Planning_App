@@ -15,7 +15,7 @@ const AllPlan = ({ navigation }) => {
     // Component ProductCard với TouchableOpacity có onPress
     const ProductCard = useCallback(({ item }) => (
         <TouchableOpacity
-            onPress={() => navigation.navigate('PlanDetail', { planId: item._id })} // Điều hướng đến chi tiết kế hoạch (có thể tùy chỉnh)
+            onPress={() => navigation.navigate('ComboDetail', { planId: item._id })} // Điều hướng đến chi tiết kế hoạch (có thể tùy chỉnh)
         >
             <View style={styles.card}>
                 <Text style={styles.productName}>{item.name}</Text>
