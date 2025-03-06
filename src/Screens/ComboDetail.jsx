@@ -13,6 +13,9 @@ import {
   Easing,
 } from "react-native";
 
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+
 const { width } = Dimensions.get("window");
 
 const DetailCombo = ({ route, navigation }) => {
@@ -85,7 +88,7 @@ const DetailCombo = ({ route, navigation }) => {
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1 }}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -200,7 +203,7 @@ const DetailCombo = ({ route, navigation }) => {
           </Animated.View>
         </View>
       </Modal>
-    </View>
+    </SafeAreaView>
   );
 };
 

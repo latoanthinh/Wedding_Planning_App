@@ -2,6 +2,8 @@ import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndi
 import React, { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Plan } from '../redux/GetAllPlanSlice';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const AllPlan = ({ navigation }) => {
     const dispatch = useDispatch();
@@ -133,7 +135,7 @@ const AllPlan = ({ navigation }) => {
     }, [AllPlanData, AllPlanStatus, dispatch, PlanCard]);
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={styles.headerButton}
@@ -153,7 +155,7 @@ const AllPlan = ({ navigation }) => {
             <View style={styles.listContainer}>
                 {renderContent()}
             </View>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -169,7 +171,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingTop: 50,
+       
         paddingBottom: 16,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,

@@ -1,6 +1,8 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView } from 'react-native';
 import React, { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const Favorites = ({ navigation }) => {
     const dispatch = useDispatch();
@@ -49,7 +51,7 @@ const Favorites = ({ navigation }) => {
     );
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             {/* Header - đã bỏ nút back, hạ paddingTop xuống */}
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Favorites</Text>
@@ -146,7 +148,7 @@ const Favorites = ({ navigation }) => {
             >
                 <Text style={styles.floatingButtonText}>+</Text>
             </TouchableOpacity>
-        </View>
+        </SafeAreaView>
     );
 };
 
@@ -160,7 +162,7 @@ const styles = StyleSheet.create({
     header: {
         alignItems: 'center',
         paddingHorizontal: 16,
-        paddingTop: 20, // giảm paddingTop để header thấp hơn
+      
         paddingBottom: 16,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
