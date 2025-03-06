@@ -16,6 +16,8 @@ import Lottie from 'lottie-react-native';
 import { Hall } from '../redux/HallSlice';
 import styles from '../Styles/Home_Style';
 import { AppContext } from '../AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
 
 const { width } = Dimensions.get('window');
 
@@ -39,7 +41,7 @@ const ScreenHome = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(true);
   const scrollX = useRef(new Animated.Value(0)).current;
-  
+
   const { user } = useContext(AppContext);
   const dispatch = useDispatch();
   const { HallData, HallStatus } = useSelector(state => state.hall);
@@ -107,7 +109,7 @@ const ScreenHome = ({ navigation }) => {
   );
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
       {isLoading ? (
@@ -141,6 +143,10 @@ const ScreenHome = ({ navigation }) => {
               renderItem={renderCarouselItem}
               snapToInterval={width}
               decelerationRate="fast"
+              onScroll={Animated.event(
+                [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+                { useNativeDriver: false }
+              )}
             />
             <View style={styles.indicatorContainer}>
               {slides.map((_, index) => {
@@ -156,29 +162,32 @@ const ScreenHome = ({ navigation }) => {
                   extrapolate: 'clamp',
                 });
 
-                const dotBounce = scrollX.interpolate({
+                const dotScale = scrollX.interpolate({
                   inputRange,
-                  outputRange: [0.9, 1.2, 0.9],
+                  outputRange: [0.8, 1.4, 0.8],
+                  extrapolate: 'clamp',
+                });
+
+                const dotRotate = scrollX.interpolate({
+                  inputRange,
+                  outputRange: ['0deg', '360deg', '0deg'],
                   extrapolate: 'clamp',
                 });
 
                 const dotColor = scrollX.interpolate({
                   inputRange,
-                  outputRange: ['#ccc', '#f3f6f4', '#ccc'],
+                  outputRange: ['#ccc', '#fff', '#ccc'],
                   extrapolate: 'clamp',
                 });
 
                 return (
                   <TouchableOpacity key={index} onPress={() => flatListRef.current?.scrollToIndex({ index, animated: true })}>
                     <Animated.View
-                      style={[
-                        styles.dot,
-                        {
-                          opacity: dotOpacity,
-                          transform: [{ scale: dotBounce }],
-                          backgroundColor: dotColor,
-                        },
-                      ]}
+                      style={[styles.dot, {
+                        opacity: dotOpacity,
+                        transform: [{ scale: dotScale }, { rotate: dotRotate }],
+                        backgroundColor: dotColor,
+                      }]}
                     />
                   </TouchableOpacity>
                 );
@@ -248,13 +257,13 @@ const ScreenHome = ({ navigation }) => {
           <Text style={[styles.sectionTitle, { marginLeft: 20, marginTop: 20 }]}>Dịch vụ khác</Text>
 
           <View style={styles.locationRow}>
-            <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("InvitationsScreen")}>
+            <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("Gift_Screen")}>
               <Image source={require('../Assets/Images/thiepcuoi.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Quà Tặng</Text>
               <Text style={styles.statusText}>Status</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("DiaDienCreen")}>
+            <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("DiaDiem_Screen")}>
               <Image source={require('../Assets/Images/diadiem.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Địa Điểm</Text>
             </TouchableOpacity>
@@ -273,7 +282,7 @@ const ScreenHome = ({ navigation }) => {
           </TouchableOpacity>
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 

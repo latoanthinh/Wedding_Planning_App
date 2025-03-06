@@ -7,7 +7,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     backgroundColor: '#f9f9f9',
-    paddingTop: 15
+    
   },
   scrollViewContent: {
     paddingBottom: 30,
@@ -33,7 +33,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
     alignItems: 'center',
     paddingHorizontal: 20,
-    paddingTop: 30,
+      
   },
   rightHeader: {
     flexDirection: 'row',
@@ -128,7 +128,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: '#fff',
     marginHorizontal: 3,
   },
   activeDot: {
@@ -157,18 +157,25 @@ const styles = StyleSheet.create({
   hallListContainer: {
     paddingLeft: 20,
     paddingRight: 10,
+    marginBottom: 20,
+    paddingTop: 20
   },
   backgroudhall: {
     width: 200,
+    height: 200,
     backgroundColor: '#fff',
     borderRadius: 12,
     marginRight: 15,
     padding: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 12,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#e0e0e0', 
+    position: 'relative', 
   },
   imghall: {
     width: '100%',

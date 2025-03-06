@@ -1,15 +1,12 @@
-import React, { useRef, useState, useEffect, useCallback, useContext } from 'react';
+import React, { useEffect } from 'react';
 import {
     Text,
     View,
     Image,
     FlatList,
     TouchableOpacity,
-    ScrollView,
-    StatusBar,
     Dimensions,
     Pressable,
-    Animated,
     StyleSheet
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
@@ -19,67 +16,61 @@ import Lottie from 'lottie-react-native';
 const { width } = Dimensions.get('window');
 
 const AllLobyy = ({ navigation }) => {
-
-
     const dispatch = useDispatch();
     const { HallData, HallStatus } = useSelector(state => state.hall);
 
     useEffect(() => {
         const fetchData = async () => {
-            setIsLoading(true);
             await dispatch(Hall());
-            setIsLoading(false);
         };
         fetchData();
     }, [dispatch]);
 
-    const renderHallItem = ({ item }) => {
-        return (
-            <Pressable onPress={() => navigation.navigate('HallWeddings', { productIdHall: item._id })}>
-                <View style={styles.backgroudhall}>
-                    <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
-                    <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
-                    <View style={styles.bottomhall}>
-                        <View style={{ flexDirection: "row", alignItems: "center" }}>
-                            <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
-                            <Text>{item.SoLuongKhach} Khách</Text>
-                        </View>
+    const renderHallItem = ({ item }) => (
+        <Pressable onPress={() => navigation.navigate('HallWeddings', { productIdHall: item._id })} 
+        android_ripple={{ color: '#e0e0e0' }}>
+            <View style={styles.backgroudhall}>
+                <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
+                <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
+                <View style={styles.bottomhall}>
+                    <View style={{ flexDirection: "row", alignItems: "center" }}>
+                        <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
+                        <Text>{item.SoLuongKhach} Khách</Text>
                     </View>
                 </View>
-            </Pressable>
-        );
-    };
+            </View>
+        </Pressable>
+    );
+
     const renderLoading = () => (
         <View style={styles.loadingContainer}>
-            <Lottie
-                source={require('../Assets/Animations/loading.json')}
-                autoPlay
-                loop
-                style={styles.loadingAnimation}
-            />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+            <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
+            <Text style={styles.loadingText}>Đang tải...</Text>
         </View>
     );
+
     return (
         <View style={styles.container}>
-
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
-                    <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
+                    <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Tất cả Sảnh</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
                     <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
                 </TouchableOpacity>
             </View>
+
             {HallStatus === 'loading' && renderLoading()}
+
             {HallStatus === 'succeeded' && (
                 <FlatList
                     data={HallData}
                     renderItem={renderHallItem}
                     keyExtractor={item => item._id.toString()}
-                    showsVerticalScrollIndicator={false} 
+                    showsVerticalScrollIndicator={false}
                     contentContainerStyle={styles.flatListContent}
+                    style={styles.flatList}
                 />
             )}
 
@@ -89,13 +80,12 @@ const AllLobyy = ({ navigation }) => {
                 </View>
             )}
         </View>
-    )
+    );
 }
 
-export default AllLobyy
+export default AllLobyy;
 
 const styles = StyleSheet.create({
-
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -103,32 +93,42 @@ const styles = StyleSheet.create({
         width: '100%',
         paddingTop: 30,
         paddingBottom: 10,
-        paddingHorizontal: 10
+        paddingHorizontal: 10,
     },
-    icon: { width: 24, height: 24 },
-    title: { fontSize: 24, fontWeight: 'bold', color: '#333' },
+    icon: {
+        width: 24,
+        height: 24,
+    },
+    icon_1: {
+        width: 20,
+        height: 15,
+    },
+    title: {
+        fontSize: 24,
+        fontFamily: 'Playfair_me',
+        color: '#333',
+    },
     bottomhall: {
         flexDirection: "row",
         justifyContent: 'space-between',
-        padding: 10,
-        width: "100%"
+        paddingLeft: 10,
+        width: "100%",
     },
     namehall: {
         fontSize: 18,
-        fontWeight: "bold",
+        fontFamily: 'Playfair_me',
         marginTop: 5,
-        color: '#555'
+        color: '#555',
     },
     imghall: {
-        width: "99%",
-        height: width * 0.35,
-        borderTopLeftRadius: 20,
-        borderTopRightRadius: 20,
+        width: '100%',
+        height: 130,
+        borderRadius: 8,
+        marginBottom: 8,
     },
     backgroudhall: {
-        width: 350,
+        width: width - 40,
         height: width * 0.55,
-        marginRight: 10,
         borderRadius: 15,
         overflow: "hidden",
         backgroundColor: "#fff",
@@ -139,7 +139,6 @@ const styles = StyleSheet.create({
         shadowRadius: 5,
         marginTop: 15,
         alignItems: "center",
-        marginLeft: 10
     },
     container: {
         width: '100%',
@@ -147,20 +146,19 @@ const styles = StyleSheet.create({
         padding: 10,
         backgroundColor: '#fff',
         alignItems: "center",
-        justifyContent: "center",
     },
     iconSmall: {
         width: 15,
         height: 15,
-        marginRight: 5
+        marginRight: 5,
     },
     flatListContent: {
-        paddingBottom: 20
+        paddingBottom: 20,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
-        alignItems: 'center'
+        alignItems: 'center',
     },
     loadingAnimation: {
         width: 100,
@@ -170,7 +168,5 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 16,
         color: '#555',
-    }
-
-
-})
+    },
+});

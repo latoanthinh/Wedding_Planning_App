@@ -9,103 +9,107 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
-  Dimensions,
 } from 'react-native';
-import React, { useState, useRef, useEffect } from 'react';
-
-const { width, height } = Dimensions.get('window');
+import React, { useState, useRef, useEffect, useCallback } from 'react';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Message = () => {
   const [messages, setMessages] = useState([
-    { id: '1', text: 'Xin chào! Bạn có khỏe không?', fromUser: false },
+    { id: '1', text: 'Xin chào! Hôm nay bạn cần tư vấn gì nào?', fromUser: false },
   ]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [dots, setDots] = useState('');
   const flatListRef = useRef(null);
 
-  const handleSend = () => {
+  const handleSend = useCallback(() => {
     if (newMessage.trim()) {
-      const newMessageItem = { id: (messages.length + 1).toString(), text: newMessage, fromUser: true };
-      setMessages(prevMessages => [...prevMessages, newMessageItem]);
+      const newMessageItem = { id: Date.now().toString(), text: newMessage, fromUser: true };
+      setMessages(prev => [...prev, newMessageItem]);
       setNewMessage('');
-      autoReply(newMessage);
+      autoReply();
     }
-  };
+  }, [newMessage]);
 
-  const autoReply = (userMessage) => {
+  const autoReply = () => {
     setIsTyping(true);
     setDots('');
 
     const interval = setInterval(() => {
-      setDots(prevDots => (prevDots.length < 3 ? prevDots + '.' : '')); 
+      setDots(prevDots => (prevDots.length < 3 ? prevDots + '.' : ''));
     }, 100);
 
     setTimeout(() => {
-      clearInterval(interval); 
+      clearInterval(interval);
       const replyMessageItem = {
-        id: (messages.length + 2).toString(),
-        text: 'Cảm ơn bạn đã gửi tin nhắn! Hệ thống sẽ xem xét và phản hồi.',
+        id: Date.now().toString(),
+        text: 'Cảm ơn bạn đã gửi tin nhắn! Hệ thống sẽ phản hồi sớm.',
         fromUser: false,
       };
-      setMessages(prevMessages => [...prevMessages, replyMessageItem]);
+      setMessages(prev => [...prev, replyMessageItem]);
       setIsTyping(false);
-      flatListRef.current.scrollToEnd({ animated: true });
+      flatListRef.current?.scrollToEnd({ animated: true });
     }, 2000);
   };
 
   const renderMessage = ({ item }) => (
     <View style={[styles.messageContainer, item.fromUser ? styles.userMessage : styles.systemMessage]}>
-      <Text style={[styles.messageText, item.fromUser ? styles.userText : styles.systemText]}>{item.text}</Text>
+      <Text style={[styles.messageText, item.fromUser ? styles.userText : styles.systemText]}>
+        {item.text}
+      </Text>
     </View>
   );
 
   return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
-    >
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <View style={styles.inner}>
-          <Text style={styles.title}>Tin nhắn</Text>
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={item => item.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.messageList}
-          />
-          {isTyping && (
-            <View style={styles.typingContainer}>
-              <Text style={styles.typingText}>Hệ thống đang phản hồi{dots}</Text>
-            </View>
-          )}
-          <View style={styles.inputContainer}>
-            <TextInput
-              style={styles.input}
-              placeholder="Nhập tin nhắn..."
-              value={newMessage}
-              onChangeText={setNewMessage}
-              maxLength={200}
+    <SafeAreaView style={styles.safeContainer}>
+      <KeyboardAvoidingView
+        style={styles.container}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <View style={styles.inner}>
+            <Text style={styles.title}>Tin nhắn</Text>
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={item => item.id}
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={styles.messageList}
             />
-            <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-              <Text style={styles.buttonText}>Gửi</Text>
-            </TouchableOpacity>
+            {isTyping && (
+              <View style={styles.typingContainer}>
+                <Text style={styles.typingText}>Hệ thống đang phản hồi{dots}</Text>
+              </View>
+            )}
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Nhập tin nhắn..."
+                value={newMessage}
+                onChangeText={setNewMessage}
+                maxLength={200}
+              />
+              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
+                <Text style={styles.buttonText}>Gửi</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </TouchableWithoutFeedback>
-    </KeyboardAvoidingView>
+        </TouchableWithoutFeedback>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
   );
 };
 
 export default Message;
 
 const styles = StyleSheet.create({
-  container: {
+  safeContainer: {
     flex: 1,
     backgroundColor: '#f7f9fc',
+  },
+  container: {
+    flex: 1,
   },
   inner: {
     flex: 1,
@@ -113,9 +117,11 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
+    fontWeight: 'bold',
     color: '#333',
     marginBottom: 20,
     alignSelf: 'center',
+    fontFamily:'Playfair_me'
   },
   messageList: {
     flexGrow: 1,
@@ -128,7 +134,7 @@ const styles = StyleSheet.create({
     maxWidth: '75%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
   },
@@ -137,7 +143,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-end',
   },
   systemMessage: {
-    backgroundColor: '#F3F3F3',
+    backgroundColor: '#EAEAEA',
     alignSelf: 'flex-start',
   },
   messageText: {
@@ -153,16 +159,18 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
+    borderTopColor: '#ddd',
     paddingVertical: 10,
+    backgroundColor: '#fff',
   },
   input: {
     flex: 1,
     borderRadius: 10,
-    padding: 10,
+    padding: 12,
     marginRight: 10,
-    backgroundColor: '#fff',
-    elevation: 5,
+    backgroundColor: '#f9f9f9',
+    fontSize: 16,
+    elevation: 3,
   },
   sendButton: {
     backgroundColor: '#007bff',
@@ -174,6 +182,7 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: '#fff',
+    fontWeight: 'bold',
   },
   typingContainer: {
     flexDirection: 'row',

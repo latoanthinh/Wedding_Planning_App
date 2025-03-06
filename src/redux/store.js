@@ -13,6 +13,7 @@ import  InvitationsReducer  from './InvitationsSlice';
 import  Cate_decoratesReducer  from './Cate_decoratesSlice';
 import  DecoratesByCateReducer  from './DecoratesByCateSlice';
 import  Cate_CateringReducer  from './Cate_CateringSlice';
+import  Cate_PresentReducer  from './Cate_PresentSlice';
 
 
 
@@ -21,6 +22,7 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    cate_present:Cate_PresentReducer,
     cate_catering:Cate_CateringReducer,
     decoratesbyCate:DecoratesByCateReducer,
     cate_decorates:Cate_decoratesReducer,

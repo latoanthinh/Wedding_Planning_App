@@ -12,14 +12,14 @@ import {
 import { useDispatch, useSelector } from "react-redux";
 import { FlowersAPI } from "../redux/FlowersSlice";
 import { Cate_catering } from "../redux/Cate_CateringSlice";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Lottie from 'lottie-react-native';
 
 const { width } = Dimensions.get("window");
 
-// Hàm format giá (thêm dấu chấm phân tách)
 const formatPrice = (num) => {
   if (!num) return "0";
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
 };
 
 
@@ -27,7 +27,7 @@ const formatPrice = (num) => {
 const renderLoading = () => (
   <View style={styles.loadingContainer}>
     <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
-    <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+    <Text style={styles.loadingText}>Chờ xíu...</Text>
   </View>
 );
 
@@ -70,7 +70,7 @@ const FlowersScreen = ({ navigation }) => {
         <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
           <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.productPrice}>{formatPrice(item.price)} đ</Text>
+          <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
         </View>
       </View>
     </TouchableOpacity>
@@ -124,10 +124,10 @@ const FlowersScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
-          <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
+          <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
         </TouchableOpacity>
         <Text style={styles.title}>Đồ Ăn</Text>
         <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
@@ -156,7 +156,7 @@ const FlowersScreen = ({ navigation }) => {
       </View>
 
       {renderContent()}
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -165,7 +165,7 @@ export default FlowersScreen;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FB',
+    backgroundColor: '#fff',
   },
   header: {
     flexDirection: 'row',
@@ -174,21 +174,20 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    borderBottomWidth: 1,
-    borderBottomColor: '#E0E0E0',
-    elevation: 5,
-    marginTop: 50,
+    marginTop: 30,
   },
   title: {
     fontSize: 22,
-    fontWeight: 'bold',
-    color: '#2D2D2D',
-    letterSpacing: 0.5,
+    fontFamily: 'Playfair_me',
+    color: '#000',
   },
   icon: {
     width: 24,
     height: 24,
-    tintColor: '#FF6F61',
+  },
+  icon_1: {
+    width: 20,
+    height: 15,
   },
   searchBox: {
     backgroundColor: '#FFFFFF',
@@ -196,24 +195,21 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 10,
     marginHorizontal: 15,
-    marginVertical: 10,
     fontSize: 16,
     color: '#333',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
+    fontFamily: 'Playfair_me',
+    borderWidth: 0.5,
+    borderColor: '#E0E0E0',
   },
   categoryWrapper: {
-    height: 50, // Cố định chiều cao của vùng chứa danh mục
-    backgroundColor: '#F8F9FB',
+    height: 70,
+    backgroundColor: '#fff',
+    marginTop: 10
   },
   categoryListContent: {
     paddingHorizontal: 15,
     paddingVertical: 8,
     alignItems: 'center',
-   
   },
   categoryItem: {
     paddingVertical: 8,
@@ -221,32 +217,30 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
     borderRadius: 20,
     backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
+    borderWidth: 0.5,
+    borderColor: '#000',
     elevation: 2,
     justifyContent: 'center',
-    minWidth: 80, // Đảm bảo chiều rộng tối thiểu
-    height: 50 , // Cố định chiều cao của mỗi mục
+    minWidth: 80,
+    height: 50,
   },
   selectedCategory: {
-    backgroundColor: '#FF6F61',
-    borderColor: '#FF6F61',
+    backgroundColor: '#000',
+    borderColor: '#000',
   },
   categoryText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#555',
+    fontFamily: 'Playfair_me',
+    color: '#000',
   },
   selectedCategoryText: {
     color: '#FFFFFF',
-    fontWeight: 'bold',
+    fontFamily: 'Playfair_me',
   },
   flatListContainer: {
     paddingHorizontal: 10,
     paddingTop: 5,
     paddingBottom: 20,
-   
-  
   },
   card: {
     flex: 1,
@@ -273,14 +267,14 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Playfair_me',
     color: '#333',
     marginBottom: 5,
   },
   productPrice: {
     fontSize: 16,
-    fontWeight: 'bold',
-    color: '#FF6F61',
+    fontFamily: 'Playfair_me',
+    color: 'red',
   },
   loadingContainer: {
     flex: 1,
@@ -294,8 +288,8 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 15,
     fontSize: 16,
-    fontWeight: '500',
-    color: '#FF6F61',
+    fontFamily: 'Playfair_me',
+    color: '#000',
   },
   emptyContainer: {
     flex: 1,
@@ -305,7 +299,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Playfair_me',
     color: '#555',
   },
   errorContainer: {
@@ -315,7 +309,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    fontWeight: '500',
+    fontFamily: 'Playfair_me',
     color: '#FF3B30',
     marginBottom: 20,
   },
@@ -329,6 +323,6 @@ const styles = StyleSheet.create({
   retryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontFamily: 'Playfair_me',
   },
 });
