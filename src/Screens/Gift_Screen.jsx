@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Dimensions, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, Dimensions, ActivityIndicator, Modal, TouchableWithoutFeedback } from 'react-native';
 import React, { useEffect, useState, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Invitations } from '../redux/InvitationsSlice';
@@ -10,32 +10,64 @@ const { width } = Dimensions.get("window");
 
 const formatPrice = (num) => (num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0");
 
-const InvitationsScreen = ({ navigation }) => {
+const Gift_Screen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { Cate_presentData = [], Cate_presentStatus } = useSelector((state) => state.cate_present);
   const { InvitationsData = [], InvitationsStatus } = useSelector((state) => state.invitations);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [favorites, setFavorites] = useState(new Set()); // Lưu danh sách ID của các item yêu thích
 
   useEffect(() => {
+    console.log('Fetching Cate_present...');
     dispatch(Cate_present());
   }, [dispatch]);
 
   useEffect(() => {
+    console.log('Cate_presentStatus:', Cate_presentStatus, 'Data:', Cate_presentData);
     if (Cate_presentStatus === 'succeeded' && Cate_presentData.length > 0 && !selectedCategoryId) {
       setSelectedCategoryId(Cate_presentData[0]._id);
     }
   }, [Cate_presentData, Cate_presentStatus, selectedCategoryId]);
 
   useEffect(() => {
+    console.log('Fetching Invitations for category:', selectedCategoryId);
     if (selectedCategoryId) {
       dispatch(Invitations(selectedCategoryId));
     }
   }, [selectedCategoryId, dispatch]);
 
+  useEffect(() => {
+    console.log('InvitationsStatus:', InvitationsStatus, 'Data:', InvitationsData);
+  }, [InvitationsStatus, InvitationsData]);
+
   const handleSelect = (id) => {
     if (id !== selectedCategoryId) {
       setSelectedCategoryId(id);
     }
+  };
+
+  const handleItemPress = (item) => {
+    console.log('Item pressed - selectedItem:', item);
+    if (item && item._id) {
+      setSelectedItem(item);
+      setModalVisible(true);
+      console.log('Modal should be visible:', true);
+    } else {
+      console.log('Invalid item selected:', item);
+    }
+  };
+
+  const toggleFavorite = (itemId) => {
+    const newFavorites = new Set(favorites);
+    if (newFavorites.has(itemId)) {
+      newFavorites.delete(itemId);
+    } else {
+      newFavorites.add(itemId);
+    }
+    setFavorites(newFavorites);
+    console.log('Favorites updated:', Array.from(newFavorites));
   };
 
   const renderLoading = () => (
@@ -49,25 +81,26 @@ const InvitationsScreen = ({ navigation }) => {
     <TouchableOpacity onPress={() => handleSelect(item._id)} activeOpacity={0.7}>
       <View style={[styles.categoryItem, selectedCategoryId === item._id && styles.selectedCategory]}>
         <Text style={[styles.categoryText, selectedCategoryId === item._id && styles.selectedCategoryText]}>
-          {item.name}
+          {item.name || 'Unnamed Category'}
         </Text>
       </View>
     </TouchableOpacity>
   ), [selectedCategoryId]);
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('InvitationDetail', { invitationId: item._id })}>
+    <TouchableOpacity onPress={() => handleItemPress(item)} style={styles.touchableContainer}>
       <View style={styles.card}>
-        <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
+        <Image source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
-          <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
+          <Text style={styles.productName} numberOfLines={1}>{item.name || 'Unnamed Item'}</Text>
+          <Text style={styles.productPrice}>{formatPrice(item.price)} đ</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
   const renderContent = () => {
+    console.log('Rendering content with status:', InvitationsStatus, 'Data length:', InvitationsData.length);
     if (InvitationsStatus === 'loading') {
       return <ActivityIndicator size="large" color="#FF6F61" style={styles.loading} />;
     }
@@ -97,6 +130,11 @@ const InvitationsScreen = ({ navigation }) => {
     );
   };
 
+  const closeModal = () => {
+    setModalVisible(false);
+    setSelectedItem(null);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -124,11 +162,53 @@ const InvitationsScreen = ({ navigation }) => {
       <View style={styles.listContainer}>
         {renderContent()}
       </View>
+
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={closeModal}
+      >
+        <TouchableWithoutFeedback onPress={closeModal}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback>
+              <View style={styles.modalContent}>
+                {selectedItem ? (
+                  <>
+                    <Image
+                      source={{ uri: selectedItem.imageUrl || 'https://via.placeholder.com/200' }}
+                      style={styles.modalImage}
+                      resizeMode="cover"
+                    />
+                    <TouchableOpacity
+                      style={styles.favoriteIcon}
+                      onPress={() => toggleFavorite(selectedItem._id)}
+                    >
+                      <Image
+                        source={require('../Assets/Images/heart_filled.png')} // Thay bằng đường dẫn đến ảnh trái tim
+                        style={[styles.heartImage, favorites.has(selectedItem._id) && styles.heartFilled]}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                    <Text style={styles.modalTitle}>{selectedItem.name || 'Không có tên'}</Text>
+                    <Text style={styles.modalPrice}>{formatPrice(selectedItem.price)} đ</Text>
+                    <Text style={styles.modalDescription} numberOfLines={3}>
+                      {selectedItem.Description || 'Không có mô tả'}
+                    </Text>
+                  </>
+                ) : (
+                  <Text style={styles.modalError}>Không có dữ liệu để hiển thị</Text>
+                )}
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-export default InvitationsScreen;
+export default Gift_Screen;
 
 const styles = StyleSheet.create({
   container: {
@@ -143,10 +223,10 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     backgroundColor: '#fff',
   },
-  title:{
+  title: {
     fontSize: 20,
     fontFamily: 'Playfair_me',
-    alignSelf:'center',
+    alignSelf: 'center',
   },
   icon: {
     width: 24,
@@ -198,6 +278,9 @@ const styles = StyleSheet.create({
   flatListContainer: {
     paddingHorizontal: 10,
     paddingBottom: 20,
+  },
+  touchableContainer: {
+    flex: 1,
   },
   card: {
     flex: 1,
@@ -279,5 +362,73 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    position: 'relative', // Để định vị biểu tượng trái tim
+  },
+  modalImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 8,
+    marginBottom: 15,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontFamily: 'Playfair_me',
+    color: '#000',
+    fontWeight: '600',
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  modalPrice: {
+    fontSize: 18,
+    fontFamily: 'Playfair_me',
+    color: 'red',
+    fontWeight: '700',
+    marginBottom: 10,
+  },
+  modalDescription: {
+    fontSize: 14,
+    fontFamily: 'Playfair_me',
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  modalError: {
+    fontSize: 16,
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  favoriteIcon: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 1,
+    padding: 5,
+  },
+  heartImage: {
+    width: 24,
+    height: 24,
+    tintColor: '#ccc', // Màu mặc định khi chưa yêu thích
+  },
+  heartFilled: {
+    tintColor: 'red', // Màu khi đã yêu thích
   },
 });
