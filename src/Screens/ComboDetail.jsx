@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -6,66 +6,121 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  Modal,
+  TextInput,
+  Animated,
+  Easing,
 } from "react-native";
 
-const { width } = Dimensions.get('window');
+const { width } = Dimensions.get("window");
 
 const DetailCombo = ({ route, navigation }) => {
   const { comboData } = route.params || {};
-  
-  const data = comboData || {
+
+  const defaultData = {
     name: "Premium Wedding Combo",
     price: 14999999,
     imageUrl: require("../Assets/Images/combo.png"),
-    description: [ 
+    description: [
       "Comprehensive wedding decor with diverse floral arrangements",
       "Culinary experience featuring traditional and international cuisine",
       "Professional videography and photography coverage",
-      "Wedding cake, beverages, and gallery table decorations"
+      "Wedding cake, beverages, and gallery table decorations",
     ],
   };
-  console.log(data.imageUrl);
+
+  const [data, setData] = useState(comboData || defaultData);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [guestCount, setGuestCount] = useState(100);
+  const [tableCount, setTableCount] = useState(10);
+  const [themeColor, setThemeColor] = useState("White & Gold");
+  const [flowerStyle, setFlowerStyle] = useState("Roses & Lilies");
+
+  // Animated value cho modal
+  const [animation] = useState(new Animated.Value(0));
 
   const formatPrice = (num) => {
-    if (!num) return "0";
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    return num
+      ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "đ"
+      : "0đ";
   };
 
-  const formattedPrice = formatPrice(data.price) + "đ";
+  const openModal = () => {
+    setModalVisible(true);
+    Animated.timing(animation, {
+      toValue: 1,
+      duration: 300,
+      easing: Easing.out(Easing.ease),
+      useNativeDriver: true,
+    }).start();
+  };
 
-  const handleContact = () => {
-    // Navigate to contact screen or open contact modal
-    navigation.navigate('Contact', { comboName: data.name });
+  const closeModal = () => {
+    Animated.timing(animation, {
+      toValue: 0,
+      duration: 300,
+      easing: Easing.in(Easing.ease),
+      useNativeDriver: true,
+    }).start(() => setModalVisible(false));
+  };
+
+  // Dịch chuyển modal theo giá trị animation
+  const translateY = animation.interpolate({
+    inputRange: [0, 1],
+    outputRange: [300, 0],
+  });
+
+  const saveCustomization = () => {
+    setData({
+      ...data,
+      description: [
+        `Guests: ${guestCount}`,
+        `Tables: ${tableCount}`,
+        `Theme Color: ${themeColor}`,
+        `Flowers: ${flowerStyle}`,
+      ],
+    });
+    closeModal();
   };
 
   return (
-    <View style={styles.container}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}
-      >
+    <View style={{ flex: 1 }}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={styles.iconButton}
+        >
+          <Image
+            source={require("../Assets/Images/back.png")}
+            style={styles.icon}
+          />
+        </TouchableOpacity>
+
+        <Text style={styles.headerTitle}>Combo Detail</Text>
+
+        <TouchableOpacity onPress={openModal} style={styles.iconButton}>
+          <Image
+            source={require("../Assets/Images/lightedit.png")}
+            style={styles.homeIcon}
+          />
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={{ flex: 1 }}>
         {/* Image with Overlay */}
         <View style={styles.imageContainer}>
-          <Image
-            source={data.imageUrl}
-            style={styles.image}
-          />
+          <Image source={data.imageUrl} style={styles.image} />
           <View style={styles.imageOverlay} />
         </View>
 
         {/* Content Area */}
         <View style={styles.contentContainer}>
-          {/* Combo Name */}
           <Text style={styles.comboName}>{data.name}</Text>
-
-          {/* Price */}
-          <Text style={styles.price}>{formattedPrice}</Text>
-
-          {/* Description Title */}
+          <Text style={styles.price}>{formatPrice(data.price)}</Text>
           <Text style={styles.sectionTitle}>Package Includes:</Text>
 
-          {/* Description Items */}
           {data.description?.map((desc, index) => (
             <View key={index} style={styles.descriptionItemContainer}>
               <Text style={styles.checkIcon}>✓</Text>
@@ -74,14 +129,77 @@ const DetailCombo = ({ route, navigation }) => {
           ))}
 
           {/* Contact Button */}
-          <TouchableOpacity 
-            style={styles.contactButton} 
-            onPress={handleContact}
+          <TouchableOpacity
+            style={styles.contactButton}
+            onPress={() =>
+              navigation.navigate("Contact", { comboName: data.name })
+            }
           >
             <Text style={styles.buttonText}>Contact for Booking</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Customization Modal */}
+      <Modal visible={modalVisible} animationType="none" transparent>
+        <View style={styles.modalOverlay}>
+          <Animated.View
+            style={[styles.modalContainer, { transform: [{ translateY }] }]}
+          >
+            <Text style={styles.modalTitle}>Customize Your Combo</Text>
+
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Number of Guests"
+              keyboardType="numeric"
+              placeholderTextColor="#999"
+              value={String(guestCount)}
+              onChangeText={(text) =>
+                setGuestCount(Number(text.replace(/[^0-9]/g, "")))
+              }
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Number of Tables"
+              keyboardType="numeric"
+              placeholderTextColor="#999"
+              value={String(tableCount)}
+              onChangeText={(text) =>
+                setTableCount(Number(text.replace(/[^0-9]/g, "")))
+              }
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Theme Color"
+              placeholderTextColor="#999"
+              value={themeColor}
+              onChangeText={setThemeColor}
+            />
+            <TextInput
+              style={styles.modalInput}
+              placeholder="Flower Style"
+              placeholderTextColor="#999"
+              value={flowerStyle}
+              onChangeText={setFlowerStyle}
+            />
+
+            <View style={styles.modalButtonContainer}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={closeModal}
+              >
+                <Text style={styles.modalButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalButtonSave}
+                onPress={saveCustomization}
+              >
+                <Text style={styles.modalButtonText}>Save</Text>
+              </TouchableOpacity>
+            </View>
+          </Animated.View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -89,45 +207,60 @@ const DetailCombo = ({ route, navigation }) => {
 export default DetailCombo;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F5F5F5",
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F8F8F8",
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#DDD",
   },
-  scrollViewContent: {
-    paddingBottom: 24,
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: "500",
+    color: "#333",
+    flex: 1,
+    textAlign: "center",
+  },
+  iconButton: {
+    padding: 6,
+  },
+  homeIcon: {
+    width: 22,
+    height: 22,
+  },
+  icon: {
+    width: 20,
+    height: 20,
+    resizeMode: "contain",
   },
   imageContainer: {
     width: width,
     height: 300,
-    position: 'relative',
+    position: "relative",
   },
   image: {
-    width: '100%',
-    height: '100%',
-    resizeMode: 'cover',
+    width: "100%",
+    height: "100%",
+    resizeMode: "cover",
   },
   imageOverlay: {
-    position: 'absolute',
+    position: "absolute",
     left: 0,
     right: 0,
     bottom: 0,
-    height: '50%',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    height: "50%",
+    backgroundColor: "rgba(0,0,0,0.5)",
   },
   contentContainer: {
-    backgroundColor: 'white',
+    backgroundColor: "white",
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     marginTop: -24,
     paddingTop: 24,
     paddingHorizontal: 16,
-    shadowColor: "#000",
-    shadowOffset: {
-      width: 0,
-      height: -2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
     elevation: 5,
   },
   comboName: {
@@ -149,15 +282,15 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   descriptionItemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 8,
   },
   checkIcon: {
     marginRight: 10,
     color: "#4CAF50",
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   descriptionItem: {
     fontSize: 16,
@@ -173,9 +306,62 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
   },
   buttonText: {
-    color: 'white',
+    color: "white",
     fontSize: 18,
-    fontWeight: '600',
-    textAlign: 'center',
+    fontWeight: "600",
+    textAlign: "center",
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "flex-end",
+    backgroundColor: "rgba(0,0,0,0.5)",
+  },
+  modalContainer: {
+    backgroundColor: "white",
+    padding: 20,
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: "600",
+    color: "#333",
+    textAlign: "center",
+    marginBottom: 20,
+  },
+  modalInput: {
+    width: "100%",
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+    paddingVertical: 8,
+    marginBottom: 20,
+    fontSize: 16,
+    color: "#333",
+  },
+  modalButtonContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+  },
+  modalButtonSave: {
+    marginRight: 10,
+    flex: 1,
+    backgroundColor: "#E53935",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalButtonCancel: {
+    marginRight: 10,
+    flex: 1,
+    backgroundColor: "#aaa",
+    borderRadius: 8,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });

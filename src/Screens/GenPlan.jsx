@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions
 } from "react-native";
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const { width } = Dimensions.get('window');
 
@@ -54,52 +55,64 @@ const GenPlan = ({ navigation }) => {
   };
 
   return (
-    <ScrollView 
-      style={styles.container}
-      showsVerticalScrollIndicator={false}
-    >
-      {/* Tiêu đề trang */}
-      <Text style={styles.pageTitle}>WEDDING COMBOS</Text>
+    <View style={{ flex: 1 }}>
+      {/* Header */}
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
+          <Image source={require("../Assets/Images/back.png")} style={styles.backIcon} />
+        </TouchableOpacity>
 
-      {/* Danh sách Combo */}
-      <View style={styles.comboList}>
-        {combos.map((item) => (
-          <TouchableOpacity 
-            key={item.id} 
-            style={styles.comboCard}
-            onPress={() => navigation.navigate("ComboDetail", { comboData: item })}
-          >
-            {/* Hình ảnh */}
-            <Image 
-              source={item.imageUrl} 
-              style={styles.comboImage} 
-              resizeMode="cover"
-            />
+        <Text style={styles.headerTitle}>Gen Plan</Text>
 
-            {/* Nội dung combo */}
-            <View style={styles.comboContent}>
-              <Text style={styles.comboName}>{item.name}</Text>
-              <Text style={styles.comboPrice}>{formatPrice(item.price)}</Text>
-              
-              {/* Các mục dịch vụ */}
-              <View style={styles.comboDescriptionContainer}>
-                {item.description.map((desc, index) => (
-                  <View key={index} style={styles.descriptionItem}>
-                    <Text style={styles.descriptionDot}>•</Text>
-                    <Text style={styles.descriptionText}>{desc}</Text>
-                  </View>
-                ))}
-              </View>
-
-              {/* Nút chi tiết */}
-              <View style={styles.detailButtonContainer}>
-                <Text style={styles.detailButton}>Chi tiết</Text>
-              </View>
-            </View>
-          </TouchableOpacity>
-        ))}
+        <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")} style={styles.iconButton}>
+          <Image source={require("../Assets/Images/home48.png")} style={styles.homeIcon} />
+        </TouchableOpacity>
       </View>
-    </ScrollView>
+
+      <ScrollView style={{ flex: 1 }}>
+        {/* Tiêu đề trang */}
+        <Text style={styles.pageSubtitle}>Explore Our Combos</Text>
+
+        {/* Danh sách Combo */}
+        <View style={styles.comboList}>
+          {combos.map((item) => (
+            <TouchableOpacity 
+              key={item.id} 
+              style={styles.comboCard}
+              onPress={() => navigation.navigate("ComboDetail", { comboData: item })}
+            >
+              {/* Hình ảnh */}
+              <Image 
+                source={item.imageUrl} 
+                style={styles.comboImage} 
+                resizeMode="cover"
+              />
+
+              {/* Nội dung combo */}
+              <View style={styles.comboContent}>
+                <Text style={styles.comboName}>{item.name}</Text>
+                <Text style={styles.comboPrice}>{formatPrice(item.price)}</Text>
+                
+                {/* Các mục dịch vụ */}
+                <View style={styles.comboDescriptionContainer}>
+                  {item.description.map((desc, index) => (
+                    <View key={index} style={styles.descriptionItem}>
+                      <Text style={styles.descriptionDot}>•</Text>
+                      <Text style={styles.descriptionText}>{desc}</Text>
+                    </View>
+                  ))}
+                </View>
+
+                {/* Nút chi tiết */}
+                <View style={styles.detailButtonContainer}>
+                  <Text style={styles.detailButton}>Chi tiết</Text>
+                </View>
+              </View>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+    </View>
   );
 };
 
@@ -110,13 +123,35 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#F5F5F5",
   },
-  pageTitle: {
-    fontSize: 24,
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#F8F8F8", 
+    paddingVertical: 8, 
+    paddingHorizontal: 16,
+    borderBottomWidth: 1, 
+    borderBottomColor: "#DDD",
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: "500",
+    color: "#333", 
+    flex: 1,
+    textAlign: "center",
+  },
+  iconButton: {
+    padding: 8,
+  },
+  homeIcon: {
+    width: 22,
+    height: 22,
+  },
+  pageSubtitle: {
+    fontSize: 16,
     fontWeight: "bold",
     textAlign: "center",
-    paddingVertical: 20,
-    color: "#333",
-    backgroundColor: "#fff",
+    marginVertical: 10,
   },
   comboList: {
     paddingHorizontal: 16,

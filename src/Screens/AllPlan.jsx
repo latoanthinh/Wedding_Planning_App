@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator, Button } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
 import React, { useEffect, useCallback } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Plan } from '../redux/GetAllPlanSlice';
@@ -7,40 +7,89 @@ const AllPlan = ({ navigation }) => {
     const dispatch = useDispatch();
     const { AllPlanData, AllPlanStatus } = useSelector((state) => state.allplan);
 
-    // Dispatch action để lấy dữ liệu kế hoạch chỉ khi component mount
+    // Dispatch action để lấy dữ liệu kế hoạch khi component mount
     useEffect(() => {
         dispatch(Plan());
     }, [dispatch]);
 
-    // Component ProductCard với TouchableOpacity có onPress
-    const ProductCard = useCallback(({ item }) => (
+    // Component hiển thị item kế hoạch với thiết kế được cải tiến
+    const PlanCard = useCallback(({ item }) => (
         <TouchableOpacity
-            onPress={() => navigation.navigate('ComboDetail', { planId: item._id })} // Điều hướng đến chi tiết kế hoạch (có thể tùy chỉnh)
+            onPress={() => navigation.navigate('ComboDetail', { planId: item._id })}
+            style={styles.cardContainer}
         >
             <View style={styles.card}>
-                <Text style={styles.productName}>{item.name}</Text>
-                <Text style={styles.productPrice}>{item.totalPrice}đ</Text>
-
-                <View style={styles.ratingContainer}>
-                    <Text style={styles.ratingText}>{item.status || 'Chưa có trạng thái'}</Text>
+                <View style={styles.cardHeader}>
+                    <Text style={styles.productName}>{item.name}</Text>
+                    <View style={[
+                        styles.statusBadge,
+                        { backgroundColor: getStatusColor(item.status) }
+                    ]}>
+                        <Text style={styles.statusText}>
+                            {item.status || 'Chưa có trạng thái'}
+                        </Text>
+                    </View>
+                </View>
+                
+                <View style={styles.cardDivider} />
+                
+                <View style={styles.cardFooter}>
+                    <View style={styles.priceContainer}>
+                        <Text style={styles.priceLabel}>Tổng tiền:</Text>
+                        <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
+                    </View>
+                    <View style={styles.detailButton}>
+                        <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                        <Image 
+                            source={require('../Assets/Images/back.png')} 
+                            style={styles.arrowIcon} 
+                        />
+                    </View>
                 </View>
             </View>
         </TouchableOpacity>
     ), [navigation]);
 
-    // Hàm render nội dung dựa trên status với xử lý lỗi tốt hơn
+    // Hàm định dạng giá tiền với dấu phân cách
+    const formatPrice = (price) => {
+        return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+    };
+
+    // Hàm xác định màu sắc dựa trên trạng thái
+    const getStatusColor = (status) => {
+        if (!status) return '#9E9E9E'; // Default gray
+
+        switch (status.toLowerCase()) {
+            case 'hoàn thành':
+                return '#4CAF50'; // Green
+            case 'đang xử lý':
+                return '#2196F3'; // Blue
+            case 'chờ xác nhận':
+                return '#FF9800'; // Orange
+            case 'đã hủy':
+                return '#F44336'; // Red
+            default:
+                return '#9E9E9E'; // Gray
+        }
+    };
+
+    // Hàm render nội dung dựa trên status
     const renderContent = useCallback(() => {
         switch (AllPlanStatus) {
             case 'idle':
                 return (
                     <View style={styles.statusContainer}>
-                        <Text style={styles.statusText}>Đang chờ dữ liệu...</Text>
+                        <Image 
+                            source={require('../Assets/Images/home48.png')}
+                            style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} 
+                        />
+                        <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
                     </View>
                 );
             case 'loading':
                 return (
                     <View style={styles.statusContainer}>
-                        <ActivityIndicator size="large" color="#007AFF" />
+                        <ActivityIndicator size="large" color="#2196F3" />
                         <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
                     </View>
                 );
@@ -49,18 +98,26 @@ const AllPlan = ({ navigation }) => {
                     <FlatList
                         data={AllPlanData}
                         keyExtractor={(item) => item._id}
-                        renderItem={ProductCard}
+                        renderItem={PlanCard}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.flatListContent}
                     />
                 ) : (
                     <View style={styles.statusContainer}>
-                        <Text style={styles.statusText}>Không có kế hoạch nào để hiển thị!</Text>
+                        <Image 
+                            source={require('../Assets/Images/home48.png')}
+                            style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} 
+                        />
+                        <Text style={styles.statusMessage}>Không có kế hoạch nào để hiển thị!</Text>
                     </View>
                 );
             case 'failed':
                 return (
                     <View style={styles.statusContainer}>
+                        <Image 
+                            source={require('../Assets/Images/home48.png')}
+                            style={[styles.statusIcon, { tintColor: '#F44336' }]} 
+                        />
                         <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
                         <TouchableOpacity
                             style={styles.retryButton}
@@ -73,19 +130,23 @@ const AllPlan = ({ navigation }) => {
             default:
                 return null;
         }
-    }, [AllPlanData, AllPlanStatus, dispatch, ProductCard]);
-
-
+    }, [AllPlanData, AllPlanStatus, dispatch, PlanCard]);
 
     return (
         <View style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
+                <TouchableOpacity 
+                    style={styles.headerButton}
+                    onPress={() => navigation.goBack()}
+                >
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
-                <Text style={styles.title}>Kế hoạch</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
-                    <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+                <Text style={styles.title}>Kế hoạch của bạn</Text>
+                <TouchableOpacity 
+                    style={styles.headerButton}
+                    onPress={() => navigation.navigate('TabNavigation')}
+                >
+                    <Image source={require('../Assets/Images/home48.png')} style={styles.homeIcon} />
                 </TouchableOpacity>
             </View>
 
@@ -101,99 +162,176 @@ export default AllPlan;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F7FA',
-        paddingTop: 40,
+        backgroundColor: '#ffffff',
     },
     header: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingHorizontal: 20,
-        paddingBottom: 15,
+        paddingHorizontal: 16,
+        paddingTop: 50,
+        paddingBottom: 16,
         backgroundColor: '#FFFFFF',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
+        borderBottomWidth: 1,
+        borderBottomColor: 'rgba(0,0,0,0.05)',
+    },
+    headerButton: {
+        width: 40,
+        height: 40,
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 20,
     },
     icon: {
-        width: 28,
-        height: 28,
-        tintColor: '#007AFF',
+        width: 20,
+        height: 15,
+    },
+    homeIcon: {
+        width: 20,
+        height: 20,
+    },
+    arrowIcon: {
+        width: 16,
+        height: 16,
+        tintColor: '#FFFFFF',
+        transform: [{ rotate: '180deg' }]
     },
     title: {
-        fontSize: 24,
+        fontSize: 20,
         fontWeight: '700',
-        color: '#1A1A1A',
+        color: '#212121',
         letterSpacing: 0.5,
     },
     listContainer: {
         flex: 1,
-        paddingHorizontal: 20,
-        paddingTop: 20,
+        paddingHorizontal: 16,
+        paddingTop: 16,
     },
     flatListContent: {
         paddingBottom: 20,
     },
-    card: {
+    cardContainer: {
+        marginBottom: 16,
+        borderRadius: 16, 
         backgroundColor: '#FFFFFF',
-        borderRadius: 12,
-        padding: 15,
-        marginBottom: 15,
-        elevation: 3,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 6 }, 
+        shadowOpacity: 0.15, 
+        shadowRadius: 8,
+        elevation: 5, 
+        overflow: 'hidden',
+        borderWidth: 1,
+        borderColor: 'rgba(0,0,0,0.03)', 
+    },
+    card: {
+        padding: 18,
+    },
+    cardHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 14,
     },
     productName: {
-        fontSize: 18, 
-        fontWeight: '600',
-        color: '#1A1A1A',
-        marginBottom: 5,
+        fontSize: 18,
+        fontWeight: '700', 
+        color: '#212121',
+        flex: 1,
+        letterSpacing: 0.3, 
     },
-    productPrice: {
-        fontSize: 16, 
-        fontWeight: 'bold',
-        color: '#FF3B30',
-        marginBottom: 5,
+    statusBadge: {
+        paddingHorizontal: 12,
+        paddingVertical: 5,
+        borderRadius: 20, 
+        marginLeft: 8,
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 2,
+        elevation: 1, 
     },
-    ratingContainer: {
+    statusText: {
+        fontSize: 12,
+        fontWeight: '700', 
+        color: '#FFFFFF',
+    },
+    cardDivider: {
+        height: 1.5, 
+        backgroundColor: 'rgba(0,0,0,0.06)',
+        marginVertical: 14,
+    },
+    cardFooter: {
         flexDirection: 'row',
+        justifyContent: 'space-between',
         alignItems: 'center',
     },
-    ratingText: {
+    priceContainer: {
+        flexDirection: 'column',
+    },
+    priceLabel: {
         fontSize: 14,
-        color: '#007AFF',
-        fontWeight: '500',
+        fontWeight: '500', 
+        color: '#757575',
+        marginBottom: 4,
+    },
+    productPrice: {
+        fontSize: 20, 
+        fontWeight: 'bold',
+        color: '#F44336',
+    },
+    detailButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#200000',
+        paddingVertical: 10, 
+        paddingHorizontal: 16, 
+        borderRadius: 24, 
+        shadowColor: '#222222',
+        shadowOffset: { width: 0, height: 3 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+        elevation: 3, 
+    },
+    detailButtonText: {
+        fontSize: 14,
+        fontWeight: '700', 
+        color: '#FFFFFF',
+        marginRight: 6,
     },
     statusContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
+        padding: 20,
     },
-    statusText: {
+    statusIcon: {
+        width: 60,
+        height: 60,
+        marginBottom: 16,
+    },
+    statusMessage: {
         fontSize: 16,
-        color: '#1A1A1A',
+        color: '#757575',
         textAlign: 'center',
     },
     loadingText: {
         fontSize: 16,
-        color: '#007AFF',
-        marginTop: 10,
+        color: '#2196F3',
+        marginTop: 16,
     },
     errorText: {
         fontSize: 16,
-        color: '#FF3B30',
+        color: '#F44336',
         textAlign: 'center',
-        marginBottom: 20,
+        marginVertical: 12,
     },
     retryButton: {
-        backgroundColor: '#007AFF',
-        paddingVertical: 10,
-        paddingHorizontal: 20,
-        borderRadius: 8,
+        backgroundColor: '#2196F3',
+        paddingVertical: 12,
+        paddingHorizontal: 24,
+        borderRadius: 24,
+        marginTop: 16,
+        elevation: 2,
     },
     retryButtonText: {
         color: '#FFFFFF',
