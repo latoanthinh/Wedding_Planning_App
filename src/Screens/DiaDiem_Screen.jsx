@@ -119,9 +119,9 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 15,
-        paddingVertical: 10,
+       
         backgroundColor: '#FFFFFF',
-        marginTop: 20,
+       
     },
     icon: {
         width: 24,

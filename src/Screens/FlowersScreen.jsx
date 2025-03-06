@@ -60,9 +60,7 @@ const FlowersScreen = ({ navigation }) => {
     }
   };
 
-  const filteredFlowers = FlowersData.filter(item =>
-    item.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  
 
   const renderItem = ({ item }) => (
     <TouchableOpacity onPress={() => navigation.navigate('FlowerDetail', { flowerId: item._id })}>
@@ -91,10 +89,10 @@ const FlowersScreen = ({ navigation }) => {
       case 'loading':
         return renderLoading();
       case 'succeeded':
-        return filteredFlowers.length > 0 ? (
+        return FlowersData.length > 0 ? (
           <FlatList
             numColumns={2}
-            data={filteredFlowers}
+            data={FlowersData}
             renderItem={renderItem}
             keyExtractor={(item) => item._id.toString()}
             contentContainerStyle={styles.flatListContainer}
@@ -135,14 +133,7 @@ const FlowersScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      <TextInput
-        style={styles.searchBox}
-        placeholder="Tìm kiếm đồ ăn..."
-        placeholderTextColor="#888"
-        value={searchQuery}
-        onChangeText={setSearchQuery}
-      />
-
+    
       <View style={styles.categoryWrapper}>
         <FlatList
           horizontal
@@ -174,7 +165,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     paddingVertical: 12,
     backgroundColor: '#FFFFFF',
-    marginTop: 30,
+    
   },
   title: {
     fontSize: 22,
