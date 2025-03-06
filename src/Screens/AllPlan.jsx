@@ -137,7 +137,7 @@ const AllPlan = ({ navigation }) => {
             <View style={styles.header}>
                 <TouchableOpacity 
                     style={styles.headerButton}
-                    onPress={() => navigation.goBack()}
+                    onPress={() => navigation.navigate('TabNavigation')}//i fix here goback về lỗi
                 >
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
