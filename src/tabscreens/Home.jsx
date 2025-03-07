@@ -116,13 +116,6 @@ const ScreenHome = ({ navigation }) => {
         renderLoading()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => setIsSearchClicked(!isSearchClicked)}>
-              <Image source={require('../Assets/Images/search.png')} style={styles.searchIcon} />
-            </TouchableOpacity>
-          </View>
-
           {/* Greeting */}
           <Text style={styles.greetingText}>Xin chào, {'\n'} {user.name}</Text>
           <Text style={styles.welcomeText}>Hãy lên kế hoạch cho ngày cưới hoàn hảo</Text>

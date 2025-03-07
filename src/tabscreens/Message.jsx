@@ -10,12 +10,12 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Message = () => {
   const [messages, setMessages] = useState([
-    { id: '1', text: 'Xin chào! Hôm nay bạn cần tư vấn gì nào?', fromUser: false },
+    { id: '1', text: 'Xin chào! Hôm nay bạn cần tư vấn gì nào?', fromUser: false, time: new Date().toLocaleTimeString() },
   ]);
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -24,7 +24,12 @@ const Message = () => {
 
   const handleSend = useCallback(() => {
     if (newMessage.trim()) {
-      const newMessageItem = { id: Date.now().toString(), text: newMessage, fromUser: true };
+      const newMessageItem = {
+        id: Date.now().toString(),
+        text: newMessage,
+        fromUser: true,
+        time: new Date().toLocaleTimeString(),
+      };
       setMessages(prev => [...prev, newMessageItem]);
       setNewMessage('');
       autoReply();
@@ -45,17 +50,21 @@ const Message = () => {
         id: Date.now().toString(),
         text: 'Cảm ơn bạn đã gửi tin nhắn! Hệ thống sẽ phản hồi sớm.',
         fromUser: false,
+        time: new Date().toLocaleTimeString(),
       };
       setMessages(prev => [...prev, replyMessageItem]);
       setIsTyping(false);
       flatListRef.current?.scrollToEnd({ animated: true });
-    }, 2000);
+    }, 5000);
   };
 
   const renderMessage = ({ item }) => (
     <View style={[styles.messageContainer, item.fromUser ? styles.userMessage : styles.systemMessage]}>
       <Text style={[styles.messageText, item.fromUser ? styles.userText : styles.systemText]}>
         {item.text}
+      </Text>
+      <Text style={styles.timeText}>
+        {item.time}
       </Text>
     </View>
   );
@@ -106,22 +115,21 @@ export default Message;
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
-    backgroundColor: '#f7f9fc',
+    backgroundColor: '#fff',
   },
   container: {
     flex: 1,
   },
   inner: {
     flex: 1,
-    padding: 20,
+    padding: 10,
   },
   title: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    color: '#000',
     marginBottom: 20,
     alignSelf: 'center',
-    fontFamily:'Playfair_me'
+    fontFamily: 'Playfair_me',
   },
   messageList: {
     flexGrow: 1,
@@ -168,9 +176,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginRight: 10,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: '#fff',
     fontSize: 16,
     elevation: 3,
+    borderWidth: 0.5,
+    borderColor: 'grey',
   },
   sendButton: {
     backgroundColor: '#007bff',
@@ -192,5 +202,11 @@ const styles = StyleSheet.create({
   typingText: {
     color: '#999',
     marginRight: 5,
+  },
+  timeText: {
+    fontSize: 12,
+    color: '#999',
+    marginTop: 5,
+    alignSelf: 'flex-end',
   },
 });
