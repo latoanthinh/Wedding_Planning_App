@@ -8,7 +8,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get("window");
 
-const formatPrice = (num) => (num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") : "0");
+const formatPrice = (price) => {
+  return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
+};
 
 const Gift_Screen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -17,30 +19,27 @@ const Gift_Screen = ({ navigation }) => {
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [favorites, setFavorites] = useState(new Set()); // Lưu danh sách ID của các item yêu thích
+  const [favorites, setFavorites] = useState(new Set());
+  const [loading, setLoading] = useState(false); 
 
   useEffect(() => {
-    console.log('Fetching Cate_present...');
     dispatch(Cate_present());
   }, [dispatch]);
 
   useEffect(() => {
-    console.log('Cate_presentStatus:', Cate_presentStatus, 'Data:', Cate_presentData);
     if (Cate_presentStatus === 'succeeded' && Cate_presentData.length > 0 && !selectedCategoryId) {
       setSelectedCategoryId(Cate_presentData[0]._id);
     }
   }, [Cate_presentData, Cate_presentStatus, selectedCategoryId]);
 
   useEffect(() => {
-    console.log('Fetching Invitations for category:', selectedCategoryId);
     if (selectedCategoryId) {
-      dispatch(Invitations(selectedCategoryId));
+      setLoading(true); 
+      dispatch(Invitations(selectedCategoryId)).finally(() => {
+        setLoading(false); 
+      });
     }
   }, [selectedCategoryId, dispatch]);
-
-  useEffect(() => {
-    console.log('InvitationsStatus:', InvitationsStatus, 'Data:', InvitationsData);
-  }, [InvitationsStatus, InvitationsData]);
 
   const handleSelect = (id) => {
     if (id !== selectedCategoryId) {
@@ -49,13 +48,9 @@ const Gift_Screen = ({ navigation }) => {
   };
 
   const handleItemPress = (item) => {
-    console.log('Item pressed - selectedItem:', item);
     if (item && item._id) {
       setSelectedItem(item);
       setModalVisible(true);
-      console.log('Modal should be visible:', true);
-    } else {
-      console.log('Invalid item selected:', item);
     }
   };
 
@@ -67,12 +62,11 @@ const Gift_Screen = ({ navigation }) => {
       newFavorites.add(itemId);
     }
     setFavorites(newFavorites);
-    console.log('Favorites updated:', Array.from(newFavorites));
   };
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
+      <Lottie source={require('../Assets/Animations/loading1.json')} autoPlay loop style={styles.loadingAnimation} />
       <Text style={styles.loadingText}>Chờ xíu...</Text>
     </View>
   );
@@ -93,14 +87,16 @@ const Gift_Screen = ({ navigation }) => {
         <Image source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
           <Text style={styles.productName} numberOfLines={1}>{item.name || 'Unnamed Item'}</Text>
-          <Text style={styles.productPrice}>{formatPrice(item.price)} đ</Text>
+          <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
         </View>
       </View>
     </TouchableOpacity>
   );
 
   const renderContent = () => {
-    console.log('Rendering content with status:', InvitationsStatus, 'Data length:', InvitationsData.length);
+    if (loading) {
+      return renderLoading();
+    }
     if (InvitationsStatus === 'loading') {
       return <ActivityIndicator size="large" color="#FF6F61" style={styles.loading} />;
     }
@@ -185,13 +181,13 @@ const Gift_Screen = ({ navigation }) => {
                       onPress={() => toggleFavorite(selectedItem._id)}
                     >
                       <Image
-                        source={require('../Assets/Images/heart_filled.png')} // Thay bằng đường dẫn đến ảnh trái tim
+                        source={require('../Assets/Images/heart_filled.png')}
                         style={[styles.heartImage, favorites.has(selectedItem._id) && styles.heartFilled]}
                         resizeMode="contain"
                       />
                     </TouchableOpacity>
                     <Text style={styles.modalTitle}>{selectedItem.name || 'Không có tên'}</Text>
-                    <Text style={styles.modalPrice}>{formatPrice(selectedItem.price)} đ</Text>
+                    <Text style={styles.modalPrice}>{formatPrice(selectedItem.price)}</Text>
                     <Text style={styles.modalDescription} numberOfLines={3}>
                       {selectedItem.Description || 'Không có mô tả'}
                     </Text>
@@ -321,12 +317,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingAnimation: {
-    width: 120,
-    height: 120,
+    width: 150,
+    height: 150,
   },
   loadingText: {
-    marginTop: 10,
-    fontSize: 16,
+    fontSize: 20,
     color: '#000',
     fontFamily: 'Playfair-re',
   },
@@ -380,7 +375,7 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
-    position: 'relative', // Để định vị biểu tượng trái tim
+    position: 'relative',
   },
   modalImage: {
     width: '100%',
@@ -426,9 +421,9 @@ const styles = StyleSheet.create({
   heartImage: {
     width: 24,
     height: 24,
-    tintColor: '#ccc', // Màu mặc định khi chưa yêu thích
+    tintColor: '#ccc',
   },
   heartFilled: {
-    tintColor: 'red', // Màu khi đã yêu thích
+    tintColor: 'red',
   },
 });

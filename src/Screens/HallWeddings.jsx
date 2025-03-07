@@ -27,7 +27,7 @@ const HallWeddings = ({ navigation, route }) => {
     const renderLoading = () => (
         <View style={styles.loadingContainer}>
             <Lottie
-                source={require('../Assets/Animations/loading.json')}
+                source={require('../Assets/Animations/loading1.json')}
                 autoPlay
                 loop
                 style={styles.loadingAnimation}
@@ -169,8 +169,7 @@ const styles = StyleSheet.create({
         height: 120,
     },
     loadingText: {
-        marginTop: 10,
-        fontSize: 16,
+        fontSize: 20,
         color: '#666',
         fontFamily:'Playfair-re'
     },

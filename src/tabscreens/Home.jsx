@@ -18,7 +18,6 @@ import styles from '../Styles/Home_Style';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
 const { width } = Dimensions.get('window');
 
 const slides = [
@@ -91,7 +90,7 @@ const ScreenHome = ({ navigation }) => {
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
+      <Lottie source={require('../Assets/Animations/loading1.json')} autoPlay loop style={styles.loadingAnimation} />
       <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
     </View>
   );
@@ -112,7 +111,7 @@ const ScreenHome = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      {isLoading ? (
+      {isLoading || HallStatus === 'loading' ? (
         renderLoading()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
@@ -253,7 +252,6 @@ const ScreenHome = ({ navigation }) => {
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("Gift_Screen")}>
               <Image source={require('../Assets/Images/thiepcuoi.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Quà Tặng</Text>
-              
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("DiaDiem_Screen")}>

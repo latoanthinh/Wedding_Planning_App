@@ -19,14 +19,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   loadingAnimation: {
-    width: 100,
-    height: 100,
+    width: 150,
+    height: 150,
   },
   loadingText: {
-    fontSize: 16,
+    fontSize: 20,
     color: '#666',
-    marginTop: 10,
-    fontWeight: '500',
+   fontFamily:'Playfair-re',
   },
   header: {
     flexDirection: 'row',

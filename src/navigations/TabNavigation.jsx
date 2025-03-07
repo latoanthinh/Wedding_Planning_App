@@ -37,10 +37,10 @@ const TabNavigation = () => {
 
           return <Ionicons name={iconName} size={size} color={color} />;
         },
-        tabBarActiveTintColor: 'tomato',
+        tabBarActiveTintColor: 'black',
         tabBarInactiveTintColor: 'gray',
         tabBarStyle: {
-          backgroundColor: colorInterpolation,
+          backgroundColor: '#fff',
           borderTopWidth: 0,
           borderTopLeftRadius: 15,
           borderTopRightRadius: 15,
