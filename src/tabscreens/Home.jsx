@@ -253,7 +253,7 @@ const ScreenHome = ({ navigation }) => {
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("Gift_Screen")}>
               <Image source={require('../Assets/Images/thiepcuoi.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Quà Tặng</Text>
-              <Text style={styles.statusText}>Status</Text>
+              
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("DiaDiem_Screen")}>
@@ -265,7 +265,7 @@ const ScreenHome = ({ navigation }) => {
           <TouchableOpacity
             style={styles.flowerContainer}
             onPress={() => navigation.navigate('FlowersScreen')}>
-            <Image source={require('../Assets/Images/hoacuoi.jpeg')} style={styles.flowerImage} />
+            <Image source={require('../Assets/Images/thucdon.jpg')} style={styles.flowerImage} />
             <View style={styles.overlay}>
               <View style={styles.textContainer}>
                 <Text style={styles.flowerTitle}>Đồ ăn</Text>
