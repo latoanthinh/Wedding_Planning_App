@@ -272,7 +272,7 @@ const ScreenHome = ({ navigation }) => {
           <TouchableOpacity
             style={styles.flowerContainer}
             onPress={() => navigation.navigate('FlowersScreen')}>
-            <Image source={require('../Assets/Images/hoacuoi.jpeg')} style={styles.flowerImage} />
+            <Image source={require('../Assets/Images/restaurentfood.jpg')} style={styles.flowerImage} />
             <View style={styles.overlay}>
               <View style={styles.textContainer}>
                 <Text style={styles.flowerTitle}>Đồ ăn</Text>
