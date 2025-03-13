@@ -5,15 +5,14 @@ import { GuestStackNavigation, StackNavigation } from './StackNavigation'
 
 import { AppContext } from '../AppContext'
 const Appnavigation = () => {
-  const { user} = useContext(AppContext)
+  const { user } = useContext(AppContext)
 
-  
   return (
-        <NavigationContainer>
-            {
-                user ? <StackNavigation /> : <GuestStackNavigation />
-            }
-        </NavigationContainer>
+    <NavigationContainer>
+      {
+        user ? <StackNavigation /> : <GuestStackNavigation />
+      }
+    </NavigationContainer>
   )
 }
 
