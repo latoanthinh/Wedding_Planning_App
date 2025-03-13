@@ -18,7 +18,6 @@ import styles from '../Styles/Home_Style';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-
 const { width } = Dimensions.get('window');
 
 const slides = [
@@ -91,7 +90,7 @@ const ScreenHome = ({ navigation }) => {
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
+      <Lottie source={require('../Assets/Animations/loading1.json')} autoPlay loop style={styles.loadingAnimation} />
       <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
     </View>
   );
@@ -112,17 +111,10 @@ const ScreenHome = ({ navigation }) => {
     <SafeAreaView style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="dark-content" />
 
-      {isLoading ? (
+      {isLoading || HallStatus === 'loading' ? (
         renderLoading()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
-          {/* Header */}
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => setIsSearchClicked(!isSearchClicked)}>
-              <Image source={require('../Assets/Images/search.png')} style={styles.searchIcon} />
-            </TouchableOpacity>
-          </View>
-
           {/* Greeting */}
           <Text style={styles.greetingText}>Xin chào, {'\n'} {user.name}</Text>
           <Text style={styles.welcomeText}>Hãy lên kế hoạch cho ngày cưới hoàn hảo</Text>
@@ -260,7 +252,6 @@ const ScreenHome = ({ navigation }) => {
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("Gift_Screen")}>
               <Image source={require('../Assets/Images/thiepcuoi.png')} style={styles.serviceIcon} />
               <Text style={styles.locationTitle}>Quà Tặng</Text>
-              <Text style={styles.statusText}>Status</Text>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("DiaDiem_Screen")}>
@@ -273,6 +264,7 @@ const ScreenHome = ({ navigation }) => {
             style={styles.flowerContainer}
             onPress={() => navigation.navigate('FlowersScreen')}>
             <Image source={require('../Assets/Images/restaurentfood.jpg')} style={styles.flowerImage} />
+
             <View style={styles.overlay}>
               <View style={styles.textContainer}>
                 <Text style={styles.flowerTitle}>Đồ ăn</Text>

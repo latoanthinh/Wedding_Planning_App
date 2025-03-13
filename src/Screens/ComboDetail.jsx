@@ -45,7 +45,7 @@ const DetailCombo = ({ route, navigation }) => {
 
   const formatPrice = (num) => {
     return num
-      ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "đ"
+      ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ"
       : "0đ";
   };
 
@@ -88,7 +88,7 @@ const DetailCombo = ({ route, navigation }) => {
   };
 
   return (
-    <SafeAreaView style={{ flex: 1 }}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity
@@ -101,7 +101,7 @@ const DetailCombo = ({ route, navigation }) => {
           />
         </TouchableOpacity>
 
-        <Text style={styles.headerTitle}>Combo Detail</Text>
+        <Text style={styles.headerTitle}>Chi tiết Combo</Text>
 
         <TouchableOpacity onPress={openModal} style={styles.iconButton}>
           <Image
@@ -135,7 +135,7 @@ const DetailCombo = ({ route, navigation }) => {
           <TouchableOpacity
             style={styles.contactButton}
             onPress={() =>
-              navigation.navigate("Contact", { comboName: data.name })
+              navigation.navigate("Message", { comboName: data.name })
             }
           >
             <Text style={styles.buttonText}>Contact for Booking</Text>
@@ -214,16 +214,15 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F8F8F8",
+    backgroundColor: "#fff",
     paddingVertical: 6,
     paddingHorizontal: 16,
     borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
   },
   headerTitle: {
-    fontSize: 16,
-    fontWeight: "500",
-    color: "#333",
+    fontSize: 20,
+    fontFamily: "Playfair_me",
+    color: "#000",
     flex: 1,
     textAlign: "center",
   },
@@ -268,7 +267,7 @@ const styles = StyleSheet.create({
   },
   comboName: {
     fontSize: 28,
-    fontWeight: "bold",
+    fontFamily: "Playfair_me",
     color: "#333",
     marginBottom: 8,
   },
@@ -311,7 +310,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "white",
     fontSize: 18,
-    fontWeight: "600",
+    fontFamily: "Playfair_me",
     textAlign: "center",
   },
   modalOverlay: {
@@ -327,8 +326,8 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 20,
-    fontWeight: "600",
-    color: "#333",
+    fontFamily: "Playfair_me",
+    color: "#000",
     textAlign: "center",
     marginBottom: 20,
   },
