@@ -43,13 +43,6 @@ const surveyData = [
     videoFile: require("../Assets/Videos/video3.mp4"),
   },
   {
-    question: "Bạn muốn tổ chức đám cưới của mình ở đâu?",
-    type: "text",
-    numericOnly: false,
-    ttsFile: require("../Assets/TTS/audio4.mp3"),
-    videoFile: require("../Assets/Videos/video3.mp4"),
-  },
-  {
     question: "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!",
     type: "info",
     ttsFile: require("../Assets/TTS/audio5.mp3"),
@@ -57,7 +50,7 @@ const surveyData = [
   },
 ];
 
-const Thongtincoban = (props) => {
+const Thongtincoban = (props) => {  
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({
     eventDate: new Date(),
