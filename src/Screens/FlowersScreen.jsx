@@ -87,7 +87,7 @@ const FlowersScreen = ({ navigation }) => {
   };
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('FoodDetail', { flowerId: item._id })}>
+    <TouchableOpacity onPress={() => navigation.navigate('FoodDetail' , {Id: item._id })}>
       <View style={styles.card}>
         <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
