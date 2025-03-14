@@ -6,14 +6,18 @@ import {
   ScrollView,
   Image,
   TouchableOpacity,
-  Dimensions
+  Dimensions,
+  Pressable
 } from "react-native";
-import Icon from 'react-native-vector-icons/FontAwesome';
 
-const { width } = Dimensions.get('window');
+const { height, width } = Dimensions.get('window');
+const scale = width / 375;
+
+const normalize = (size) => {
+  return Math.round(scale * size);
+};
 
 const GenPlan = ({ navigation }) => {
-  // Dữ liệu mẫu (fake data) cho danh sách combo
   const combos = [
     {
       id: 1,
@@ -51,11 +55,11 @@ const GenPlan = ({ navigation }) => {
   ];
 
   const formatPrice = (num) => {
-    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + "đ";
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ";
   };
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
@@ -70,13 +74,11 @@ const GenPlan = ({ navigation }) => {
       </View>
 
       <ScrollView style={{ flex: 1 }}>
-        {/* Tiêu đề trang */}
-        <Text style={styles.pageSubtitle}>Explore Our Combos</Text>
 
         {/* Danh sách Combo */}
         <View style={styles.comboList}>
           {combos.map((item) => (
-            <TouchableOpacity 
+            <Pressable 
               key={item.id} 
               style={styles.comboCard}
               onPress={() => navigation.navigate("ComboDetail", { comboData: item })}
@@ -108,7 +110,7 @@ const GenPlan = ({ navigation }) => {
                   <Text style={styles.detailButton}>Chi tiết</Text>
                 </View>
               </View>
-            </TouchableOpacity>
+            </Pressable>
           ))}
         </View>
       </ScrollView>
@@ -121,22 +123,21 @@ export default GenPlan;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F5F5F5",
+    backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#F8F8F8", 
+    backgroundColor: "#fff", 
     paddingVertical: 8, 
     paddingHorizontal: 16,
-    borderBottomWidth: 1, 
-    borderBottomColor: "#DDD",
+    marginTop: 15
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: "500",
-    color: "#333", 
+    fontSize: normalize(20),
+    fontFamily:"Playfair_me",
+    color: "#000", 
     flex: 1,
     textAlign: "center",
   },
@@ -148,7 +149,7 @@ const styles = StyleSheet.create({
     height: 22,
   },
   pageSubtitle: {
-    fontSize: 16,
+    fontSize: normalize(16),
     fontWeight: "bold",
     textAlign: "center",
     marginVertical: 10,
@@ -173,19 +174,19 @@ const styles = StyleSheet.create({
   },
   comboImage: {
     width: '100%',
-    height: 200,
+    height: normalize(200),
   },
   comboContent: {
     padding: 16,
   },
   comboName: {
-    fontSize: 20,
+    fontSize: normalize(20),
     fontWeight: "bold",
     color: "#333",
     marginBottom: 8,
   },
   comboPrice: {
-    fontSize: 18,
+    fontSize: normalize(18),
     color: "#E53935",
     fontWeight: "600",
     marginBottom: 12,
@@ -201,10 +202,10 @@ const styles = StyleSheet.create({
   descriptionDot: {
     color: "#E53935",
     marginRight: 8,
-    fontSize: 16,
+    fontSize: normalize(16),
   },
   descriptionText: {
-    fontSize: 15,
+    fontSize: normalize(15),
     color: "#666",
   },
   detailButtonContainer: {
@@ -216,7 +217,7 @@ const styles = StyleSheet.create({
   },
   detailButton: {
     color: "#FFFFFF",
-    fontSize: 14,
+    fontSize: normalize(14),
     fontWeight: "600",
   },
 });

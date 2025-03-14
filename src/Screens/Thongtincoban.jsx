@@ -275,8 +275,8 @@ const styles = StyleSheet.create({
     paddingVertical: 30,
   },
   header: {
-    fontSize: 32,
-    fontWeight: "700",
+    fontSize: 30,
+    fontFamily:'Playfair_me',
     marginBottom: 25,
     textAlign: "center",
     color: "#3E2723", 
@@ -325,10 +325,10 @@ const styles = StyleSheet.create({
   },
   question: {
     fontSize: 22,
-    fontWeight: "600",
+    fontFamily:"Playfair_me",
     marginBottom: 20,
     textAlign: "center",
-    color: "#4E342E", 
+    color: "#000", 
   },
   input: {
     backgroundColor: "#FFFFFF",
@@ -364,7 +364,7 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
   nextButton: {
-    backgroundColor: "#220000",
+    backgroundColor: "#000",
     paddingVertical: 15,
     borderRadius: 15,
     alignItems: "center",
@@ -375,7 +375,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     fontSize: 20,
-    fontWeight: "700",
+    fontFamily:"Playfair_me",
   },
 });
 

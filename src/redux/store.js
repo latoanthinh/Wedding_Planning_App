@@ -14,6 +14,7 @@ import  Cate_decoratesReducer  from './Cate_decoratesSlice';
 import  DecoratesByCateReducer  from './DecoratesByCateSlice';
 import  Cate_CateringReducer  from './Cate_CateringSlice';
 import  Cate_PresentReducer  from './Cate_PresentSlice';
+import  FavoriteDeanAddReducer  from './FavoriteDeanAddSlice';
 
 
 
@@ -22,6 +23,7 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    favoriteset:FavoriteDeanAddReducer,
     cate_present:Cate_PresentReducer,
     cate_catering:Cate_CateringReducer,
     decoratesbyCate:DecoratesByCateReducer,

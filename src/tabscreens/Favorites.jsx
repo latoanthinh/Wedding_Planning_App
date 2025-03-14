@@ -1,153 +1,132 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image, ScrollView } from 'react-native';
-import React, { useState, useEffect } from 'react';
-import { useDispatch } from 'react-redux';
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
+import React, { useEffect, useContext } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { useDispatch, useSelector } from 'react-redux';
+import { fetchUserFavorites, resetFavorites, removeFavoriteItem } from '../redux/FavoriteDeanAddSlice';
+import { AppContext } from '../AppContext';
 
 const Favorites = ({ navigation }) => {
     const dispatch = useDispatch();
-   
-    const [favoritesCombos, setFavoritesCombos] = useState([
-        { _id: '1', name: 'Combo 1', description: 'Combo tiết kiệm 15%', image: require('../Assets/Images/combo.png') },
-        { _id: '2', name: 'Combo 2', description: 'Combo gia đình', image: require('../Assets/Images/combo.png') },
-        { _id: '3', name: 'Combo 3', description: 'Combo đặc biệt', image: require('../Assets/Images/combo.png') }
-    ]);
-
-    const [favoritesItems, setFavoritesItems] = useState([
-        { _id: '1', name: 'Sản phẩm 1', description: 'Mô tả sản phẩm 1', image: require('../Assets/Images/dresse.png'), price: 250000 },
-        { _id: '2', name: 'Sản phẩm 2', description: 'Mô tả sản phẩm 2', image: require('../Assets/Images/dresse.png'), price: 350000 },
-        { _id: '3', name: 'Sản phẩm 3', description: 'Mô tả sản phẩm 3', image: require('../Assets/Images/dresse.png'), price: 150000 }
-    ]);
+    const { data, status, error } = useSelector((state) => state.favoriteset);
+    const { user } = useContext(AppContext);
+    const userId = user?._id;
 
     useEffect(() => {
-        // fetch data nếu cần
-    }, [dispatch]);
+        if (userId) {
+            // Reset dữ liệu trước khi fetch mới
+            dispatch(resetFavorites());
+            dispatch(fetchUserFavorites(userId));
+        } else {
+            console.warn('userId không tồn tại, không thể tải danh sách yêu thích');
+        }
+    }, [dispatch, userId]);
 
-    // Format price with separator
+    // Làm phẳng và loại bỏ trùng lặp
+    const flattenData = Array.isArray(data) ? data.flat() : [];
+    const validatedData = Array.from(
+        new Map(flattenData.map(item => [item._id, item])).values()
+    );
+
     const formatPrice = (price) => {
-        return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return price ? price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' VNĐ' : '0 VNĐ';
     };
 
-    // Remove combo from favorites
-    const removeCombo = (id) => {
-        setFavoritesCombos(favoritesCombos.filter(combo => combo._id !== id));
+    const handleRetry = () => {
+        if (userId) {
+            dispatch(fetchUserFavorites(userId));
+        }
     };
 
-    // Remove item from favorites
-    const removeItem = (id) => {
-        setFavoritesItems(favoritesItems.filter(item => item._id !== id));
+    const handleRemoveFavorite = (item) => {
+        if (userId && item.itemId && item.type) {
+            console.log(`Xóa mục yêu thích: userId=${userId}, type=${item.type}, itemId=${item.itemId}`);
+            dispatch(removeFavoriteItem({ userId, type: item.type, itemId: item.itemId })).then(() => {
+                // Làm mới danh sách sau khi xóa thành công
+                dispatch(fetchUserFavorites(userId));
+            }).catch((error) => {
+                console.error('Lỗi khi xóa mục yêu thích:', error);
+                Alert.alert('Lỗi', 'Không thể xóa mục yêu thích, vui lòng thử lại.');
+            });
+        } else {
+            console.warn('Không thể xóa: Thiếu userId, type hoặc itemId', item);
+            Alert.alert('Lỗi', 'Thông tin không hợp lệ.');
+        }
     };
 
-    // Empty state component
-    const EmptyState = ({ title, message }) => (
+    const renderItem = ({ item }) => {
+        if (!item || typeof item !== 'object' || !item._id) {
+            console.warn('Dữ liệu item không hợp lệ:', item);
+            return null;
+        }
+        return (
+            <View style={styles.itemCard}>
+                <TouchableOpacity
+                    onPress={() => navigation.navigate('ItemDetail', { itemId: item._id, type: item.type })}
+                >
+                    <Image
+                        source={{ uri: item.image || 'https://via.placeholder.com/80' }}
+                        style={styles.itemImage}
+                        resizeMode="cover"
+                    />
+                    <View style={styles.itemContent}>
+                        <Text style={styles.itemName} numberOfLines={1}>
+                            {item.name || 'Không có tên'}
+                        </Text>
+                        <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity
+                    style={styles.deleteButton}
+                    onPress={() => handleRemoveFavorite(item)}
+                >
+                    <Text style={styles.deleteButtonText}>Xóa</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    };
+
+    const renderEmpty = () => (
         <View style={styles.emptyContainer}>
-            <Image 
-                source={require('../Assets/Images/heart_outline.png')} 
-                style={styles.emptyIcon} 
-            />
-            <Text style={styles.emptyTitle}>{title}</Text>
-            <Text style={styles.emptyMessage}>{message}</Text>
+            <Text style={styles.emptyTitle}>Không có mục yêu thích</Text>
+            <Text style={styles.emptyMessage}>Hãy thêm sản phẩm vào danh sách yêu thích của bạn</Text>
         </View>
     );
 
+    if (status === 'loading') {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF6F61" />
+                <Text style={styles.loadingText}>Đang tải...</Text>
+            </View>
+        );
+    }
+
+    if (status === 'failed') {
+        return (
+            <View style={styles.errorContainer}>
+                <Text style={styles.errorText}>Lỗi: {error}</Text>
+                <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
+                    <Text style={styles.retryButtonText}>Thử lại</Text>
+                </TouchableOpacity>
+            </View>
+        );
+    }
+
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header - đã bỏ nút back, hạ paddingTop xuống */}
             <View style={styles.header}>
-                <Text style={styles.headerTitle}>Favorites</Text>
+                <Text style={styles.headerTitle}>Danh sách yêu thích</Text>
+                <View style={styles.placeholder} />
             </View>
 
-            <ScrollView 
+            <FlatList
+                data={validatedData}
+                renderItem={renderItem}
+                keyExtractor={(item, index) => item?._id?.toString() || `fallback-${index}`}
+                ListEmptyComponent={renderEmpty}
+                contentContainerStyle={styles.listContent}
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={styles.scrollContainer}
-            >
-                {/* Favorite Combos Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Combo yêu thích</Text>
-                    
-                    {favoritesCombos.length > 0 ? (
-                        <ScrollView 
-                            horizontal
-                            showsHorizontalScrollIndicator={false}
-                            contentContainerStyle={styles.comboList}
-                        >
-                            {favoritesCombos.map(item => (
-                                <TouchableOpacity
-                                    key={item._id}
-                                    onPress={() => navigation.navigate('ComboDetail', { comboId: item._id })}
-                                    style={styles.comboCard}
-                                >
-                                    <Image source={item.image} style={styles.comboImage} />
-                                    <View style={styles.comboContent}>
-                                        <Text style={styles.comboName}>{item.name}</Text>
-                                        <Text style={styles.comboDescription} numberOfLines={1}>{item.description}</Text>
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.heartButton}
-                                        onPress={() => removeCombo(item._id)}
-                                    >
-                                        <Image 
-                                            source={require('../Assets/Images/heart_filled.png')} 
-                                            style={styles.heartIcon} 
-                                        />
-                                    </TouchableOpacity>
-                                </TouchableOpacity>
-                            ))}
-                        </ScrollView>
-                    ) : (
-                        <EmptyState 
-                            title="Không có combo yêu thích" 
-                            message="Hãy thêm combo vào danh sách yêu thích của bạn"
-                        />
-                    )}
-                </View>
-
-                {/* Favorite Items Section */}
-                <View style={styles.section}>
-                    <Text style={styles.sectionTitle}>Các mục yêu thích</Text>
-                    
-                    {favoritesItems.length > 0 ? (
-                        <View style={styles.itemList}>
-                            {favoritesItems.map(item => (
-                                <TouchableOpacity
-                                    key={item._id}
-                                    onPress={() => navigation.navigate('ItemDetail', { itemId: item._id })}
-                                    style={styles.itemCard}
-                                >
-                                    <Image source={item.image} style={styles.itemImage} />
-                                    <View style={styles.itemContent}>
-                                        <Text style={styles.itemName}>{item.name}</Text>
-                                        <Text style={styles.itemDescription} numberOfLines={2}>{item.description}</Text>
-                                        <Text style={styles.itemPrice}>{formatPrice(item.price)}đ</Text>
-                                    </View>
-                                    <TouchableOpacity
-                                        style={styles.heartButton}
-                                        onPress={() => removeItem(item._id)}
-                                    >
-                                        <Image 
-                                            source={require('../Assets/Images/heart_filled.png')} 
-                                            style={styles.heartIcon} 
-                                        />
-                                    </TouchableOpacity>
-                                </TouchableOpacity>
-                            ))}
-                        </View>
-                    ) : (
-                        <EmptyState 
-                            title="Không có mục yêu thích" 
-                            message="Hãy thêm sản phẩm vào danh sách yêu thích của bạn"
-                        />
-                    )}
-                </View>
-            </ScrollView>
-
-            {/* Floating Add Button */}
-            <TouchableOpacity 
-                style={styles.floatingButton}
-                onPress={() => navigation.navigate('TabNavigation')}//cần all product
-            >
-                <Text style={styles.floatingButtonText}>+</Text>
-            </TouchableOpacity>
+            />
         </SafeAreaView>
     );
 };
@@ -160,172 +139,131 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     header: {
+        flexDirection: 'row',
+        justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 16,
-      
-        paddingBottom: 16,
+        padding: 16,
         backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
+        elevation: 2,
+    },
+    backIcon: {
+        width: 20,
+        height: 20,
     },
     headerTitle: {
         fontSize: 20,
+        fontFamily: 'Playfair_me',
+        color: '#000',
         fontWeight: '700',
-        color: '#212121',
-        letterSpacing: 0.5,
     },
-    scrollContainer: {
-        paddingBottom: 100, // không gian cho floating button
+    placeholder: {
+        width: 20,
     },
-    section: {
-        padding: 16,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#212121',
-        marginBottom: 16,
-        letterSpacing: 0.3,
-    },
-    comboList: {
-        paddingRight: 16,
-    },
-    comboCard: {
-        width: 240,
-        marginRight: 16,
-        borderRadius: 16,
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 5,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.03)',
-    },
-    comboImage: {
-        width: '100%',
-        height: 120,
-        resizeMode: 'cover',
-    },
-    comboContent: {
-        padding: 12,
-    },
-    comboName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#212121',
-        marginBottom: 4,
-    },
-    comboDescription: {
-        fontSize: 14,
-        color: '#757575',
-    },
-    heartButton: {
-        position: 'absolute',
-        top: 8,
-        right: 8,
-        width: 32,
-        height: 32,
-        borderRadius: 16,
-        backgroundColor: 'rgba(255,255,255,0.8)',
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 2,
-    },
-    heartIcon: {
-        width: 18,
-        height: 18,
-        tintColor: '#F44336',
-    },
-    itemList: {
-        gap: 16,
+    listContent: {
+        paddingBottom: 20,
+        paddingTop: 10,
     },
     itemCard: {
         flexDirection: 'row',
-        borderRadius: 16,
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 5,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.03)',
-        marginBottom: 16,
+        padding: 10,
+        marginHorizontal: 10,
+        marginVertical: 5,
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        elevation: 3,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+        alignItems: 'center',
     },
     itemImage: {
-        width: 100,
-        height: 100,
-        resizeMode: 'cover',
+        width: 80,
+        height: 80,
+        borderRadius: 10,
     },
     itemContent: {
         flex: 1,
-        padding: 12,
+        marginLeft: 10,
+        justifyContent: 'center',
     },
     itemName: {
         fontSize: 16,
+        fontFamily: 'Playfair_me',
+        color: '#000',
         fontWeight: '600',
-        color: '#212121',
-        marginBottom: 4,
-    },
-    itemDescription: {
-        fontSize: 14,
-        color: '#757575',
-        marginBottom: 8,
     },
     itemPrice: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        color: '#F44336',
+        fontSize: 14,
+        fontFamily: 'Playfair_me',
+        color: 'red',
+        marginTop: 5,
+    },
+    deleteButton: {
+        backgroundColor: '#FF6F61',
+        paddingVertical: 5,
+        paddingHorizontal: 10,
+        borderRadius: 5,
+        marginLeft: 10,
+    },
+    deleteButtonText: {
+        color: '#FFFFFF',
+        fontSize: 14,
+        fontFamily: 'Playfair_me',
     },
     emptyContainer: {
-        alignItems: 'center',
+        flex: 1,
         justifyContent: 'center',
-        padding: 24,
-    },
-    emptyIcon: {
-        width: 80,
-        height: 80,
-        tintColor: '#9E9E9E',
-        marginBottom: 16,
+        alignItems: 'center',
+        padding: 20,
+        marginTop: 50,
     },
     emptyTitle: {
         fontSize: 18,
+        fontFamily: 'Playfair_me',
+        color: '#000',
         fontWeight: '600',
-        color: '#212121',
-        marginBottom: 8,
     },
     emptyMessage: {
         fontSize: 14,
-        color: '#757575',
+        fontFamily: 'Playfair_me',
+        color: '#666',
+        marginTop: 5,
         textAlign: 'center',
     },
-    floatingButton: {
-        position: 'absolute',
-        bottom: 24,
-        right: 24,
-        width: 56,
-        height: 56,
-        borderRadius: 28,
-        backgroundColor: '#ffb3c6',
+    errorContainer: {
+        flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 5,
+        padding: 20,
     },
-    floatingButtonText: {
-        fontSize: 32,
+    errorText: {
+        color: 'red',
+        fontSize: 16,
+        fontFamily: 'Playfair_me',
+        marginBottom: 20,
+    },
+    retryButton: {
+        backgroundColor: '#FF6F61',
+        paddingVertical: 10,
+        paddingHorizontal: 25,
+        borderRadius: 20,
+        elevation: 2,
+    },
+    retryButtonText: {
         color: '#FFFFFF',
-        fontWeight: '300',
+        fontSize: 16,
+        fontFamily: 'Playfair_me',
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    loadingText: {
+        marginTop: 10,
+        fontSize: 16,
+        fontFamily: 'Playfair_me',
+        color: '#000',
     },
 });
