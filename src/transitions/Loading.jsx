@@ -16,7 +16,7 @@ const TransitionLoading = ({ route, navigation }) => {
   return (
     <View style={styles.container}>
       <LottieView
-        source={require('../Assets/Animations/loading1.json')}
+        source={require('../Assets/Animations/blackloading.json')}
         autoPlay
         loop
         style={styles.animation}

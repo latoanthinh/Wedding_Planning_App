@@ -57,6 +57,8 @@ const AllPlan = ({ navigation }) => {
         return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     };
 
+    
+
     // Hàm xác định màu sắc dựa trên trạng thái
     const getStatusColor = (status) => {
         if (!status) return '#9E9E9E'; // Default gray
@@ -74,6 +76,8 @@ const AllPlan = ({ navigation }) => {
                 return '#9E9E9E'; // Gray
         }
     };
+
+
 
     // Hàm render nội dung dựa trên status
     const renderContent = useCallback(() => {
