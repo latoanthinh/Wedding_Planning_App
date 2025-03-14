@@ -87,7 +87,7 @@ const FlowersScreen = ({ navigation }) => {
   };
 
   const renderItem = ({ item }) => (
-    <Pressable onPress={() => handleItemPress(item)}>
+    <TouchableOpacity onPress={() => navigation.navigate('FoodDetail', { flowerId: item._id })}>
       <View style={styles.card}>
         <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
@@ -95,7 +95,7 @@ const FlowersScreen = ({ navigation }) => {
           <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
         </View>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 
   const renderCategoryItem = useCallback(
