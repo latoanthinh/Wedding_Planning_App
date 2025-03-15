@@ -18,6 +18,7 @@ import  FavoriteDeanAddReducer  from './FavoriteDeanAddSlice';
 import  ChitietCateringReducer  from './ChitietCateringSlice';
 import  ChitietGiftReducer  from './ChitietGiftSlice';
 import  ChitietDiaDiemReducer  from './ChitietDiaDiemSlice';
+import  ChitietDecorReducer  from './ChitietDecorSlice';
 
 
 
@@ -26,25 +27,26 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
-    chitietdiadiem :ChitietDiaDiemReducer,
-    chitietgift:ChitietGiftReducer,
-    chitietcatering :ChitietCateringReducer,
-    favoriteset:FavoriteDeanAddReducer,
-    cate_present:Cate_PresentReducer,
-    cate_catering:Cate_CateringReducer,
-    decoratesbyCate:DecoratesByCateReducer,
-    cate_decorates:Cate_decoratesReducer,
-    invitations:InvitationsReducer,
-    allplan:GetAllPlanReducer,
-    createplan:CreatePlanReducer,
+    chitietdecor: ChitietDecorReducer,
+    chitietdiadiem: ChitietDiaDiemReducer,
+    chitietgift: ChitietGiftReducer,
+    chitietcatering: ChitietCateringReducer,
+    favoriteset: FavoriteDeanAddReducer,
+    cate_present: Cate_PresentReducer,
+    cate_catering: Cate_CateringReducer,
+    decoratesbyCate: DecoratesByCateReducer,
+    cate_decorates: Cate_decoratesReducer,
+    invitations: InvitationsReducer,
+    allplan: GetAllPlanReducer,
+    createplan: CreatePlanReducer,
     halltheowedding: HallTheoWeddingHallsReducer,
-    chitietflowers:ChitietFlowersReducer,
+    chitietflowers: ChitietFlowersReducer,
     flowers: FlowersReducer,
-    chitiet : ChitietsanphamReducer,
+    chitiet: ChitietsanphamReducer,
     register: RegisterReducer,
-    login : LoginReducer,
-    clothes : ClothesReducer,
-    hall : HallReducer,
+    login: LoginReducer,
+    clothes: ClothesReducer,
+    hall: HallReducer,
     dummy: dummyReducer,
   },
 });

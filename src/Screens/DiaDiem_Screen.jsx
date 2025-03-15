@@ -64,19 +64,7 @@ const DiaDiem_Screen = ({ navigation }) => {
 
   const renderItem = ({ item }) => (
     <TouchableOpacity onPress={() => navigation.navigate('DecorDetail', { 
-      decorData: {
-        _id: item._id,
-        name: item.name,
-        Description: item.Description || "Không có mô tả",
-        price: item.price,
-        imageUrl: item.imageUrl,
-        Cate_decorateId: {
-          _id: selectedCategoryId,
-          name: Cate_decoratesData.find(cat => cat._id === selectedCategoryId)?.name || "Trang trí"
-        },
-        createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-      }
+      decorId: item._id
     })}>
       <View style={styles.itemContainer}>
         <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
