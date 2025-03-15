@@ -19,6 +19,7 @@ import  ChitietGiftReducer  from './ChitietGiftSlice';
 import  ChitietDiaDiemReducer  from './ChitietDiaDiemSlice';
 import  ChitietDecorReducer  from './ChitietDecorSlice';
 import  ChitietPlanReducer  from './ChitietPlanSlice';
+import  KhaoSatReducer  from './KhaoSatSlice';
 import  UserReducer  from './UserSlice';
 
 
@@ -30,6 +31,7 @@ export const store = configureStore({
   reducer: {
     chitietplan:ChitietPlanReducer,
     user: UserReducer,
+    khaosat:KhaoSatReducer,
     chitietdiadiem :ChitietDiaDiemReducer,
     chitietgift:ChitietGiftReducer,
     chitietdecor: ChitietDecorReducer,
