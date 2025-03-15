@@ -1,23 +1,24 @@
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { 
-  View, 
-  Text, 
-  TextInput, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
   StyleSheet,
   Image,
   Animated,
   Dimensions,
   Keyboard,
   SafeAreaView,
-  ScrollView
+  ScrollView,
 } from "react-native";
 import Sound from "react-native-sound";
 import Video from "react-native-video";
 import DatePicker from "react-native-date-picker";
 import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
-import LottieView from "lottie-react-native";
+import { useDispatch, useSelector } from "react-redux";
+import { fetchKhaoSatPlans, resetKhaoSat } from "../redux/KhaoSatSlice"; // Đường dẫn tới KhaoSatSlice
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -50,7 +51,7 @@ const surveyData = [
   },
 ];
 
-const Thongtincoban = (props) => {  
+const Thongtincoban = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answers, setAnswers] = useState({
     eventDate: new Date(),
@@ -62,9 +63,11 @@ const Thongtincoban = (props) => {
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [videoPlayed, setVideoPlayed] = useState(false);
   const [ttsPlayed, setTtsPlayed] = useState(false);
-  
+
   const navigation = useNavigation();
   const { user } = useContext(AppContext);
+  const dispatch = useDispatch();
+  const { status, error } = useSelector((state) => state.khaosat); // Lấy trạng thái từ Redux
 
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -79,6 +82,12 @@ const Thongtincoban = (props) => {
     setVideoPlayed(false);
     playTTS(surveyData[currentIndex].ttsFile);
   }, [currentIndex]);
+
+  useEffect(() => {
+    return () => {
+      dispatch(resetKhaoSat()); // Reset Redux state khi rời màn hình
+    };
+  }, [dispatch]);
 
   const playTTS = (ttsFile) => {
     const sound = new Sound(ttsFile, (error) => {
@@ -105,7 +114,7 @@ const Thongtincoban = (props) => {
         budget: Number(prev.budget.replace(/\./g, "")),
       }));
     }
-    
+
     Animated.timing(slideAnim, {
       toValue: -screenWidth,
       duration: 300,
@@ -114,11 +123,25 @@ const Thongtincoban = (props) => {
       if (currentIndex < surveyData.length - 1) {
         setCurrentIndex(currentIndex + 1);
       } else {
-        navigation.navigate("TransitionLoading", { 
-          nextScreen: "GenPlan",
-          params:
-           { ...answers,
-             eventDate: answers.eventDate.toISOString() }
+        // Gửi dữ liệu khảo sát qua Redux khi hoàn thành
+        dispatch(
+          fetchKhaoSatPlans({
+            planprice: answers.budget.toString(), // Chuyển thành string để gửi API
+            plansoluongkhach: answers.guestCount,
+          })
+        ).then((result) => {
+          if (result.meta.requestStatus === "fulfilled") {
+            navigation.navigate("TransitionLoading", {
+              nextScreen: "GenPlan",
+              params: {
+                ...answers,
+                eventDate: answers.eventDate.toISOString(),
+              },
+            });
+          } else {
+            console.error("Lỗi khi lấy kế hoạch:", result.payload);
+            alert("Đã xảy ra lỗi khi lấy gợi ý kế hoạch. Vui lòng thử lại.");
+          }
         });
       }
       slideAnim.setValue(screenWidth);
@@ -145,16 +168,17 @@ const Thongtincoban = (props) => {
   const isNextDisabled =
     (isTextRequired && requiredValue.toString().trim() === "") ||
     (surveyData[currentIndex].question.includes("Ngân sách") &&
-      Number(answers.budget.toString().replace(/\./g, "")) < 50000000);
+      Number(answers.budget.toString().replace(/\./g, "")) < 50000000) ||
+    status === "loading"; // Vô hiệu hóa nút khi đang gọi API
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView 
+      <ScrollView
         contentContainerStyle={styles.scrollContainer}
         keyboardShouldPersistTaps="handled"
       >
         <Text style={styles.header}>Thông tin cơ bản</Text>
-        
+
         <View style={styles.videoContainer}>
           <Video
             source={surveyData[currentIndex].videoFile}
@@ -178,16 +202,9 @@ const Thongtincoban = (props) => {
           ))}
         </View>
 
-        <Animated.View 
-          style={[
-            styles.card, 
-            { transform: [{ translateX: slideAnim }] }
-          ]}
-        >
-          <Text style={styles.question}>
-            {surveyData[currentIndex].question}
-          </Text>
-          
+        <Animated.View style={[styles.card, { transform: [{ translateX: slideAnim }] }]}>
+          <Text style={styles.question}>{surveyData[currentIndex].question}</Text>
+
           {surveyData[currentIndex].type === "text" ? (
             <TextInput
               style={styles.input}
@@ -233,19 +250,20 @@ const Thongtincoban = (props) => {
               </Text>
             </TouchableOpacity>
           ) : null}
-          
-          <TouchableOpacity
-            style={[
-              styles.nextButton, 
-              isNextDisabled && styles.nextButtonDisabled
-            ]}
-            onPress={handleNext}
-            disabled={isNextDisabled}
-          >
-            <Text style={styles.buttonText}>
-              {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
-            </Text>
-          </TouchableOpacity>
+
+          {status === "loading" && currentIndex === surveyData.length - 1 ? (
+            <Text style={styles.loadingText}>Đang tải gợi ý...</Text>
+          ) : (
+            <TouchableOpacity
+              style={[styles.nextButton, isNextDisabled && styles.nextButtonDisabled]}
+              onPress={handleNext}
+              disabled={isNextDisabled}
+            >
+              <Text style={styles.buttonText}>
+                {currentIndex < surveyData.length - 1 ? "Tiếp theo" : "Hoàn thành"}
+              </Text>
+            </TouchableOpacity>
+          )}
         </Animated.View>
 
         <DatePicker
@@ -264,7 +282,15 @@ const Thongtincoban = (props) => {
   );
 };
 
+export default Thongtincoban;
+
 const styles = StyleSheet.create({
+  loadingText: {
+    textAlign: "center",
+    fontSize: 18,
+    color: "#3E2723",
+    marginTop: 20,
+  },
   container: {
     flex: 1,
     backgroundColor: "#FAF5F0", 
@@ -378,5 +404,3 @@ const styles = StyleSheet.create({
     fontFamily:"Playfair_me",
   },
 });
-
-export default Thongtincoban;
