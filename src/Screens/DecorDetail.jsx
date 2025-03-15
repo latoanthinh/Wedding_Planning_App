@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -9,13 +9,16 @@ import {
   ScrollView, 
   StatusBar,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  ToastAndroid
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChitietDecor, resetChitietDecor } from '../redux/ChitietDecorSlice';
+import { addFavoriteItem } from '../redux/FavoriteDeanAddSlice';
+import { AppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
 
@@ -24,6 +27,7 @@ const DecorDetail = (props) => {
   const { decorId } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietDecorData, ChitietDecorStatus, error } = useSelector(state => state.chitietdecor);
+  const { user } = useContext(AppContext);
 
   // Animation references
   const nameAnim = useRef(new Animated.Value(0)).current;
@@ -33,6 +37,7 @@ const DecorDetail = (props) => {
 
   // State for favorite
   const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
 
   useEffect(() => {
     if (decorId) {
@@ -62,9 +67,49 @@ const DecorDetail = (props) => {
   // For debugging - log the data to see what's available
   console.log("Decor Data received:", JSON.stringify(ChitietDecorData, null, 2));
 
-  // Toggle favorite
-  const toggleFavorite = () => {
-    setIsFavorite(!isFavorite);
+  // Handle adding to favorites
+  const handleAddToFavorites = () => {
+    if (!decorId) {
+      ToastAndroid.show('Không thể thêm vào yêu thích, thiếu ID sản phẩm', ToastAndroid.SHORT);
+      return;
+    }
+
+    // Log user data for debugging
+    console.log('User from AppContext:', user);
+    
+    if (!user || !user._id) {
+      ToastAndroid.show('Vui lòng đăng nhập để thêm vào yêu thích', ToastAndroid.SHORT);
+      return;
+    }
+
+    setIsFavoriteLoading(true);
+    
+    // Log the parameters being sent to the API
+    console.log('Adding to favorites with params:', {
+      userId: user._id,
+      type: 'Decorate',
+      itemId: decorId
+    });
+    
+    dispatch(addFavoriteItem({
+      userId: user._id,
+      type: 'Decorate', // Type is 'Decorate' for decorations
+      itemId: decorId
+    }))
+      .unwrap()
+      .then((result) => {
+        console.log('Favorite added successfully:', result);
+        setIsFavorite(true);
+        ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+      })
+      .catch((err) => {
+        console.error('Error adding to favorites:', err);
+        console.error('Error details:', JSON.stringify(err, null, 2));
+        ToastAndroid.show('Không thể thêm vào yêu thích: ' + (err.message || 'Lỗi không xác định'), ToastAndroid.SHORT);
+      })
+      .finally(() => {
+        setIsFavoriteLoading(false);
+      });
   };
 
   if (!decorId) {
@@ -132,8 +177,20 @@ const DecorDetail = (props) => {
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <Icon name="chevron-left" size={28} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.favoriteButton} onPress={toggleFavorite}>
-              <Icon name={isFavorite ? "heart" : "heart-outline"} size={24} color={isFavorite ? "#FF6B6B" : "#fff"} />
+            <TouchableOpacity 
+              style={styles.favoriteButton} 
+              onPress={handleAddToFavorites}
+              disabled={isFavoriteLoading}
+            >
+              {isFavoriteLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Icon 
+                  name={isFavorite ? "heart" : "heart-outline"} 
+                  size={24} 
+                  color={isFavorite ? "#FF6B6B" : "#fff"} 
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>

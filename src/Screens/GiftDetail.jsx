@@ -1,20 +1,40 @@
-import React, { useRef, useEffect } from 'react';
-import { StyleSheet, View, Text, Animated, Image, TouchableOpacity, ScrollView, StatusBar, ActivityIndicator } from 'react-native';
+import React, { useRef, useEffect, useState, useContext } from 'react';
+import { 
+  StyleSheet, 
+  View, 
+  Text, 
+  Animated, 
+  Image, 
+  TouchableOpacity, 
+  ScrollView, 
+  StatusBar,
+  Dimensions,
+  ActivityIndicator,
+  ToastAndroid 
+} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChitietGift, resetChitietGift } from '../redux/ChitietGiftSlice';
+import { addFavoriteItem } from '../redux/FavoriteDeanAddSlice';
+import { AppContext } from '../AppContext';
+
+const { width } = Dimensions.get('window');
 
 const GiftDetail = (props) => {
   const { navigation, route } = props;
   const { GitflId } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietGiftData, ChitietGiftStatus, error } = useSelector(state => state.chitietgift);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const { user } = useContext(AppContext);
 
   // Animation references
   const nameAnim = useRef(new Animated.Value(0)).current;
   const descAnim = useRef(new Animated.Value(0)).current;
   const priceAnim = useRef(new Animated.Value(0)).current;
+  const imageAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (GitflId) {
@@ -32,12 +52,58 @@ const GiftDetail = (props) => {
   useEffect(() => {
     if (ChitietGiftStatus === 'succeeded' && ChitietGiftData) {
       Animated.stagger(300, [
+        Animated.timing(imageAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
         Animated.timing(nameAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         Animated.timing(descAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
         Animated.timing(priceAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
       ]).start();
     }
   }, [ChitietGiftStatus, ChitietGiftData]);
+
+  // Function to add gift to favorites
+  const handleAddToFavorites = () => {
+    if (!GitflId) {
+      ToastAndroid.show('Không thể thêm vào yêu thích, thiếu ID sản phẩm', ToastAndroid.SHORT);
+      return;
+    }
+
+    // Log user data for debugging
+    console.log('User from AppContext:', user);
+    
+    if (!user || !user._id) {
+      ToastAndroid.show('Vui lòng đăng nhập để thêm vào yêu thích', ToastAndroid.SHORT);
+      return;
+    }
+
+    setIsFavoriteLoading(true);
+    
+    // Log the parameters being sent to the API
+    console.log('Adding to favorites with params:', {
+      userId: user._id,
+      type: 'Present',
+      itemId: GitflId
+    });
+    
+    dispatch(addFavoriteItem({
+      userId: user._id,
+      type: 'Present', // Type is 'Present' for gifts
+      itemId: GitflId
+    }))
+      .unwrap()
+      .then((result) => {
+        console.log('Favorite added successfully:', result);
+        setIsFavorite(true);
+        ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+      })
+      .catch((err) => {
+        console.error('Error adding to favorites:', err);
+        console.error('Error details:', JSON.stringify(err, null, 2));
+        ToastAndroid.show('Không thể thêm vào yêu thích: ' + (err.message || 'Lỗi không xác định'), ToastAndroid.SHORT);
+      })
+      .finally(() => {
+        setIsFavoriteLoading(false);
+      });
+  };
 
   // For debugging - log the data to see what's available
   console.log("Gift Data received:", JSON.stringify(ChitietGiftData, null, 2));
@@ -53,7 +119,7 @@ const GiftDetail = (props) => {
   if (ChitietGiftStatus === 'loading') {
     return (
       <SafeAreaView style={styles.container}>
-        <ActivityIndicator size="large" color="#0000ff" />
+        <ActivityIndicator size="large" color="#A67C52" />
       </SafeAreaView>
     );
   }
@@ -82,24 +148,52 @@ const GiftDetail = (props) => {
     return (
       <SafeAreaView style={styles.container}>
         <StatusBar barStyle="light-content" />
+        
+        {/* Image Container with Animation */}
         <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: ChitietGiftData?.imageUrl || 'https://via.placeholder.com/300' }} 
-            style={styles.giftImage} 
-            resizeMode="cover" 
-          />
+          <Animated.View style={{ 
+            opacity: imageAnim,
+            transform: [{ scale: imageAnim.interpolate({ 
+              inputRange: [0, 1], 
+              outputRange: [0.9, 1] 
+            }) }]
+          }}>
+            <Image 
+              source={{ uri: ChitietGiftData?.imageUrl || 'https://via.placeholder.com/300' }} 
+              style={styles.giftImage} 
+              resizeMode="cover" 
+            />
+            {/* Overlay gradient effect */}
+            <View style={styles.imageOverlay} />
+          </Animated.View>
+          
+          {/* Header Buttons */}
           <View style={styles.headerButtons}>
             <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
               <Icon name="chevron-left" size={28} color="#fff" />
             </TouchableOpacity>
-            <TouchableOpacity style={styles.favoriteButton}>
-              <Icon name="heart-outline" size={24} color="#fff" />
+            <TouchableOpacity 
+              style={styles.favoriteButton} 
+              onPress={handleAddToFavorites}
+              disabled={isFavoriteLoading}
+            >
+              {isFavoriteLoading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Icon 
+                  name={isFavorite ? "heart" : "heart-outline"} 
+                  size={24} 
+                  color={isFavorite ? "#FF6B6B" : "#fff"} 
+                />
+              )}
             </TouchableOpacity>
           </View>
         </View>
+
+        {/* Content Card */}
         <View style={styles.contentCard}>
           <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-            {/* Tên sản phẩm */}
+            {/* Product Name */}
             <View style={styles.titleContainer}>
               <Animated.Text 
                 style={[
@@ -116,12 +210,12 @@ const GiftDetail = (props) => {
                 {ChitietGiftData?.name || 'Không có tên'}
               </Animated.Text>
               <View style={styles.ratingTag}>
-                <Icon name="star" size={16} color="#DCA34B" />
+                <Icon name="star" size={16} color="#A67C52" />
                 <Text style={styles.ratingText}>4.8</Text>
               </View>
             </View>
 
-            {/* Tags */}
+            {/* Category Tags */}
             <View style={styles.tagsContainer}>
               <View style={styles.tagItem}>
                 <Text style={styles.tagText}>{ChitietGiftData?.Cate_presentId?.name || 'Quà tặng'}</Text>
@@ -134,23 +228,46 @@ const GiftDetail = (props) => {
               </View>
             </View>
             
-            {/* Mô tả */}
-            <Animated.Text 
-              style={[
-                styles.description, 
-                { 
-                  opacity: descAnim,
-                  transform: [{ translateY: descAnim.interpolate({ 
-                    inputRange: [0, 1], 
-                    outputRange: [20, 0] 
-                  }) }] 
-                }
-              ]}
+            {/* Description */}
+            <Animated.View 
+              style={{ 
+                opacity: descAnim,
+                transform: [{ translateY: descAnim.interpolate({ 
+                  inputRange: [0, 1], 
+                  outputRange: [20, 0] 
+                }) }] 
+              }}
             >
-              {ChitietGiftData?.Description || 'Không có mô tả'}
-            </Animated.Text>
-            
-            {/* Giá */}
+              <Text style={styles.sectionTitle}>Mô tả</Text>
+              <Text style={styles.descriptionText}>{ChitietGiftData?.Description || 'Không có mô tả'}</Text>
+            </Animated.View>
+
+            <View style={styles.divider} />
+
+            {/* Features */}
+            <View style={styles.featuresSection}>
+              <Text style={styles.sectionTitle}>Đặc điểm</Text>
+              <View style={styles.featureItem}>
+                <Icon name="gift" size={20} color="#A67C52" />
+                <Text style={styles.featureText}>Quà tặng cao cấp</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Icon name="palette" size={20} color="#A67C52" />
+                <Text style={styles.featureText}>Thiết kế sang trọng</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Icon name="check-circle" size={20} color="#A67C52" />
+                <Text style={styles.featureText}>Bao gồm dịch vụ gói quà</Text>
+              </View>
+              <View style={styles.featureItem}>
+                <Icon name="clock-outline" size={20} color="#A67C52" />
+                <Text style={styles.featureText}>Thời gian chuẩn bị: 1-2 ngày</Text>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Price */}
             <Animated.View 
               style={[
                 styles.priceContainer, 
@@ -163,48 +280,46 @@ const GiftDetail = (props) => {
                 }
               ]}
             >
-              <Text style={styles.priceText}>{formattedPrice}</Text>
+              <Text style={styles.priceLabel}>Giá:</Text>
+              <Text style={styles.priceValue}>{formattedPrice}</Text>
             </Animated.View>
-            
-            <View style={styles.divider} />
-            
-            <Text style={styles.sectionTitle}>Thông tin sản phẩm</Text>
-            <View style={styles.infoContainer}>
-              <View style={styles.infoItem}>
-                <Icon name="tag-outline" size={20} color="#A67C52" />
-                <Text style={styles.infoText}>Loại: {ChitietGiftData?.Cate_presentId?.name || 'Đồ lưu niệm'}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Icon name="package-variant-closed" size={20} color="#A67C52" />
-                <Text style={styles.infoText}>Bộ sản phẩm: {ChitietGiftData?.name?.includes('set') ? ChitietGiftData.name : 'Sản phẩm đơn lẻ'}</Text>
-              </View>
-              <View style={styles.infoItem}>
-                <Icon name="calendar-range" size={20} color="#A67C52" />
-                <Text style={styles.infoText}>Ngày cập nhật: {new Date(ChitietGiftData?.updatedAt).toLocaleDateString('vi-VN')}</Text>
-              </View>
-            </View>
-            
-            <View style={styles.divider} />
-            
-            <Text style={styles.sectionTitle}>Mô tả chi tiết</Text>
-            <View style={styles.detailsContainer}>
-              <Text style={styles.detailsText}>
-                {ChitietGiftData?.Description || 'Không có mô tả chi tiết cho sản phẩm này.'}
-              </Text>
-              <Text style={styles.detailsText}>
-                Sản phẩm được làm từ chất liệu cao cấp, thiết kế tinh tế và sang trọng, phù hợp với không khí lễ cưới.
-              </Text>
-            </View>
-            
+
+            {/* Note */}
             <View style={styles.noteContainer}>
-              <Icon name="information-outline" size={20} color="#A67C52" />
+              <Icon name="information-outline" size={22} color="#A67C52" />
               <Text style={styles.noteText}>Có thể tùy chỉnh theo yêu cầu của khách hàng</Text>
             </View>
+
+            {/* Related Products Placeholder */}
+            <View style={styles.relatedSection}>
+              <Text style={styles.sectionTitle}>Sản phẩm liên quan</Text>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll}>
+                {[1, 2, 3].map((item) => (
+                  <TouchableOpacity key={item} style={styles.relatedItem}>
+                    <Image 
+                      source={{ uri: 'https://via.placeholder.com/150x100' }} 
+                      style={styles.relatedImage} 
+                    />
+                    <View style={styles.relatedImageOverlay} />
+                    <Text style={styles.relatedName}>Quà tặng {item}</Text>
+                    <Text style={styles.relatedPrice}>{(ChitietGiftData?.price * 0.8).toLocaleString('vi-VN')} đ</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           </ScrollView>
-          
-          <TouchableOpacity style={styles.addButton}>
-            <Text style={styles.addButtonText}>Thêm vào giỏ hàng</Text>
-          </TouchableOpacity>
+
+          {/* Bottom Action Buttons */}
+          <View style={styles.actionButtons}>
+            <TouchableOpacity style={styles.contactButton}>
+              <Icon name="phone" size={20} color="#A67C52" />
+              <Text style={styles.contactButtonText}>Liên hệ</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.addToCartButton}>
+              <Icon name="cart-plus" size={20} color="#FFFFFF" />
+              <Text style={styles.addToCartText}>Thêm vào giỏ hàng</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </SafeAreaView>
     );
@@ -217,27 +332,35 @@ const GiftDetail = (props) => {
   );
 };
 
-export default GiftDetail;
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FDF8F3',
+    backgroundColor: '#FFFAF5',
   },
   imageContainer: {
-    height: 260,
+    height: 300,
     width: '100%',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
+    position: 'relative',
   },
   giftImage: {
     width: '100%',
     height: '100%',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  imageOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.2)',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
   },
   headerButtons: {
     position: 'absolute',
-    top: 20,
+    top: 10,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -246,28 +369,22 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   backButton: {
-    height: 45,
-    width: 45,
-    borderRadius: 22.5,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.3)',
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    alignItems: 'center',
+    backdropFilter: 'blur(10px)',
   },
   favoriteButton: {
-    height: 45,
-    width: 45,
-    borderRadius: 22.5,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.3)',
-    alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
+    alignItems: 'center',
+    backdropFilter: 'blur(10px)',
   },
   contentCard: {
     flex: 1,
@@ -275,70 +392,54 @@ const styles = StyleSheet.create({
     marginTop: -30,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    padding: 25,
-    paddingBottom: 0,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: -2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
+    paddingHorizontal: 20,
+    paddingTop: 25,
   },
   titleContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-    marginTop: 10,
+    alignItems: 'center',
+    marginBottom: 15,
   },
   giftName: {
-    fontSize: 26,
-    fontWeight: '700',
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#1A1A1A',
-    width: '70%',
+    flex: 1,
     fontFamily: 'serif',
   },
   ratingTag: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFF6E5',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#F0D9B6',
+    backgroundColor: '#FFF9E9',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
   },
   ratingText: {
-    marginLeft: 6,
-    fontWeight: '600',
+    marginLeft: 5,
     color: '#A67C52',
-  },
-  description: {
-    fontSize: 16,
-    lineHeight: 24,
-    color: '#555555',
-    marginTop: 10,
-    marginBottom: 18,
+    fontWeight: 'bold',
     fontFamily: 'serif',
   },
-  priceContainer: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#220000',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    shadowColor: '#B78D51',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.5,
-    shadowRadius: 3,
-    elevation: 3,
-    marginBottom: 18,
+  tagsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
   },
-  priceText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#FFFFFF',
+  tagItem: {
+    backgroundColor: '#F7E9D7',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 15,
+    marginRight: 10,
+    marginBottom: 10,
+  },
+  tagText: {
+    color: '#A67C52',
+    fontSize: 12,
+    fontWeight: '500',
     fontFamily: 'serif',
-    letterSpacing: 1,
   },
   divider: {
     height: 1,
@@ -352,47 +453,53 @@ const styles = StyleSheet.create({
     marginBottom: 14,
     fontFamily: 'serif',
   },
-  tagsContainer: {
-    flexDirection: 'row',
-    marginBottom: 15,
-    marginTop: 5,
-  },
-  tagItem: {
-    backgroundColor: '#F7E9D7',
-    borderRadius: 15,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
-    marginRight: 10,
-  },
-  tagText: {
-    fontSize: 13,
-    color: '#A67C52',
-    fontFamily: 'serif',
-    fontWeight: '500',
-  },
-  infoContainer: {
-    marginBottom: 20,
-  },
-  infoItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  infoText: {
+  descriptionText: {
     fontSize: 15,
-    color: '#444444',
-    marginLeft: 10,
-    fontFamily: 'serif',
-  },
-  detailsContainer: {
-    marginBottom: 20,
-  },
-  detailsText: {
-    fontSize: 15,
-    lineHeight: 22,
     color: '#555555',
+    lineHeight: 22,
     marginBottom: 10,
     fontFamily: 'serif',
+  },
+  featuresSection: {
+    marginBottom: 20,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  featureText: {
+    marginLeft: 10,
+    fontSize: 14,
+    color: '#444444',
+    fontFamily: 'serif',
+  },
+  priceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#220000',
+    padding: 15,
+    borderRadius: 15,
+    marginVertical: 20,
+    shadowColor: '#B78D51',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  priceLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    marginRight: 10,
+    fontFamily: 'serif',
+  },
+  priceValue: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#FFFFFF',
+    fontFamily: 'serif',
+    letterSpacing: 1,
   },
   noteContainer: {
     flexDirection: 'row',
@@ -408,26 +515,92 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontFamily: 'serif',
   },
-  addButton: {
+  relatedSection: {
+    marginBottom: 80,
+  },
+  relatedScroll: {
+    marginTop: 10,
+  },
+  relatedItem: {
+    width: 150,
+    marginRight: 15,
+    position: 'relative',
+  },
+  relatedImage: {
+    width: 150,
+    height: 100,
+    borderRadius: 10,
+  },
+  relatedImageOverlay: {
     position: 'absolute',
-    bottom: 25,
-    left: 25,
-    right: 25,
-    height: 60,
-    backgroundColor: '#220000',
-    borderRadius: 30,
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 100,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+    borderRadius: 10,
+  },
+  relatedName: {
+    fontSize: 14,
+    fontWeight: '500',
+    marginTop: 5,
+    color: '#333333',
+    fontFamily: 'serif',
+  },
+  relatedPrice: {
+    fontSize: 12,
+    color: '#A67C52',
+    fontWeight: 'bold',
+    fontFamily: 'serif',
+  },
+  actionButtons: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 20,
+    paddingVertical: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#F1E4D8',
+  },
+  contactButton: {
+    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: 12,
+    borderWidth: 1,
+    borderColor: '#A67C52',
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  contactButtonText: {
+    marginLeft: 8,
+    color: '#A67C52',
+    fontWeight: '600',
+    fontFamily: 'serif',
+  },
+  addToCartButton: {
+    flex: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#220000',
+    paddingVertical: 12,
+    borderRadius: 10,
     shadowColor: '#B78D51',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 6,
   },
-  addButtonText: {
-    fontSize: 18,
-    fontWeight: '700',
+  addToCartText: {
+    marginLeft: 8,
     color: '#FFFFFF',
+    fontWeight: '600',
+    fontFamily: 'serif',
   },
   errorText: {
     fontSize: 16,
@@ -437,3 +610,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
+
+export default GiftDetail;
