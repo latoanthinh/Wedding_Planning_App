@@ -108,10 +108,19 @@ const DetailPlan = ({ navigation, route }) => {
     );
   }
 
-  // Điều chỉnh để phù hợp với dữ liệu thực tế
   const planData = ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData || {};
   console.log('ChitietPlanData:', ChitietPlanData);
   console.log('planData:', planData);
+
+  // Hàm xử lý khi nhấn nút "Chỉnh sửa Plan"
+  const handleEditPlan = () => {
+    navigation.navigate('EditPlan', { planId: DetailPlanId, planData });
+  };
+
+  // Hàm xử lý khi nhấn nút "Đặt cọc"
+  const handleDeposit = () => {
+    navigation.navigate('DepositPlan', { planId: DetailPlanId, totalPrice: planData.totalPrice });
+  };
 
   return (
     <SafeAreaView style={styles.container}>
@@ -125,10 +134,10 @@ const DetailPlan = ({ navigation, route }) => {
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Chi tiết kế hoạch</Text>
             <TouchableOpacity
-                      onPress={() => navigation.navigate("TabNavigation")}
-                      style={styles.backButton}
-                    >
-                      <Image source={require("../Assets/Images/home48.png")} style={styles.homeIcon} />
+              onPress={() => navigation.navigate("TabNavigation")}
+              style={styles.backButton}
+            >
+              <Image source={require("../Assets/Images/home48.png")} style={styles.homeIcon} />
             </TouchableOpacity>
           </View>
 
@@ -177,6 +186,18 @@ const DetailPlan = ({ navigation, route }) => {
               <Text style={styles.planDetail}>
                 Ngân sách: {(planData.planprice || 0).toLocaleString('vi-VN')} VNĐ
               </Text>
+            </View>
+
+            {/* Nút Chỉnh sửa Plan và Đặt cọc */}
+            <View style={styles.buttonContainer}>
+              <TouchableOpacity style={styles.editButton} onPress={handleEditPlan}>
+                <Icon name="pencil" size={20} color="#FFF" style={styles.buttonIcon} />
+                <Text style={styles.buttonText}>Chỉnh sửa Plan</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.depositButton} onPress={handleDeposit}>
+                <Icon name="cash-plus" size={20} color="#FFF" style={styles.buttonIcon} />
+                <Text style={styles.buttonText}>Đặt cọc</Text>
+              </TouchableOpacity>
             </View>
           </View>
 
@@ -246,7 +267,7 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent:"space-around",
+    justifyContent: 'space-around',
     alignItems: 'center',
     backgroundColor: '#FF6F61',
     paddingVertical: 15,
@@ -375,6 +396,37 @@ const styles = StyleSheet.create({
     color: '#888',
     fontStyle: 'italic',
     textAlign: 'center',
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 20,
+  },
+  editButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFB300', // Màu vàng cho nút chỉnh sửa
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    elevation: 3,
+  },
+  depositButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#4CAF50', // Màu xanh lá cho nút đặt cọc
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    elevation: 3,
+  },
+  buttonIcon: {
+    marginRight: 8,
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
 });
 

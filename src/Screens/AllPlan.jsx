@@ -17,7 +17,7 @@ const AllPlan = ({ navigation }) => {
     // Component hiển thị item kế hoạch với thiết kế được cải tiến
     const PlanCard = useCallback(({ item }) => (
         <TouchableOpacity
-            onPress={() => navigation.navigate('ComboDetail', { planId: item._id })}
+            onPress={()=> navigation.navigate("DetailPlan" , {DetailPlanId : item._id})}
             style={styles.cardContainer}
         >
             <View style={styles.card}>
