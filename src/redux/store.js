@@ -18,7 +18,7 @@ import  ChitietCateringReducer  from './ChitietCateringSlice';
 import  ChitietGiftReducer  from './ChitietGiftSlice';
 import  ChitietDiaDiemReducer  from './ChitietDiaDiemSlice';
 import  ChitietDecorReducer  from './ChitietDecorSlice';
-
+import  UserReducer  from './UserSlice';
 
 
 const dummyReducer = (state = {}) => state;
@@ -26,6 +26,7 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    user: UserReducer,
     chitietdiadiem :ChitietDiaDiemReducer,
     chitietgift:ChitietGiftReducer,
     chitietdecor: ChitietDecorReducer,
