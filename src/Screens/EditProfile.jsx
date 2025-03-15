@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, PermissionsAndroid, Linking } from 'react-native';
 import { AppContext } from '../AppContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUser, resetUpdateStatus, checkApiStatus } from '../redux/UserSlice';
+import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
 
 const EditProfile = (props) => {
   const { navigation } = props;
@@ -19,15 +20,97 @@ const EditProfile = (props) => {
   const [email, setEmail] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [oldPassword, setOldPassword] = useState('');
+  const [avatar, setAvatar] = useState(null);
   const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [secureTextEntry, setSecureTextEntry] = useState(true);
   const [oldPasswordSecureEntry, setOldPasswordSecureEntry] = useState(true);
+  const [hasImagePermission, setHasImagePermission] = useState(false);
+  const [hasCameraPermission, setHasCameraPermission] = useState(false);
 
   // Kiểm tra trạng thái API khi component mount
   useEffect(() => {
     dispatch(checkApiStatus());
   }, [dispatch]);
+
+  // Yêu cầu quyền truy cập camera
+  const requestCameraPermission = async () => {
+    try {
+      console.log('Requesting camera permission...');
+      const granted = await PermissionsAndroid.request(
+        PermissionsAndroid.PERMISSIONS.CAMERA,
+        {
+          title: 'Quyền truy cập Camera',
+          message: 'Ứng dụng cần quyền truy cập camera để chụp ảnh đại diện mới.',
+          buttonPositive: 'Đồng ý',
+          buttonNegative: 'Từ chối',
+        }
+      );
+      
+      const hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
+      console.log('Camera permission result:', granted, 'Granted:', hasPermission);
+      setHasCameraPermission(hasPermission);
+      return hasPermission;
+    } catch (err) {
+      console.error('Error requesting camera permission:', err);
+      return false;
+    }
+  };
+
+  // Yêu cầu quyền truy cập bộ nhớ
+  const requestStoragePermission = async () => {
+    try {
+      console.log('Requesting storage permission...');
+      const androidVersion = parseInt(Platform.Version, 10);
+      console.log('Android version:', androidVersion);
+      
+      // Quyền khác nhau dựa trên phiên bản Android
+      let permission;
+      if (androidVersion >= 33) {
+        permission = PermissionsAndroid.PERMISSIONS.READ_MEDIA_IMAGES;
+      } else {
+        permission = PermissionsAndroid.PERMISSIONS.READ_EXTERNAL_STORAGE;
+      }
+      
+      console.log('Requesting permission:', permission);
+      const granted = await PermissionsAndroid.request(
+        permission,
+        {
+          title: 'Quyền truy cập Thư viện ảnh',
+          message: 'Ứng dụng cần quyền truy cập thư viện ảnh để chọn ảnh đại diện.',
+          buttonPositive: 'Đồng ý',
+          buttonNegative: 'Từ chối',
+        }
+      );
+      
+      const hasPermission = granted === PermissionsAndroid.RESULTS.GRANTED;
+      console.log('Storage permission result:', granted, 'Granted:', hasPermission);
+      setHasImagePermission(hasPermission);
+      return hasPermission;
+    } catch (err) {
+      console.error('Error requesting storage permission:', err);
+      return false;
+    }
+  };
+
+  // Yêu cầu quyền ngay khi component mount
+  useEffect(() => {
+    const checkPermissions = async () => {
+      try {
+        // Yêu cầu quyền camera trước
+        const cameraPermission = await requestCameraPermission();
+        console.log('Camera permission check result:', cameraPermission);
+        
+        // Sau đó yêu cầu quyền bộ nhớ
+        const storagePermission = await requestStoragePermission();
+        console.log('Storage permission check result:', storagePermission);
+      } catch (error) {
+        console.error('Error checking permissions:', error);
+      }
+    };
+    
+    checkPermissions();
+  }, []);
 
   // Load user data when component mounts
   useEffect(() => {
@@ -35,6 +118,7 @@ const EditProfile = (props) => {
       console.log('Loading user data:', JSON.stringify(user));
       setName(user.name || '');
       setEmail(user.email || '');
+      setAvatar(user.avatar || null);
       
       // Debug info - chỉ log ra console, không hiển thị trên UI
       console.log(`Debug Info - User ID: ${user._id || 'undefined'}, Email: ${user.email || 'undefined'}, API Status: ${apiStatus}`);
@@ -73,6 +157,171 @@ const EditProfile = (props) => {
       );
     }
   }, [updateStatus, updateError, serverResponse, dispatch, navigation]);
+
+  // Mở cài đặt ứng dụng
+  const openAppSettings = () => {
+    Alert.alert(
+      'Cần cấp quyền',
+      'Để sử dụng tính năng này, bạn cần cấp quyền truy cập Bộ nhớ và Camera trong phần cài đặt ứng dụng.\n\nTrên Android 12, quyền truy cập bộ nhớ có thể được gọi là "Lưu trữ" hoặc "Tệp và phương tiện".',
+      [
+        { text: 'Hủy', style: 'cancel' },
+        { 
+          text: 'Mở cài đặt', 
+          onPress: () => {
+            if (Platform.OS === 'ios') {
+              Linking.openURL('app-settings:');
+            } else {
+              Linking.openSettings();
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  // Function to pick image from gallery
+  const pickImage = async () => {
+    console.log('Pick image called, checking permissions...');
+    
+    // Kiểm tra quyền camera
+    if (!hasCameraPermission) {
+      const cameraGranted = await requestCameraPermission();
+      if (!cameraGranted) {
+        console.log('Camera permission denied');
+        openAppSettings();
+        return;
+      }
+    }
+    
+    // Kiểm tra quyền bộ nhớ
+    if (!hasImagePermission) {
+      const storageGranted = await requestStoragePermission();
+      if (!storageGranted) {
+        console.log('Storage permission denied');
+        openAppSettings();
+        return;
+      }
+    }
+    
+    console.log('Permissions OK, showing image source options');
+    
+    // Hiển thị tùy chọn chọn ảnh
+    Alert.alert(
+      'Chọn ảnh đại diện',
+      'Bạn muốn chọn ảnh từ đâu?',
+      [
+        {
+          text: 'Hủy',
+          style: 'cancel'
+        },
+        {
+          text: 'Thư viện ảnh',
+          onPress: () => selectFromGallery()
+        },
+        {
+          text: 'Chụp ảnh mới',
+          onPress: () => takePhoto()
+        }
+      ]
+    );
+  };
+
+  // Chọn ảnh từ thư viện
+  const selectFromGallery = async () => {
+    console.log('Selecting from gallery...');
+    
+    // Kiểm tra lại quyền bộ nhớ
+    if (!hasImagePermission) {
+      const granted = await requestStoragePermission();
+      if (!granted) {
+        console.log('Storage permission denied when trying to select from gallery');
+        openAppSettings();
+        return;
+      }
+    }
+    
+    const options = {
+      mediaType: 'photo',
+      includeBase64: true,
+      maxHeight: 500,
+      maxWidth: 500,
+      quality: 0.7,
+    };
+
+    try {
+      console.log('Launching image library with options:', options);
+      const result = await launchImageLibrary(options);
+      
+      console.log('Image picker result:', result.didCancel ? 'Canceled' : 'Image selected');
+      
+      if (!result.didCancel && result.assets && result.assets.length > 0) {
+        const selectedAsset = result.assets[0];
+        // Tạo URI dạng base64 để gửi lên server
+        const base64Uri = `data:image/jpeg;base64,${selectedAsset.base64}`;
+        setAvatar(base64Uri);
+        console.log('Image selected, size:', selectedAsset.fileSize);
+      }
+    } catch (error) {
+      console.error('Error picking image from gallery:', error);
+      Alert.alert('Lỗi', 'Không thể chọn ảnh từ thư viện. Vui lòng thử lại.');
+    }
+  };
+
+  // Chụp ảnh mới
+  const takePhoto = async () => {
+    console.log('Taking photo...');
+    
+    // Kiểm tra lại quyền camera
+    if (!hasCameraPermission) {
+      const granted = await requestCameraPermission();
+      if (!granted) {
+        console.log('Camera permission denied when trying to take photo');
+        openAppSettings();
+        return;
+      }
+    }
+    
+    const options = {
+      mediaType: 'photo',
+      includeBase64: true,
+      maxHeight: 500,
+      maxWidth: 500,
+      quality: 0.7,
+      saveToPhotos: true,
+    };
+
+    try {
+      console.log('Launching camera with options:', options);
+      const result = await launchCamera(options);
+      
+      console.log('Camera result:', result.didCancel ? 'Canceled' : 'Photo taken');
+      
+      if (!result.didCancel && result.assets && result.assets.length > 0) {
+        const selectedAsset = result.assets[0];
+        console.log('Captured photo details:', {
+          width: selectedAsset.width,
+          height: selectedAsset.height,
+          fileSize: selectedAsset.fileSize,
+          type: selectedAsset.type,
+          fileName: selectedAsset.fileName,
+          uri: selectedAsset.uri ? selectedAsset.uri.substring(0, 30) + '...' : null,
+          base64Present: selectedAsset.base64 ? true : false,
+          base64Length: selectedAsset.base64 ? selectedAsset.base64.length : 0
+        });
+        
+        // Tạo URI dạng base64 để gửi lên server
+        const base64Uri = `data:image/jpeg;base64,${selectedAsset.base64}`;
+        console.log('Created base64Uri, length:', base64Uri.length);
+        console.log('Base64Uri starts with:', base64Uri.substring(0, 30) + '...');
+        
+        setAvatar(base64Uri);
+        console.log('Avatar state updated with base64Uri');
+      }
+    } catch (error) {
+      console.error('Error taking photo:', error);
+      Alert.alert('Lỗi', 'Không thể chụp ảnh. Vui lòng thử lại.');
+    }
+  };
 
   // Function to handle email change
   const handleEmailChange = (text) => {
@@ -129,13 +378,25 @@ const EditProfile = (props) => {
       const isNameChanged = name !== user?.name && name !== '';
       const isEmailChanged = email !== user?.email && email !== '';
       const isPasswordChanged = newPassword !== '';
+      const isAvatarChanged = avatar !== user?.avatar && avatar !== null;
       
-      console.log('Current user data:', JSON.stringify(user));
-      console.log('Form values:', { name, email, newPassword: newPassword ? '[REDACTED]' : '', oldPassword: oldPassword ? '[REDACTED]' : '' });
-      console.log('Changes detected:', { isNameChanged, isEmailChanged, isPasswordChanged });
+      console.log('Current user data:', JSON.stringify({
+        ...user,
+        avatar: user?.avatar ? 'CURRENT_AVATAR_DATA_PRESENT' : null
+      }));
+      console.log('Form values:', { 
+        name, 
+        email, 
+        newPassword: newPassword ? '[REDACTED]' : '', 
+        oldPassword: oldPassword ? '[REDACTED]' : '',
+        avatarChanged: isAvatarChanged,
+        avatarPresent: avatar ? true : false,
+        avatarLength: avatar ? avatar.length : 0
+      });
+      console.log('Changes detected:', { isNameChanged, isEmailChanged, isPasswordChanged, isAvatarChanged });
       
       // If nothing has changed, show a message
-      if (!isNameChanged && !isEmailChanged && !isPasswordChanged) {
+      if (!isNameChanged && !isEmailChanged && !isPasswordChanged && !isAvatarChanged) {
         Alert.alert('Thông báo', 'Không có thông tin nào được thay đổi.');
         return;
       }
@@ -152,13 +413,29 @@ const EditProfile = (props) => {
       if (isNameChanged) userData.name = name;
       if (isEmailChanged) userData.email = email;
       if (isPasswordChanged) userData.password = newPassword;
+      if (isAvatarChanged) {
+        console.log('Avatar changed, including in update data');
+        console.log('Avatar data type:', typeof avatar);
+        console.log('Avatar data length:', avatar ? avatar.length : 0);
+        if (avatar) {
+          console.log('Avatar data starts with:', avatar.substring(0, 30) + '...');
+          userData.avatar = avatar;
+        } else {
+          console.log('Avatar is null, not including in update');
+        }
+      }
       
       // Add old password if changing email or password
       if (isChangingEmail || isChangingPassword) {
         userData.oldPassword = oldPassword;
       }
 
-      console.log('Sending update data:', { ...userData, password: userData.password ? '[REDACTED]' : undefined, oldPassword: userData.oldPassword ? '[REDACTED]' : undefined });
+      console.log('Sending update data:', { 
+        ...userData, 
+        password: userData.password ? '[REDACTED]' : undefined, 
+        oldPassword: userData.oldPassword ? '[REDACTED]' : undefined,
+        avatar: userData.avatar ? 'BASE64_IMAGE_DATA_PRESENT' : undefined
+      });
       console.log('User ID for update:', user._id);
       
       // Dispatch update action
@@ -172,6 +449,14 @@ const EditProfile = (props) => {
   // Function to cancel and go back
   const handleCancel = () => {
     navigation.goBack();
+  };
+
+  // Render avatar image or default
+  const renderAvatar = () => {
+    if (avatar) {
+      return <Image source={{ uri: avatar }} style={styles.profileImage} />;
+    }
+    return <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />;
   };
 
   return (
@@ -197,10 +482,10 @@ const EditProfile = (props) => {
         
         {/* Profile Image */}
         <View style={styles.profileContainer}>
-          <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
-          <View style={styles.cameraIconContainer}>
+          {renderAvatar()}
+          <TouchableOpacity style={styles.cameraIconContainer} onPress={pickImage}>
             <Image source={require('../Assets/Images/camera24.png')} style={styles.cameraIcon} />
-          </View>
+          </TouchableOpacity>
         </View>
 
         {/* Form Inputs */}
@@ -344,16 +629,22 @@ const styles = StyleSheet.create({
     borderRadius: 60,
     borderWidth: 2,
     borderColor: '#ddd',
+    backgroundColor: '#f0f0f0', // Thêm màu nền để tránh hiển thị lỗi khi ảnh chưa tải xong
   },
   cameraIconContainer: {
     position: 'absolute',
     bottom: 0,
     right: '35%',
     backgroundColor: '#fff',
-    padding: 5,
+    padding: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: '#ccc',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   cameraIcon: {
     width: 18,

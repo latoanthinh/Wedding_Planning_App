@@ -25,7 +25,11 @@ const Settings = (props) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Profile Info */}
         <View style={styles.profileContainer}>
-          <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
+          {user && user.avatar ? (
+            <Image source={{ uri: user.avatar }} style={styles.profileImage} />
+          ) : (
+            <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
+          )}
           <View style={styles.profileTextContainer}>
             <Text style={styles.profileName} numberOfLines={1}>{user.name}</Text>
             <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>

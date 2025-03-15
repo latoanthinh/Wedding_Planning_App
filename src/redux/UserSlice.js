@@ -25,6 +25,7 @@ export const updateUser = createAsyncThunk(
         console.warn('API ping failed, may be offline:', pingError);
       }
       
+      console.log('Sending PATCH request to:', `https://apidatn.onrender.com/users/update/${id}`);
       const response = await fetch(`https://apidatn.onrender.com/users/update/${id}`, {
         method: 'PATCH',
         headers: { 
@@ -59,7 +60,23 @@ export const updateUser = createAsyncThunk(
         throw new Error('Lỗi khi xử lý phản hồi từ máy chủ');
       });
       
-      console.log('Server response:', JSON.stringify(result));
+      console.log('Server response:', JSON.stringify({
+        ...result,
+        user: result.user ? {
+          ...result.user,
+          avatar: result.user.avatar ? 'AVATAR_DATA_PRESENT' : null
+        } : null
+      }));
+
+      // Kiểm tra xem avatar có được trả về không
+      if (result.user && result.user.avatar) {
+        console.log('Avatar received from server');
+        console.log('Avatar data type:', typeof result.user.avatar);
+        console.log('Avatar data length:', result.user.avatar.length);
+        console.log('Avatar data starts with:', result.user.avatar.substring(0, 30) + '...');
+      } else {
+        console.warn('No avatar received from server');
+      }
 
       if (!response.ok) {
         console.error('Update failed with status:', response.status);
@@ -126,7 +143,21 @@ export const UserSlice = createSlice({
         state.serverResponse = null;
       })
       .addCase(updateUser.fulfilled, (state, action) => {
-        console.log('Update successful:', JSON.stringify(action.payload));
+        console.log('Update successful:', JSON.stringify({
+          ...action.payload,
+          user: action.payload.user ? {
+            ...action.payload.user,
+            avatar: action.payload.user.avatar ? 'AVATAR_DATA_PRESENT' : null
+          } : null
+        }));
+        
+        // Kiểm tra xem avatar có được cập nhật không
+        if (action.payload.user && action.payload.user.avatar) {
+          console.log('Avatar successfully updated in user data');
+        } else {
+          console.warn('Avatar not present in updated user data');
+        }
+        
         state.updateStatus = 'succeeded';
         state.userData = action.payload.user;
         state.serverResponse = action.payload;
