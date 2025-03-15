@@ -40,6 +40,12 @@ const DiaDiem_Screen = ({ navigation }) => {
     }
   }, [selectedCategoryId, dispatch]);
 
+  useEffect(() => {
+    if (status === 'succeeded' && products.length > 0) {
+      console.log('Products data structure:', JSON.stringify(products[0], null, 2));
+    }
+  }, [products, status]);
+
   
 
   const handleSelect = (id) => {
@@ -57,7 +63,21 @@ const DiaDiem_Screen = ({ navigation }) => {
   );
 
   const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('DiaDiemDetail' , {DiaDiemId: item._id })} >
+    <TouchableOpacity onPress={() => navigation.navigate('DecorDetail', { 
+      decorData: {
+        _id: item._id,
+        name: item.name,
+        Description: item.Description || "Không có mô tả",
+        price: item.price,
+        imageUrl: item.imageUrl,
+        Cate_decorateId: {
+          _id: selectedCategoryId,
+          name: Cate_decoratesData.find(cat => cat._id === selectedCategoryId)?.name || "Trang trí"
+        },
+        createdAt: item.createdAt,
+        updatedAt: item.updatedAt,
+      }
+    })}>
       <View style={styles.itemContainer}>
         <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
         <View style={styles.itemInfo}>

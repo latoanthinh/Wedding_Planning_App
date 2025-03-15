@@ -76,7 +76,12 @@ const Gift_Screen = ({ navigation, route }) => {
 
   const renderItem = ({ item }) => (
     <Pressable onPress={() => handleItemPress(item)}>
-      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('GitfDetail' , {GitflId: item._id })}>
+      <TouchableOpacity 
+        style={styles.card} 
+        onPress={() => navigation.navigate('GiftDetail', { 
+          GitflId: item._id 
+        })}
+      >
         <Image source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
           <Text style={styles.productName} numberOfLines={1}>{item.name || 'Unnamed Item'}</Text>
