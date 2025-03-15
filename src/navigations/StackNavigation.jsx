@@ -19,6 +19,7 @@ import TransitionLoading from '../transitions/Loading'
 import FoodDetail from '../Screens/FoodDetail'
 import GitfDetail from '../Screens/GitfDetail'
 import DiaDiemDetail from '../Screens/DiaDiemDetail'
+import DetailPlan from '../Screens/DetailPlan'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -62,6 +63,7 @@ const StackNavigation = () => {
       <Stack.Screen name="FoodDetail" component={FoodDetail} />
       <Stack.Screen name="GitfDetail" component={GitfDetail} />
       <Stack.Screen name="DiaDiemDetail" component={DiaDiemDetail} />
+      <Stack.Screen name="DetailPlan" component={DetailPlan} />
 
     </Stack.Navigator>
     
