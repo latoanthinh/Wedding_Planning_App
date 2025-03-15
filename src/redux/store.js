@@ -28,6 +28,7 @@ export const store = configureStore({
   reducer: {
     chitietdiadiem :ChitietDiaDiemReducer,
     chitietgift:ChitietGiftReducer,
+    chitietdecor: ChitietDecorReducer,
     chitietcatering :ChitietCateringReducer,
     favoriteset:FavoriteDeanAddReducer,
     cate_present:Cate_PresentReducer,
@@ -36,7 +37,6 @@ export const store = configureStore({
     cate_decorates:Cate_decoratesReducer,
     invitations:InvitationsReducer,
     allplan:GetAllPlanReducer,
-    createplan:CreatePlanReducer,
     halltheowedding: HallTheoWeddingHallsReducer,
     chitietflowers: ChitietFlowersReducer,
     flowers: FlowersReducer,
