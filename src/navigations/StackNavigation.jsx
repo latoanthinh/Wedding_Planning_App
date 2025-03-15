@@ -19,6 +19,7 @@ import TransitionLoading from '../transitions/Loading'
 import FoodDetail from '../Screens/FoodDetail'
 import GiftDetail from '../Screens/GiftDetail'
 import DetailPlan from '../Screens/DetailPlan'
+import DecorDetail from '../Screens/DecorDetail'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -61,8 +62,8 @@ const StackNavigation = () => {
       <Stack.Screen name="TransitionLoading" component={TransitionLoading} />
       <Stack.Screen name="FoodDetail" component={FoodDetail} />
       <Stack.Screen name="GiftDetail" component={GiftDetail} />
-      
       <Stack.Screen name="DetailPlan" component={DetailPlan} />
+      <Stack.Screen name="DecorDetail" component={DecorDetail} />
 
     </Stack.Navigator>
     
