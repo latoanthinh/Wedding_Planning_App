@@ -17,7 +17,8 @@ import AllLobyy from '../Screens/AllLobyy'
 import DiaDiem_Screen from '../Screens/DiaDiem_Screen'
 import TransitionLoading from '../transitions/Loading'
 import FoodDetail from '../Screens/FoodDetail'
-import GitfDetail from '../Screens/GitfDetail'
+
+import GiftDetail from '../Screens/GiftDetail'
 import DiaDiemDetail from '../Screens/DiaDiemDetail'
 import DetailPlan from '../Screens/DetailPlan'
 
@@ -61,7 +62,8 @@ const StackNavigation = () => {
       <Stack.Screen name="DiaDiem_Screen" component={DiaDiem_Screen} />
       <Stack.Screen name="TransitionLoading" component={TransitionLoading} />
       <Stack.Screen name="FoodDetail" component={FoodDetail} />
-      <Stack.Screen name="GitfDetail" component={GitfDetail} />
+      
+      <Stack.Screen name="GiftDetail" component={GiftDetail} />
       <Stack.Screen name="DiaDiemDetail" component={DiaDiemDetail} />
       <Stack.Screen name="DetailPlan" component={DetailPlan} />
 
