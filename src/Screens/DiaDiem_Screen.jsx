@@ -5,8 +5,7 @@ import { Cate_decorates } from '../redux/Cate_decoratesSlice';
 import { getProductsByDecorates } from '../redux/DecoratesByCateSlice';
 import Lottie from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice';
-import { AppContext } from '../AppContext';
+
 
 const { width } = Dimensions.get('window');
 
@@ -18,68 +17,12 @@ const DiaDiem_Screen = ({ navigation }) => {
   const dispatch = useDispatch();
   const { Cate_decoratesData, Cate_decoratesStatus } = useSelector((state) => state.cate_decorates);
   const { products, status } = useSelector((state) => state.decoratesbyCate);
-  const { data: favoritesData = [], status: favoriteStatus } = useSelector((state) => state.favoriteset);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  
 
-  const { user } = useContext(AppContext);
-  const userId = user?._id;
-  const type = 'Decorate';
-
-  // Kiểm tra trạng thái yêu thích
-  const isFavorite = useMemo(() => {
-    if (!modalVisible || !selectedItem || !selectedItem._id || !Array.isArray(favoritesData)) {
-      return false;
-    }
-    console.log('favoritesData trước khi so sánh:', favoritesData);
-    const result = favoritesData.some(item => {
-      const match = item.type === type && item.itemId === selectedItem._id.toString(); // Đảm bảo so sánh chuỗi
-      console.log(`Kiểm tra yêu thích: type=${item.type}, itemId=${item.itemId}, selectedItemId=${selectedItem._id}, match=${match}`);
-      return match;
-    });
-    console.log(`isFavorite result: ${result}`);
-    return result;
-  }, [modalVisible, selectedItem, favoritesData, type]);
-
-  const handleToggleFavorite = async () => {
-    if (!userId || !type || !selectedItem?._id) {
-      console.error('Không thể thực hiện yêu thích do thông tin không hợp lệ:', { userId, type, itemId: selectedItem?._id });
-      Alert.alert('Lỗi', 'Thông tin không hợp lệ, vui lòng thử lại.');
-      return;
-    }
-
-    if (favoriteLoading) {
-      console.log('Đang xử lý yêu thích, vui lòng chờ...');
-      return;
-    }
-
-    setFavoriteLoading(true);
-    try {
-      console.log('Gửi yêu cầu với:', { userId, type, itemId: selectedItem._id });
-      if (isFavorite) {
-        const result = await dispatch(removeFavoriteItem({ userId, type, itemId: selectedItem._id })).unwrap();
-        console.log('Phản hồi từ removeFavoriteItem:', result);
-        Alert.alert('Thông báo', 'Đã xóa khỏi danh sách yêu thích.');
-      } else {
-        const result = await dispatch(addFavoriteItem({ userId, type, itemId: selectedItem._id })).unwrap();
-        console.log('Phản hồi từ addFavoriteItem:', result);
-        Alert.alert('Thông báo', 'Đã thêm vào danh sách yêu thích.');
-      }
-      // Làm mới danh sách yêu thích sau khi thêm/xóa
-      const fetchAction = await dispatch(fetchUserFavorites(userId));
-      if (fetchAction.payload) {
-        console.log('Dữ liệu mới sau fetch:', fetchAction.payload);
-      }
-    } catch (error) {
-      console.error('Lỗi khi xử lý yêu thích:', error);
-      const errorMessage = error.message || (error.response?.data?.message || 'Không thể thực hiện yêu thích, vui lòng thử lại.');
-      Alert.alert('Lỗi', errorMessage);
-    } finally {
-      setFavoriteLoading(false);
-    }
-  };
+  
 
   useEffect(() => {
     dispatch(Cate_decorates());
@@ -97,27 +40,14 @@ const DiaDiem_Screen = ({ navigation }) => {
     }
   }, [selectedCategoryId, dispatch]);
 
-  useEffect(() => {
-    if (userId && favoriteStatus === 'idle') {
-      dispatch(fetchUserFavorites(userId));
-    }
-  }, [dispatch, userId, favoriteStatus]);
+  
 
   const handleSelect = (id) => {
     if (id !== selectedCategoryId) setSelectedCategoryId(id);
   };
 
-  const handleItemPress = (item) => {
-    if (item && item._id) {
-      setSelectedItem(item);
-      setModalVisible(true);
-    }
-  };
 
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedItem(null);
-  };
+
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
@@ -127,16 +57,15 @@ const DiaDiem_Screen = ({ navigation }) => {
   );
 
   const renderItem = ({ item }) => (
-    <Pressable onPress={() => handleItemPress(item)}>
+    <TouchableOpacity onPress={() => navigation.navigate('DiaDiemDetail' , {DiaDiemId: item._id })} >
       <View style={styles.itemContainer}>
         <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
         <View style={styles.itemInfo}>
           <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.itemDescription} numberOfLines={2}>{item.Description}</Text>
           <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
         </View>
       </View>
-    </Pressable>
+    </TouchableOpacity>
   );
 
   const renderCategoryItem = ({ item }) => (
@@ -185,52 +114,7 @@ const DiaDiem_Screen = ({ navigation }) => {
         />
       )}
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}
-      >
-        <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                {selectedItem && selectedItem._id ? (
-                  <>
-                    <Image
-                      source={{ uri: selectedItem.imageUrl || 'https://via.placeholder.com/200' }}
-                      style={styles.modalImage}
-                      resizeMode="cover"
-                    />
-                    <Pressable
-                      style={styles.favoriteIcon}
-                      onPress={handleToggleFavorite}
-                      disabled={favoriteLoading}
-                    >
-                      {favoriteLoading ? (
-                        <ActivityIndicator size="small" color="#FF6F61" />
-                      ) : (
-                        <Image
-                          source={require('../Assets/Images/heart_filled.png')}
-                          style={[styles.heartImage, { tintColor: isFavorite ? 'red' : '#ccc' }]}
-                          resizeMode="contain"
-                        />
-                      )}
-                    </Pressable>
-                    <Text style={styles.modalTitle}>{selectedItem.name || 'Không có tên'}</Text>
-                    <Text style={styles.modalPrice}>{formatPrice(selectedItem.price)}</Text>
-                    <Text style={styles.modalDescription} numberOfLines={3}>
-                      {selectedItem.Description || 'Không có mô tả'}
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={styles.modalError}>Không có dữ liệu để hiển thị</Text>
-                )}
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      
     </SafeAreaView>
   );
 };

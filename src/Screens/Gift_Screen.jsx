@@ -5,8 +5,7 @@ import { Invitations } from '../redux/InvitationsSlice';
 import { Cate_present } from '../redux/Cate_PresentSlice';
 import Lottie from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice';
-import { AppContext } from '../AppContext';
+
 
 const { width } = Dimensions.get('window');
 
@@ -18,62 +17,12 @@ const Gift_Screen = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { Cate_presentData = [], Cate_presentStatus } = useSelector((state) => state.cate_present);
   const { InvitationsData = [], InvitationsStatus } = useSelector((state) => state.invitations);
-  const { data: favoritesData = [], status: favoriteStatus, error: favoriteError } = useSelector((state) => state.favoriteset);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [favoriteLoading, setFavoriteLoading] = useState(false);
-
-  const { user } = useContext(AppContext);
-  const { itemId } = route.params || {};
-  const userId = user?._id;
-
-  const type = route.params?.type || 'Present';
-
-  // Kiểm tra isFavorite với log để debug
-  const isFavorite = selectedItem
-    ? Array.isArray(favoritesData) && favoritesData.some(item => {
-        const match = item.type === type && item.itemId === selectedItem._id;
-        console.log(`Kiểm tra yêu thích: type=${item.type}, itemId=${item.itemId}, selectedItemId=${selectedItem._id}, match=${match}`);
-        return match;
-      })
-    : false;
-
-  const handleToggleFavorite = async () => {
-    if (!userId || !type || !selectedItem?._id) {
-      console.error('Không thể thực hiện yêu thích do thông tin không hợp lệ:', { userId, type, itemId: selectedItem?._id });
-      Alert.alert('Lỗi', 'Thông tin không hợp lệ, vui lòng thử lại.');
-      return;
-    }
-
-    if (favoriteLoading) {
-      console.log('Đang xử lý yêu thích, vui lòng chờ...');
-      return; // Ngăn nhấn liên tục khi đang xử lý
-    }
-
-    setFavoriteLoading(true);
-    try {
-      console.log('Gửi yêu cầu với:', { userId, type, itemId: selectedItem._id });
-      if (isFavorite) {
-        const result = await dispatch(removeFavoriteItem({ userId, type, itemId: selectedItem._id })).unwrap();
-        console.log('Phản hồi từ removeFavoriteItem:', result);
-        Alert.alert('Thông báo', 'Đã xóa khỏi danh sách yêu thích.');
-      } else {
-        const result = await dispatch(addFavoriteItem({ userId, type, itemId: selectedItem._id })).unwrap();
-        console.log('Phản hồi từ addFavoriteItem:', result);
-        Alert.alert('Thông báo', 'Đã thêm vào danh sách yêu thích.');
-      }
-      // Làm mới danh sách yêu thích sau khi thêm/xóa
-      await dispatch(fetchUserFavorites(userId));
-    } catch (error) {
-      console.error('Lỗi khi xử lý yêu thích:', error);
-      const errorMessage = error.message || (error.response?.data?.message || 'Không thể thực hiện yêu thích, vui lòng thử lại.');
-      Alert.alert('Lỗi', errorMessage);
-    } finally {
-      setFavoriteLoading(false);
-    }
-  };
+  
+ 
+  
 
   useEffect(() => {
     dispatch(Cate_present());
@@ -92,11 +41,7 @@ const Gift_Screen = ({ navigation, route }) => {
     }
   }, [selectedCategoryId, dispatch]);
 
-  useEffect(() => {
-    if (userId && favoriteStatus === 'idle') {
-      dispatch(fetchUserFavorites(userId));
-    }
-  }, [dispatch, userId, favoriteStatus]);
+ 
 
   const handleSelect = (id) => {
     if (id !== selectedCategoryId) setSelectedCategoryId(id);
@@ -105,7 +50,7 @@ const Gift_Screen = ({ navigation, route }) => {
   const handleItemPress = (item) => {
     if (item && item._id) {
       setSelectedItem(item);
-      setModalVisible(true);
+      
     }
   };
 
@@ -131,13 +76,13 @@ const Gift_Screen = ({ navigation, route }) => {
 
   const renderItem = ({ item }) => (
     <Pressable onPress={() => handleItemPress(item)}>
-      <View style={styles.card}>
+      <TouchableOpacity style={styles.card} onPress={() => navigation.navigate('GitfDetail' , {GitflId: item._id })}>
         <Image source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }} style={styles.image} resizeMode="cover" />
         <View style={styles.cardContent}>
           <Text style={styles.productName} numberOfLines={1}>{item.name || 'Unnamed Item'}</Text>
           <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
         </View>
-      </View>
+      </TouchableOpacity>
     </Pressable>
   );
 
@@ -173,10 +118,7 @@ const Gift_Screen = ({ navigation, route }) => {
     );
   };
 
-  const closeModal = () => {
-    setModalVisible(false);
-    setSelectedItem(null);
-  };
+  
 
   return (
     <SafeAreaView style={styles.container}>
@@ -202,52 +144,7 @@ const Gift_Screen = ({ navigation, route }) => {
 
       {renderContent()}
 
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={closeModal}
-      >
-        <TouchableWithoutFeedback onPress={closeModal}>
-          <View style={styles.modalOverlay}>
-            <TouchableWithoutFeedback>
-              <View style={styles.modalContent}>
-                {selectedItem ? (
-                  <>
-                    <Image
-                      source={{ uri: selectedItem.imageUrl || 'https://via.placeholder.com/200' }}
-                      style={styles.modalImage}
-                      resizeMode="cover"
-                    />
-                    <Pressable
-                      style={styles.favoriteIcon}
-                      onPress={handleToggleFavorite}
-                      disabled={favoriteLoading}
-                    >
-                      {favoriteLoading ? (
-                        <ActivityIndicator size="small" color="#FF6F61" />
-                      ) : (
-                        <Image
-                          source={require('../Assets/Images/heart_filled.png')}
-                          style={[styles.heartImage, { tintColor: isFavorite ? 'red' : '#ccc' }]}
-                          resizeMode="contain"
-                        />
-                      )}
-                    </Pressable>
-                    <Text style={styles.modalTitle}>{selectedItem.name || 'Không có tên'}</Text>
-                    <Text style={styles.modalPrice}>{formatPrice(selectedItem.price)}</Text>
-                    <Text style={styles.modalDescription} numberOfLines={3}>
-                      {selectedItem.Description || 'Không có mô tả'}
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={styles.modalError}>Không có dữ liệu để hiển thị</Text>
-                )}
-              </View>
-            </TouchableWithoutFeedback>
-          </View>
-        </TouchableWithoutFeedback>
-      </Modal>
+      
     </SafeAreaView>
   );
 };

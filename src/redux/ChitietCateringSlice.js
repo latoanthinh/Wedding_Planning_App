@@ -17,6 +17,7 @@ export const ChitietCatering = createAsyncThunk(
       }
 
       const data = await response.json();
+      console.log('Dữ liệu trả về từ API:', data);
       if (!data.status) {
         throw new Error(data.message || 'Lấy chi tiết thất bại');
       }

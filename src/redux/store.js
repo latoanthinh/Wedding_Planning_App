@@ -16,6 +16,8 @@ import  Cate_CateringReducer  from './Cate_CateringSlice';
 import  Cate_PresentReducer  from './Cate_PresentSlice';
 import  FavoriteDeanAddReducer  from './FavoriteDeanAddSlice';
 import  ChitietCateringReducer  from './ChitietCateringSlice';
+import  ChitietGiftReducer  from './ChitietGiftSlice';
+import  ChitietDiaDiemReducer  from './ChitietDiaDiemSlice';
 
 
 
@@ -24,6 +26,8 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    chitietdiadiem :ChitietDiaDiemReducer,
+    chitietgift:ChitietGiftReducer,
     chitietcatering :ChitietCateringReducer,
     favoriteset:FavoriteDeanAddReducer,
     cate_present:Cate_PresentReducer,
