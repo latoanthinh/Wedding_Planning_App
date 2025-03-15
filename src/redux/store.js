@@ -7,7 +7,7 @@ import  RegisterReducer  from './RegisterSlice';
 import  ChitietsanphamReducer  from './ChitietsanphamSlice';
 import  ChitietFlowersReducer  from './ChitietFlowersSlice';
 import  HallTheoWeddingHallsReducer  from './HallTheoWeddingHallsSlice';
-import  CreatePlanReducer  from './CreatePlanSlice';
+import  KhaoSatReducer  from './KhaoSatSlice';
 import  GetAllPlanReducer  from './GetAllPlanSlice';
 import  InvitationsReducer  from './InvitationsSlice';
 import  Cate_decoratesReducer  from './Cate_decoratesSlice';
@@ -36,7 +36,7 @@ export const store = configureStore({
     cate_decorates:Cate_decoratesReducer,
     invitations:InvitationsReducer,
     allplan:GetAllPlanReducer,
-    createplan:CreatePlanReducer,
+    khaosat:KhaoSatReducer,
     halltheowedding: HallTheoWeddingHallsReducer,
     chitietflowers:ChitietFlowersReducer,
     flowers: FlowersReducer,
