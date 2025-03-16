@@ -78,12 +78,12 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   slide: {
-    width: 360,
+    width: 390,
     height: 140,
     position: 'relative',
   },
   slideImage: {
-    width: 320,
+    width: 350,
     height: 140,
     borderRadius: 10,
     alignSelf: 'center',

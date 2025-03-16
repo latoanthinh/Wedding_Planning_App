@@ -17,7 +17,7 @@ const AllPlan = ({ navigation }) => {
     // Component hiển thị item kế hoạch với thiết kế được cải tiến
     const PlanCard = useCallback(({ item }) => (
         <TouchableOpacity
-            onPress={() => navigation.navigate('ComboDetail', { planId: item._id })}
+            onPress={()=> navigation.navigate("DetailPlan" , {DetailPlanId : item._id})}
             style={styles.cardContainer}
         >
             <View style={styles.card}>
@@ -57,6 +57,8 @@ const AllPlan = ({ navigation }) => {
         return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
     };
 
+    
+
     // Hàm xác định màu sắc dựa trên trạng thái
     const getStatusColor = (status) => {
         if (!status) return '#9E9E9E'; // Default gray
@@ -74,6 +76,8 @@ const AllPlan = ({ navigation }) => {
                 return '#9E9E9E'; // Gray
         }
     };
+
+
 
     // Hàm render nội dung dựa trên status
     const renderContent = useCallback(() => {

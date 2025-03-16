@@ -11,8 +11,8 @@ const SignIn = (props) => {
     const [isChecked, setIsChecked] = useState(false);
     const { navigation } = props;
 
-    const [email, setEmail] = useState('tran07hieu@gmail.com');
-    const [password, setPassword] = useState('123456');
+    const [email, setEmail] = useState('lmao2@gmail.com');
+    const [password, setPassword] = useState('112233');
     const { user, setUser } = useContext(AppContext);
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');

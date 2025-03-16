@@ -6,33 +6,37 @@ import {
   Animated,
   Image, 
   TouchableOpacity, 
-  SafeAreaView, 
   ScrollView, 
-  StatusBar 
+  StatusBar,
+  ActivityIndicator,
 } from 'react-native';
-
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import { ChitietCatering, resetChitietCatering } from '../redux/ChitietCateringSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
+const FoodDetailScreen = (props) => {
+  const { navigation, route } = props;
+  const { Id } = route?.params || {}; // Đảm bảo Id không undefined
+  const dispatch = useDispatch();
+  const { ChitietCateringData, ChitietCateringStatus, error } = useSelector(state => state.chitietcatering);
 
-const FoodDetailScreen = () => {
-  const navigation = useNavigation();
-  const product = {
-    __v: 0,
-    _id: "67bf41c316fc073e575f3e38",
-    cate_cateringId: "67bf3ab416fc073e575f3e10",
-    createdAt: "2025-02-26T16:30:59.890Z",
-    description: "Cupcake là loại bánh kem thu nhỏ, không có nhân hoặc sử dụng nhân ngọt, cốt bánh thường nhẹ, mềm, vị ngọt tan và có lớp bông kem phía trên.",
-    imageUrl: "https://swansdown.com/wp-content/uploads/2021/07/Cupcakes_Quick-Preset_1020x500.jpg",
-    name: "Cupcake",
-    price: 1500000,
-    updatedAt: "2025-02-26T16:30:59.890Z"
-  };
+  useEffect(() => {
+    // Gọi API để lấy chi tiết sản phẩm khi component mount, chỉ khi Id tồn tại
+    if (Id) {
+      console.log('Fetching detail for Id:', Id); // Debug log
+      dispatch(ChitietCatering(Id));
+    } else {
+      console.error('Id không được cung cấp:', route?.params);
+    }
 
-  const formattedPrice = product.price.toLocaleString('vi-VN', {
-    style: 'currency',
-    currency: 'VND'
-  });
+    // Cleanup: Reset trạng thái khi rời màn hình
+    return () => {
+      console.log('Cleaning up and resetting state for Id:', Id);
+      dispatch(resetChitietCatering());
+    };
+  }, [dispatch, Id]);
 
   // Animated values cho phần tên, mô tả và giá
   const nameAnim = useRef(new Animated.Value(0)).current;
@@ -63,7 +67,6 @@ const FoodDetailScreen = () => {
       }),
     ]).start();
 
-    // Hiệu ứng cho các thanh tiến trình dinh dưỡng
     Animated.parallel([
       Animated.timing(carbWidth, {
         toValue: 40, 
@@ -83,44 +86,108 @@ const FoodDetailScreen = () => {
     ]).start();
   }, [nameAnim, descAnim, priceAnim, carbWidth, proteinWidth, fatWidth]);
 
-  return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" />
-      
-      {/* Header with Image */}
-      <View style={styles.imageContainer}>
-        <Image 
-          source={{ uri: product.imageUrl }} 
-          style={styles.foodImage} 
-          resizeMode="cover" 
-        />
+  // Xử lý hiển thị dựa trên trạng thái
+  if (ChitietCateringStatus === 'loading') {
+    console.log('Loading state...'); // Debug log
+    return (
+      <SafeAreaView style={styles.container}>
+        <ActivityIndicator size="large" color="#0000ff" />
+      </SafeAreaView>
+    );
+  }
+
+  if (ChitietCateringStatus === 'failed' || !Id) {
+    console.log('Failed state or invalid Id:', { error, Id }); // Debug log
+    return (
+      <SafeAreaView style={styles.container}>
+        <Text style={styles.errorText}>
+          {error || 'Không thể tải chi tiết hoặc ID không hợp lệ'}
+        </Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (ChitietCateringStatus === 'succeeded') {
+    console.log('Succeeded state, Data:', ChitietCateringData); // Debug log
+    const formattedPrice = ChitietCateringData?.price?.toLocaleString('vi-VN', {
+      style: 'currency',
+      currency: 'VND',
+    }) || '0 VNĐ'; // Xử lý trường hợp price là null hoặc undefined
+
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="light-content" />
         
-        {/* Navigation buttons */}
-        <View style={styles.headerButtons}>
-          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-            <Icon name="chevron-left" size={28} color="#fff" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.favoriteButton}>
-            <Icon name="heart-outline" size={24} color="#fff" />
-          </TouchableOpacity>
+        {/* Header with Image */}
+        <View style={styles.imageContainer}>
+          <Image 
+            source={{ uri: ChitietCateringData?.imageUrl || 'https://via.placeholder.com/300' }} 
+            style={styles.foodImage} 
+            resizeMode="cover" 
+          />
+          
+          {/* Navigation buttons */}
+          <View style={styles.headerButtons}>
+            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+              <Icon name="chevron-left" size={28} color="#fff" />
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.favoriteButton}>
+              <Icon name="heart-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
-      </View>
-      
-      {/* Content Card */}
-      <View style={styles.contentCard}>
-        <ScrollView 
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 100 }}
-        >
-          {/* Title and Rating */}
-          <View style={styles.titleContainer}>
+        
+        {/* Content Card */}
+        <View style={styles.contentCard}>
+          <ScrollView 
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 100 }}
+          >
+            {/* Title and Rating */}
+            <View style={styles.titleContainer}>
+              <Animated.Text 
+                style={[
+                  styles.foodName, 
+                  {
+                    opacity: nameAnim,
+                    transform: [{
+                      translateY: nameAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [10, 0]
+                      })
+                    }]
+                  }
+                ]}
+              >
+                {ChitietCateringData?.name || 'Không có tên'}
+              </Animated.Text>
+              <View style={styles.ratingTag}>
+                <Icon name="star" size={16} color="#DCA34B" />
+                <Text style={styles.ratingText}>4.8</Text>
+              </View>
+            </View>
+            
+            {/* Tags */}
+            <View style={styles.tagsContainer}>
+              <View style={styles.tagItem}>
+                <Text style={styles.tagText}>Đồ ngọt</Text>
+              </View>
+              <View style={styles.tagItem}>
+                <Text style={styles.tagText}>Tráng miệng</Text>
+              </View>
+              <View style={styles.tagItem}>
+                <Text style={styles.tagText}>Hấp dẫn</Text>
+              </View>
+            </View>
+            
+            {/* Description */}
             <Animated.Text 
               style={[
-                styles.foodName, 
+                styles.description, 
                 {
-                  opacity: nameAnim,
+                  opacity: descAnim,
                   transform: [{
-                    translateY: nameAnim.interpolate({
+                    translateY: descAnim.interpolate({
                       inputRange: [0, 1],
                       outputRange: [10, 0]
                     })
@@ -128,129 +195,102 @@ const FoodDetailScreen = () => {
                 }
               ]}
             >
-              {product.name}
+              {ChitietCateringData?.description || 'Không có mô tả'}
             </Animated.Text>
-            <View style={styles.ratingTag}>
-              <Icon name="star" size={16} color="#DCA34B" />
-              <Text style={styles.ratingText}>4.8</Text>
-            </View>
-          </View>
-          
-          {/* Tags */}
-          <View style={styles.tagsContainer}>
-            <View style={styles.tagItem}>
-              <Text style={styles.tagText}>Đồ ngọt</Text>
-            </View>
-            <View style={styles.tagItem}>
-              <Text style={styles.tagText}>Tráng miệng</Text>
-            </View>
-            <View style={styles.tagItem}>
-              <Text style={styles.tagText}>Hấp dẫn</Text>
-            </View>
-          </View>
-          
-          {/* Description */}
-          <Animated.Text 
-            style={[
-              styles.description, 
-              {
-                opacity: descAnim,
-                transform: [{
-                  translateY: descAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [10, 0]
-                  })
-                }]
-              }
-            ]}
-          >
-            {product.description}
-          </Animated.Text>
-          
-          {/* Price Section */}
-          <Animated.View 
-            style={[
-              styles.priceContainer,
-              {
-                opacity: priceAnim,
-                transform: [{
-                  translateY: priceAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [10, 0]
-                  })
-                }]
-              }
-            ]}
-          >
-            <Text style={styles.priceText}>{formattedPrice}/phần</Text>
-          </Animated.View>
-          
-          {/* Divider */}
-          <View style={styles.divider} />
-          
-          {/* Nutrition Section */}
-          <Text style={styles.sectionTitle}>Thành phần dinh dưỡng</Text>
-          
-          <View style={styles.nutritionContainer}>
-            {/* Chart Area */}
-            <View style={styles.nutritionChart}>
-              <View style={styles.chartPlaceholder}>
-                <Animated.View 
-                  style={[styles.chartSegment, { backgroundColor: '#DCA34B', width: carbWidth }]} 
-                />
-                <Animated.View 
-                  style={[styles.chartSegment, { backgroundColor: '#76A878', width: proteinWidth }]} 
-                />
-                <Animated.View 
-                  style={[styles.chartSegment, { backgroundColor: '#7D93B0', width: fatWidth }]} 
-                />
+            
+            {/* Price Section */}
+            <Animated.View 
+              style={[
+                styles.priceContainer,
+                {
+                  opacity: priceAnim,
+                  transform: [{
+                    translateY: priceAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [10, 0]
+                    })
+                  }]
+                }
+              ]}
+            >
+              <Text style={styles.priceText}>{formattedPrice}/phần</Text>
+            </Animated.View>
+            
+            {/* Divider */}
+            <View style={styles.divider} />
+            
+            {/* Nutrition Section */}
+            <Text style={styles.sectionTitle}>Thành phần dinh dưỡng</Text>
+            
+            <View style={styles.nutritionContainer}>
+              {/* Chart Area */}
+              <View style={styles.nutritionChart}>
+                <View style={styles.chartPlaceholder}>
+                  <Animated.View 
+                    style={[styles.chartSegment, { backgroundColor: '#DCA34B', width: carbWidth }]} 
+                  />
+                  <Animated.View 
+                    style={[styles.chartSegment, { backgroundColor: '#76A878', width: proteinWidth }]} 
+                  />
+                  <Animated.View 
+                    style={[styles.chartSegment, { backgroundColor: '#7D93B0', width: fatWidth }]} 
+                  />
+                </View>
+              </View>
+              
+              {/* Nutrition Details */}
+              <View style={styles.nutritionDetails}>
+                <View style={styles.nutritionItem}>
+                  <View style={[styles.nutritionDot, { backgroundColor: '#DCA34B' }]} />
+                  <Text style={styles.nutritionText}>Carb: 48g</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <View style={[styles.nutritionDot, { backgroundColor: '#76A878' }]} />
+                  <Text style={styles.nutritionText}>Protein: 42g</Text>
+                </View>
+                <View style={styles.nutritionItem}>
+                  <View style={[styles.nutritionDot, { backgroundColor: '#7D93B0' }]} />
+                  <Text style={styles.nutritionText}>Chất béo: 25g</Text>
+                </View>
+                <Text style={styles.caloriesText}>Calo: 580</Text>
               </View>
             </View>
             
-            {/* Nutrition Details */}
-            <View style={styles.nutritionDetails}>
-              <View style={styles.nutritionItem}>
-                <View style={[styles.nutritionDot, { backgroundColor: '#DCA34B' }]} />
-                <Text style={styles.nutritionText}>Carb: 48g</Text>
-              </View>
-              <View style={styles.nutritionItem}>
-                <View style={[styles.nutritionDot, { backgroundColor: '#76A878' }]} />
-                <Text style={styles.nutritionText}>Protein: 42g</Text>
-              </View>
-              <View style={styles.nutritionItem}>
-                <View style={[styles.nutritionDot, { backgroundColor: '#7D93B0' }]} />
-                <Text style={styles.nutritionText}>Chất béo: 25g</Text>
-              </View>
-              <Text style={styles.caloriesText}>Calo: 580</Text>
+            {/* Divider */}
+            <View style={styles.divider} />
+            
+            {/* Ingredients Section */}
+            <Text style={styles.sectionTitle}>Nguyên liệu</Text>
+            <View style={styles.ingredientsContainer}>
+              <Text style={styles.ingredients}>
+                Nguyên liệu chủ yếu: bột, trứng, đường, bơ...
+              </Text>
             </View>
-          </View>
+            
+            {/* Allergy Info */}
+            <View style={styles.allergyContainer}>
+              <Icon name="alert-circle-outline" size={20} color="#A67C52" />
+              <Text style={styles.allergyText}>Có thể chứa: gluten, trứng</Text>
+            </View>
+          </ScrollView>
           
-          {/* Divider */}
-          <View style={styles.divider} />
-          
-          {/* Ingredients Section */}
-          <Text style={styles.sectionTitle}>Nguyên liệu</Text>
-          <View style={styles.ingredientsContainer}>
-            <Text style={styles.ingredients}>
-              Nguyên liệu chủ yếu: bột, trứng, đường, bơ...
-            </Text>
-          </View>
-          
-          {/* Allergy Info */}
-          <View style={styles.allergyContainer}>
-            <Icon name="alert-circle-outline" size={20} color="#A67C52" />
-            <Text style={styles.allergyText}>Có thể chứa: gluten, trứng</Text>
-          </View>
-        </ScrollView>
-        
-        {/* Bottom Button */}
-        <TouchableOpacity style={styles.addButton}>
-          <Text style={styles.addButtonText}>Thêm vào thực đơn</Text>
-        </TouchableOpacity>
-      </View>
+          {/* Bottom Button */}
+          <TouchableOpacity style={styles.addButton}>
+            <Text style={styles.addButtonText}>Thêm vào thực đơn</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  return (
+    <SafeAreaView style={styles.container}>
+      <Text style={styles.errorText}>Đang tải dữ liệu...</Text>
     </SafeAreaView>
-  );
+  ); // Fallback khi chưa có trạng thái hợp lệ
 };
+
+export default FoodDetailScreen;
 
 const styles = StyleSheet.create({
   container: {
@@ -270,7 +310,7 @@ const styles = StyleSheet.create({
   },
   headerButtons: {
     position: 'absolute',
-    top: 20,
+    top: 20, // Thêm lại top để định vị chính xác
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -347,13 +387,6 @@ const styles = StyleSheet.create({
     color: '#555555',
     marginBottom: 18,
     fontFamily: 'serif',
-  },
-  price: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#220000',
-    alignSelf: 'flex-start',
-    marginBottom: 18,
   },
   priceContainer: {
     alignSelf: 'flex-start',
@@ -493,6 +526,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#FFFFFF',
   },
+  errorText: {
+    fontSize: 16,
+    fontFamily: 'serif',
+    color: '#FF3B30',
+    textAlign: 'center',
+    marginTop: 20,
+  },
 });
-
-export default FoodDetailScreen;

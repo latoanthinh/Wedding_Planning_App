@@ -1,12 +1,12 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator, FlatList, ImageBackground } from 'react-native';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-
+import { ChitietCatering } from '../redux/ChitietCateringSlice';
 const DetailFlowers = ({ navigation, route }) => {
 
-    const { productIdFlo } = route?.params;
+    const { Id } = route?.params;
     const dispatch = useDispatch();
-    const { ChitietFlowersData, ChitietFlowersStatus, error } = useSelector(state => state.chitietflowers);
+    const { ChitietCateringData, ChitietCateringStatus, error } = useSelector(state => state.chitietcatering);
 
 
 
