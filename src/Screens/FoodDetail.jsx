@@ -23,9 +23,8 @@ const FoodDetailScreen = (props) => {
   const { ChitietCateringData, ChitietCateringStatus, error } = useSelector(state => state.chitietcatering);
 
   useEffect(() => {
-    // Gọi API để lấy chi tiết sản phẩm khi component mount, chỉ khi Id tồn tại
     if (Id) {
-      console.log('Fetching detail for Id:', Id); // Debug log
+      // console.log('Fetching detail for Id:', Id); 
       dispatch(ChitietCatering(Id));
     } else {
       console.error('Id không được cung cấp:', route?.params);
@@ -33,7 +32,7 @@ const FoodDetailScreen = (props) => {
 
     // Cleanup: Reset trạng thái khi rời màn hình
     return () => {
-      console.log('Cleaning up and resetting state for Id:', Id);
+      // console.log('Cleaning up and resetting state for Id:', Id);
       dispatch(resetChitietCatering());
     };
   }, [dispatch, Id]);

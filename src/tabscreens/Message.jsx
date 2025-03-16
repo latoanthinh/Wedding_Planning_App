@@ -9,6 +9,7 @@ import {
   Platform,
   TouchableWithoutFeedback,
   Keyboard,
+  PanResponder,
 } from 'react-native';
 import React, { useState, useRef, useCallback } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -20,6 +21,7 @@ const Message = () => {
   const [newMessage, setNewMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [dots, setDots] = useState('');
+  const [swipedMessageId, setSwipedMessageId] = useState(null);
   const flatListRef = useRef(null);
 
   const handleSend = useCallback(() => {
@@ -58,16 +60,31 @@ const Message = () => {
     }, 5000);
   };
 
-  const renderMessage = ({ item }) => (
-    <View style={[styles.messageContainer, item.fromUser ? styles.userMessage : styles.systemMessage]}>
-      <Text style={[styles.messageText, item.fromUser ? styles.userText : styles.systemText]}>
-        {item.text}
-      </Text>
-      <Text style={styles.timeText}>
-        {item.time}
-      </Text>
-    </View>
-  );
+  const handleSwipe = (id) => {
+    setSwipedMessageId(id);
+  };
+
+  const renderMessage = ({ item }) => {
+    const isSwiped = swipedMessageId === item.id;
+
+    const panResponder = PanResponder.create({
+      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 30,
+      onPanResponderRelease: () => handleSwipe(item.id),
+    });
+
+    return (
+      <View {...panResponder.panHandlers} style={[styles.messageContainer, item.fromUser ? styles.userMessage : styles.systemMessage]}>
+        <Text style={[styles.messageText, item.fromUser ? styles.userText : styles.systemText]}>
+          {item.text}
+        </Text>
+        {isSwiped && (
+          <Text style={styles.timeText}>
+            {item.time}
+          </Text>
+        )}
+      </View>
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeContainer}>
@@ -112,6 +129,7 @@ const Message = () => {
 
 export default Message;
 
+
 const styles = StyleSheet.create({
   safeContainer: {
     flex: 1,
@@ -147,7 +165,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   userMessage: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#000',
     alignSelf: 'flex-end',
   },
   systemMessage: {
@@ -183,10 +201,10 @@ const styles = StyleSheet.create({
     borderColor: 'grey',
   },
   sendButton: {
-    backgroundColor: '#007bff',
+    backgroundColor: '#000',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 20,
+    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
   },

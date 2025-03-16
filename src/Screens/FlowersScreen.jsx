@@ -27,7 +27,7 @@ const formatPrice = (num) => {
 
 const renderLoading = () => (
   <View style={styles.loadingContainer}>
-    <Lottie source={require('../Assets/Animations/loading1.json')} autoPlay loop style={styles.loadingAnimation} />
+    <Lottie source={require('../Assets/Animations/blackloading.json')} autoPlay loop style={styles.loadingAnimation} />
     <Text style={styles.loadingText}>Chờ xíu...</Text>
   </View>
 );

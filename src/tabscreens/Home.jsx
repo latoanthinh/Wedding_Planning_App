@@ -115,7 +115,6 @@ const ScreenHome = ({ navigation }) => {
         renderLoading()
       ) : (
         <ScrollView contentContainerStyle={styles.scrollViewContent} showsVerticalScrollIndicator={false}>
-          {/* Greeting */}
           <Text style={styles.greetingText}>Xin chào, {'\n'} {user.name}</Text>
           <Text style={styles.welcomeText}>Hãy lên kế hoạch cho ngày cưới hoàn hảo</Text>
 

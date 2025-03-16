@@ -34,7 +34,7 @@ const GenPlan = ({ navigation, route }) => {
   const renderPlan = ({ item }) => (
     <Pressable
       style={styles.planCard}
-      onPress={() => navigation.navigate("PlanDetail", { planData: item })} // Giả sử có màn hình chi tiết
+      onPress={() => navigation.navigate("PlanDetail", { planData: item })} 
     >
       <View style={styles.planContent}>
         <Text style={styles.planName}>{item.SanhId?.name || "Sảnh không xác định"}</Text>
