@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator, FlatList, ImageBackground } from 'react-native';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { ChitietFlowers } from '../redux/ChitietFlowersSlice';
 
 const DetailFlowers = ({ navigation, route }) => {
 

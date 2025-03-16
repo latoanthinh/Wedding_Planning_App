@@ -103,6 +103,7 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontFamily: 'Playfair_me',
     marginBottom: 10,
+    marginLeft: 10
   },
   exploreButton: {
     backgroundColor: 'rgba(255, 255, 255, 0.3)',
@@ -110,10 +111,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     borderRadius: 20,
     alignSelf: 'flex-start',
+    marginLeft: 10
   },
   exploreButtonText: {
     color: '#fff',
-    fontWeight: '500',
     fontSize: 14,
     fontFamily: 'Playfair_me',
   },
