@@ -45,6 +45,9 @@ const SignIn = (props) => {
         return valid;
     };
 
+    const handleForgotPasswordPress = () => {
+        navigation.navigate('EmailOpt');
+    };
 
 
 
@@ -131,7 +134,9 @@ const SignIn = (props) => {
                     </TouchableOpacity>
                     <Text style={SignInPageStyles.rememberMeText}>Ghi nhớ</Text>
                 </View>
-                <Text style={SignInPageStyles.forgotPasswordText}>Quên mật khẩu?</Text>
+                <TouchableOpacity onPress={handleForgotPasswordPress} style={SignInPageStyles.forgotPasswordText}>
+                    <Text style={SignInPageStyles.forgotPasswordText}>Quên mật khẩu?</Text>
+                </TouchableOpacity>
             </View>
 
             <TouchableOpacity style={SignInPageStyles.signInButton} onPress={dangnhap}>

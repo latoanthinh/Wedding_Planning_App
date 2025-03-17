@@ -20,6 +20,7 @@ import FoodDetail from '../Screens/FoodDetail'
 import GiftDetail from '../Screens/GiftDetail'
 import DetailPlan from '../Screens/DetailPlan'
 import DecorDetail from '../Screens/DecorDetail'
+import EmailOpt from '../Screens/EmailOpt'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -29,6 +30,7 @@ const GuestStackNavigation = () => {
     <GuestStack.Navigator screenOptions={{ headerShown: false }}>
 
       <GuestStack.Screen name="SignIn" component={SignIn} />
+      <GuestStack.Screen name="EmailOpt" component={EmailOpt} />
       <GuestStack.Screen name="SignUp" component={SignUp} />
     </GuestStack.Navigator>
   )
