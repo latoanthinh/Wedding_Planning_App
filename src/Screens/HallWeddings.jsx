@@ -2,17 +2,22 @@ import {
     StyleSheet, Text, View, Image,
     TouchableOpacity, Dimensions, Pressable
 } from 'react-native';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { HallTheoWedding } from '../redux/HallTheoWeddingHallsSlice';
 import Lottie from 'lottie-react-native';
+import { useNavigation } from '@react-navigation/native';
 
 const { width } = Dimensions.get('window');
 
-const HallWeddings = ({ navigation, route }) => {
+const HallWeddings = ({ route }) => {
     const { productIdHall } = route?.params;
     const dispatch = useDispatch();
     const { HallTheoWeddingFlowersData, HallTheoWeddingFlowersStatus } = useSelector(state => state.halltheowedding);
+    const navigation = useNavigation();
+    
+    // Trạng thái để theo dõi việc tải hình ảnh
+    const [loadingImage, setLoadingImage] = useState(true);
 
     useEffect(() => {
         if (productIdHall) {
@@ -36,6 +41,14 @@ const HallWeddings = ({ navigation, route }) => {
         </View>
     );
 
+    const handleImageLoad = () => {
+        setLoadingImage(false);
+    };
+
+    const handleImagePress = () => {
+        navigation.navigate('PanoramaView');
+    };
+
     return (
         <View style={styles.container}>
             {/* Header */}
@@ -49,13 +62,17 @@ const HallWeddings = ({ navigation, route }) => {
                 </TouchableOpacity>
             </View>
 
-            {/* Loading */}
             {HallTheoWeddingFlowersStatus === 'loading' && renderLoading()}
 
-            {/* Nếu có dữ liệu, hiển thị item đầu tiên */}
             {HallTheoWeddingFlowersStatus === 'succeeded' && HallTheoWeddingFlowersData && (
                 <Pressable style={styles.cardContainer}>
-                    <Image source={{ uri: HallTheoWeddingFlowersData.imageUrl }} style={styles.imghall} />
+                    <TouchableOpacity onPress={handleImagePress}>
+                        <Image
+                            source={{ uri: HallTheoWeddingFlowersData.imageUrl }}
+                            style={styles.imghall}
+                            onLoad={handleImageLoad}
+                        />
+                    </TouchableOpacity>
                     <View style={styles.cardContent}>
                         <Text style={styles.namehall} numberOfLines={1}>{HallTheoWeddingFlowersData.name}</Text>
                         <View style={styles.bottomhall}>
@@ -72,8 +89,11 @@ const HallWeddings = ({ navigation, route }) => {
                 </Pressable>
             )}
 
-            {/* Trường hợp lỗi hoặc không có dữ liệu */}
-            {HallTheoWeddingFlowersStatus === 'failed' && <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>}
+            {loadingImage && renderLoading()} 
+
+            {/* {HallTheoWeddingFlowersStatus === 'failed' && (
+                <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
+            )} */}
         </View>
     );
 };
@@ -92,7 +112,7 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         paddingVertical: 15,
         backgroundColor: '#fff',
-        marginTop: 20
+        marginTop: 20,
     },
     icon: {
         width: 24,
@@ -104,7 +124,7 @@ const styles = StyleSheet.create({
     },
     title: {
         fontSize: 22,
-        fontFamily:'Playfair_me',
+        fontFamily: 'Playfair_me',
         color: '#333',
     },
     cardContainer: {
@@ -130,7 +150,7 @@ const styles = StyleSheet.create({
     },
     namehall: {
         fontSize: 20,
-        fontFamily:'Playfair_me',
+        fontFamily: 'Playfair_me',
         color: '#333',
         marginBottom: 8,
     },
@@ -152,11 +172,11 @@ const styles = StyleSheet.create({
     infoText: {
         fontSize: 16,
         color: '#555',
-        fontFamily:'Playfair-re'
+        fontFamily: 'Playfair-re',
     },
     priceText: {
         fontSize: 18,
-        fontFamily:'Playfair-re',
+        fontFamily: 'Playfair-re',
         color: '#E53935',
     },
     loadingContainer: {
@@ -171,7 +191,7 @@ const styles = StyleSheet.create({
     loadingText: {
         fontSize: 20,
         color: '#666',
-        fontFamily:'Playfair-re'
+        fontFamily: 'Playfair-re',
     },
     errorText: {
         textAlign: 'center',

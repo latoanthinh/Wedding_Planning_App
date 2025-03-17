@@ -39,6 +39,7 @@ const GuestStackNavigation = () => {
 
 // START: Stack dành cho user đã đăng nhập
 import TabNavigation from './TabNavigation'
+import PanoramaView from '../Screens/PanoramaView'
 
 const Stack = createNativeStackNavigator();
 const StackNavigation = () => {
@@ -66,7 +67,7 @@ const StackNavigation = () => {
       <Stack.Screen name="GiftDetail" component={GiftDetail} />
       <Stack.Screen name="DetailPlan" component={DetailPlan} />
       <Stack.Screen name="DecorDetail" component={DecorDetail} />
-
+      <Stack.Screen name="PanoramaView" component={PanoramaView}/>
     </Stack.Navigator>
     
   )
