@@ -2,7 +2,6 @@ import { StyleSheet, Text, View, TouchableOpacity, Image, ActivityIndicator, Fla
 import React, { useState, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChitietCatering } from '../redux/ChitietCateringSlice';
-
 const DetailFlowers = ({ navigation, route }) => {
 
     const { Id } = route?.params;

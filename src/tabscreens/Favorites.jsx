@@ -13,7 +13,6 @@ const Favorites = ({ navigation }) => {
 
     useEffect(() => {
         if (userId) {
-            // Reset dữ liệu trước khi fetch mới
             dispatch(resetFavorites());
             dispatch(fetchUserFavorites(userId));
         } else {
@@ -21,7 +20,6 @@ const Favorites = ({ navigation }) => {
         }
     }, [dispatch, userId]);
 
-    // Làm phẳng và loại bỏ trùng lặp
     const flattenData = Array.isArray(data) ? data.flat() : [];
     const validatedData = Array.from(
         new Map(flattenData.map(item => [item._id, item])).values()
@@ -53,7 +51,6 @@ const Favorites = ({ navigation }) => {
                             console.log(`Xóa mục yêu thích: userId=${userId}, type=${item.type}, itemId=${item.itemId}`);
                             dispatch(removeFavoriteItem({ userId, type: item.type, itemId: item.itemId }))
                                 .then(() => {
-                                    // Làm mới danh sách sau khi xóa thành công
                                     dispatch(fetchUserFavorites(userId));
                                 })
                                 .catch((error) => {
@@ -76,7 +73,7 @@ const Favorites = ({ navigation }) => {
             console.warn('Dữ liệu item không hợp lệ:', item);
             return null;
         }
-        
+
         return (
             <View style={styles.itemCard}>
                 <TouchableOpacity
@@ -117,7 +114,7 @@ const Favorites = ({ navigation }) => {
             </View>
             <Text style={styles.emptyTitle}>Không có mục yêu thích</Text>
             <Text style={styles.emptyMessage}>Hãy thêm sản phẩm vào danh sách yêu thích của bạn</Text>
-            <TouchableOpacity 
+            <TouchableOpacity
                 style={styles.shopButton}
                 onPress={() => navigation.navigate('HomeScreen')}
             >
@@ -129,7 +126,7 @@ const Favorites = ({ navigation }) => {
     if (status === 'loading') {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF6F61" />
+                <ActivityIndicator size="large" color="#000" />
                 <Text style={styles.loadingText}>Đang tải...</Text>
             </View>
         );
@@ -176,7 +173,7 @@ export default Favorites;
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F8F8F8',
+        backgroundColor: '#fff',
     },
     header: {
         flexDirection: 'column',
@@ -184,11 +181,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         padding: 16,
         backgroundColor: '#FFFFFF',
-        elevation: 2,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
     },
     headerTitle: {
         fontSize: 22,
@@ -313,7 +305,6 @@ const styles = StyleSheet.create({
         fontSize: 20,
         fontFamily: 'Playfair_me',
         color: '#000',
-        fontWeight: '600',
     },
     emptyMessage: {
         fontSize: 16,
@@ -324,7 +315,7 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     shopButton: {
-        backgroundColor: '#FF6F61',
+        backgroundColor: '#000',
         paddingVertical: 12,
         paddingHorizontal: 25,
         borderRadius: 25,
@@ -335,7 +326,6 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 16,
         fontFamily: 'Playfair_me',
-        fontWeight: '600',
     },
     errorContainer: {
         flex: 1,

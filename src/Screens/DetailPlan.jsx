@@ -87,7 +87,7 @@ const DetailPlan = ({ navigation, route }) => {
   if (ChitietPlanStatus === 'loading') {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6F61" />
+        <ActivityIndicator size="large" color="#000" />
         <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
       </SafeAreaView>
     );
@@ -405,7 +405,7 @@ const styles = StyleSheet.create({
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFB300', // Màu vàng cho nút chỉnh sửa
+    backgroundColor: '#000', 
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 25,
@@ -414,7 +414,7 @@ const styles = StyleSheet.create({
   depositButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50', // Màu xanh lá cho nút đặt cọc
+    backgroundColor: '#4CAF50',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 25,

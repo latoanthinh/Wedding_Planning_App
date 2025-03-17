@@ -27,7 +27,7 @@ const formatPrice = (num) => {
 
 const renderLoading = () => (
   <View style={styles.loadingContainer}>
-    <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
+    <Lottie source={require('../Assets/Animations/blackloading.json')} autoPlay loop style={styles.loadingAnimation} />
     <Text style={styles.loadingText}>Chờ xíu...</Text>
   </View>
 );
@@ -38,9 +38,9 @@ const FlowersScreen = ({ navigation }) => {
   const { Cate_cateringData, Cate_cateringStatus } = useSelector((state) => state.cate_catering);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
-  const [modalVisible, setModalVisible] = useState(false); // Trạng thái hiển thị modal
-  const [selectedItem, setSelectedItem] = useState(null); // Dữ liệu item được chọn
-  const [favorites, setFavorites] = useState(new Set()); // Lưu danh sách ID của các item yêu thích
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedItem, setSelectedItem] = useState(null);
+  const [favorites, setFavorites] = useState(new Set());
 
   useEffect(() => {
     dispatch(Cate_catering());

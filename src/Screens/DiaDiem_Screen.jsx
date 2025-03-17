@@ -57,7 +57,7 @@ const DiaDiem_Screen = ({ navigation }) => {
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
-      <Lottie source={require('../Assets/Animations/loading.json')} autoPlay loop style={styles.loadingAnimation} />
+      <Lottie source={require('../Assets/Animations/blackloading.json')} autoPlay loop style={styles.loadingAnimation} />
       <Text style={styles.loadingText}>Chờ xíu...</Text>
     </View>
   );
@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 15,
     backgroundColor: '#FFFFFF',
+    marginBottom: 10
   },
   icon: {
     width: 24,
@@ -236,12 +237,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   loadingAnimation: {
-    width: 80,
-    height: 80,
+    width: 150,
+    height: 150,
   },
   loadingText: {
     marginTop: 15,
-    fontSize: 16,
+    fontSize: 20,
     fontFamily: 'Playfair_me',
     color: '#000',
   },
