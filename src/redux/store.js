@@ -43,7 +43,7 @@ export const store = configureStore({
     decoratesbyCate:DecoratesByCateReducer,
     cate_decorates:Cate_decoratesReducer,
     invitations:InvitationsReducer,
-    allplan:GetAllPlanReducer,
+    plan:GetAllPlanReducer,
     halltheowedding: HallTheoWeddingHallsReducer,
     chitietflowers: ChitietFlowersReducer,
     flowers: FlowersReducer,

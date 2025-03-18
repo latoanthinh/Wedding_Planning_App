@@ -21,6 +21,7 @@ import GiftDetail from '../Screens/GiftDetail'
 import DetailPlan from '../Screens/DetailPlan'
 import DecorDetail from '../Screens/DecorDetail'
 import EmailOpt from '../Screens/EmailOpt'
+import EditPlan from '../Screens/EditPlan'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -67,7 +68,12 @@ const StackNavigation = () => {
       <Stack.Screen name="GiftDetail" component={GiftDetail} />
       <Stack.Screen name="DetailPlan" component={DetailPlan} />
       <Stack.Screen name="DecorDetail" component={DecorDetail} />
+<<<<<<< Updated upstream
       <Stack.Screen name="PanoramaView" component={PanoramaView}/>
+=======
+      <Stack.Screen name="EditPlan" component={EditPlan} />
+
+>>>>>>> Stashed changes
     </Stack.Navigator>
     
   )

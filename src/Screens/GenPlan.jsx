@@ -48,7 +48,7 @@ const GenPlan = ({ navigation, route }) => {
             Dịch vụ: {item.caterings?.length > 0 ? item.caterings.map(c => c.name).join(", ") : "Không có"}
           </Text>
         </View>
-        <TouchableOpacity style={styles.detailButtonContainer} onPress={()=> navigation.navigate("DetailPlan" , {DetailPlanId : item._id})}>
+        <TouchableOpacity style={styles.detailButtonContainer} onPress={()=> navigation.navigate("DetailPlan" , {planId : item._id})}>
           <Text style={styles.detailButton}>Xem chi tiết</Text>
         </TouchableOpacity>
       </View>
