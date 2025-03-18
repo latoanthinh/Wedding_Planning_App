@@ -41,14 +41,11 @@ const GuestStackNavigation = () => {
 
 // START: Stack dành cho user đã đăng nhập
 import TabNavigation from './TabNavigation'
-import PanoramaView from '../Screens/PanoramaView'
 
 const Stack = createNativeStackNavigator();
 const StackNavigation = () => {
   return (
-   
-    <Stack.Navigator screenOptions={{ headerShown: false}}>
-
+    <Stack.Navigator screenOptions={{ headerShown: false }}>
 
       <Stack.Screen name="TabNavigation" component={TabNavigation} />
       <Stack.Screen name="Dress" component={Dress} />
@@ -71,9 +68,8 @@ const StackNavigation = () => {
       <Stack.Screen name="DecorDetail" component={DecorDetail} />
       <Stack.Screen name="EditPlan" component={EditPlan} />
       <Stack.Screen name="PanoramaView" component={PanoramaView} />
-
     </Stack.Navigator>
-    
+
   )
 }
 // END: Stack dành cho user đã đăng nhập
