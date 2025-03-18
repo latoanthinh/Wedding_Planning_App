@@ -1,5 +1,6 @@
-import { StyleSheet,FlatList, Image, Dimensions, Text, View ,Animated,TouchableOpacity,alert } from 'react-native'
+import { StyleSheet,FlatList, Image, Dimensions, Text, View ,Animated,TouchableOpacity } from 'react-native'
 import React, { useRef, useState } from 'react'
+import { useNavigation } from '@react-navigation/native'
 
 
 const { width} = Dimensions.get("window");
@@ -9,27 +10,22 @@ const slides = [
     {
         image: require("../Assets/Images/intro1.png"),
         description: "Start your journey to a magical wedding experience",
-        buttonText: "Bắt đầu",
-        onPress: () => alert("Bạn đã nhấn nút 1"),
+        buttonText: "Next",
     },
     {
         image: require("../Assets/Images/intro2.png"),
         description: "Discover the beauty that awaits on your special day.",
-        buttonText: "Khám phá da dạng",
-        onPress: () => alert("Bạn đã nhấn nút 2"),
+        buttonText: "Next",
     },
     {
         image: require("../Assets/Images/intro3.png"),
         description: "Let us help you design the perfect wedding atmosphere.",
-        buttonText: "Tham gia ngay",
-        onPress: () => alert("Bạn đã nhấn nút 3"),
+        buttonText: "Go to Login",
     },
 ];
 
 const Intro = () => {
-
-     
-
+    const navigation = useNavigation();
     const flatListRef = useRef(null);
     const scrollX = useRef(new Animated.Value(0)).current;
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -43,6 +39,17 @@ const Intro = () => {
         const index = Math.round(event.nativeEvent.contentOffset.x / width);
         setCurrentIndex(index);
     };
+
+    const handleButtonPress = () => {
+        if (currentIndex < slides.length - 1) {
+            // Go to next slide
+            flatListRef.current.scrollToIndex({ index: currentIndex + 1, animated: true });
+        } else {
+            // Go to login screen on last slide
+            navigation.navigate('SignIn');
+        }
+    };
+
   return (
     <View style={styles.container}>
             <FlatList
@@ -60,7 +67,7 @@ const Intro = () => {
                         {/* Nội dung nằm trên ảnh */}
                         <View style={styles.overlay}>
                             <Text style={styles.description}>{item.description}</Text>
-                            <TouchableOpacity style={styles.button} onPress={item.onPress}>
+                            <TouchableOpacity style={styles.button} onPress={handleButtonPress}>
                                 <Text style={styles.buttonText}>{item.buttonText}</Text>
                             </TouchableOpacity>
                         </View>
