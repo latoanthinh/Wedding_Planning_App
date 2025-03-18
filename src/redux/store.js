@@ -21,6 +21,7 @@ import  ChitietDecorReducer  from './ChitietDecorSlice';
 import  ChitietPlanReducer  from './ChitietPlanSlice';
 import  KhaoSatReducer  from './KhaoSatSlice';
 import  UserReducer  from './UserSlice';
+import  ForgotPasswordReducer  from './ForgotPasswordSlice';
 
 
 
@@ -52,5 +53,6 @@ export const store = configureStore({
     clothes: ClothesReducer,
     hall: HallReducer,
     dummy: dummyReducer,
+    forgotPassword: ForgotPasswordReducer,
   },
 });
