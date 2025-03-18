@@ -1,28 +1,34 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback,useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Plan } from '../redux/GetAllPlanSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
+import { AppContext } from '../AppContext'; // Import useAppContext để lấy userId
 
 const AllPlan = ({ navigation }) => {
     const dispatch = useDispatch();
-    const { AllPlanData, AllPlanStatus } = useSelector((state) => state.allplan);
+    const { AllPlanData, AllPlanStatus, error } = useSelector((state) => state.plan); // Sửa state.allplan thành state.plan để khớp với slice
+    const { user } = useContext(AppContext); // Lấy userId từ AppContext
 
+    const userId = user._id;
     // Dispatch action để lấy dữ liệu kế hoạch khi component mount
     useEffect(() => {
-        dispatch(Plan());
-    }, [dispatch]);
+        if (userId) {
+            dispatch(Plan(userId));
+        } else {
+            console.warn('Không có userId để lấy danh sách kế hoạch');
+        }
+    }, [dispatch, userId]);
 
     // Component hiển thị item kế hoạch với thiết kế được cải tiến
     const PlanCard = useCallback(({ item }) => (
         <TouchableOpacity
-            onPress={()=> navigation.navigate("DetailPlan" , {DetailPlanId : item._id})}
+            onPress={() => navigation.navigate("DetailPlan", { planId: item._id })}
             style={styles.cardContainer}
         >
             <View style={styles.card}>
                 <View style={styles.cardHeader}>
-                    <Text style={styles.productName}>{item.name}</Text>
+                    <Text style={styles.productName}>{item.name || 'Kế hoạch không tên'}</Text>
                     <View style={[
                         styles.statusBadge,
                         { backgroundColor: getStatusColor(item.status) }
@@ -32,9 +38,9 @@ const AllPlan = ({ navigation }) => {
                         </Text>
                     </View>
                 </View>
-                
+
                 <View style={styles.cardDivider} />
-                
+
                 <View style={styles.cardFooter}>
                     <View style={styles.priceContainer}>
                         <Text style={styles.priceLabel}>Tổng tiền:</Text>
@@ -42,9 +48,9 @@ const AllPlan = ({ navigation }) => {
                     </View>
                     <View style={styles.detailButton}>
                         <Text style={styles.detailButtonText}>Xem chi tiết</Text>
-                        <Image 
-                            source={require('../Assets/Images/back.png')} 
-                            style={styles.arrowIcon} 
+                        <Image
+                            source={require('../Assets/Images/back.png')}
+                            style={styles.arrowIcon}
                         />
                     </View>
                 </View>
@@ -54,10 +60,8 @@ const AllPlan = ({ navigation }) => {
 
     // Hàm định dạng giá tiền với dấu phân cách
     const formatPrice = (price) => {
-        return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+        return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") || '0';
     };
-
-    
 
     // Hàm xác định màu sắc dựa trên trạng thái
     const getStatusColor = (status) => {
@@ -77,17 +81,15 @@ const AllPlan = ({ navigation }) => {
         }
     };
 
-
-
     // Hàm render nội dung dựa trên status
     const renderContent = useCallback(() => {
         switch (AllPlanStatus) {
             case 'idle':
                 return (
                     <View style={styles.statusContainer}>
-                        <Image 
+                        <Image
                             source={require('../Assets/Images/home48.png')}
-                            style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} 
+                            style={[styles.statusIcon, { tintColor: '#9E9E9E' }]}
                         />
                         <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
                     </View>
@@ -110,9 +112,9 @@ const AllPlan = ({ navigation }) => {
                     />
                 ) : (
                     <View style={styles.statusContainer}>
-                        <Image 
+                        <Image
                             source={require('../Assets/Images/home48.png')}
-                            style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} 
+                            style={[styles.statusIcon, { tintColor: '#9E9E9E' }]}
                         />
                         <Text style={styles.statusMessage}>Không có kế hoạch nào để hiển thị!</Text>
                     </View>
@@ -120,14 +122,14 @@ const AllPlan = ({ navigation }) => {
             case 'failed':
                 return (
                     <View style={styles.statusContainer}>
-                        <Image 
+                        <Image
                             source={require('../Assets/Images/home48.png')}
-                            style={[styles.statusIcon, { tintColor: '#F44336' }]} 
+                            style={[styles.statusIcon, { tintColor: '#F44336' }]}
                         />
-                        <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
+                        <Text style={styles.errorText}>Không thể tải dữ liệu! {error}</Text>
                         <TouchableOpacity
                             style={styles.retryButton}
-                            onPress={() => dispatch(Plan())}
+                            onPress={() => userId && dispatch(Plan(userId))}
                         >
                             <Text style={styles.retryButtonText}>Thử lại</Text>
                         </TouchableOpacity>
@@ -136,19 +138,19 @@ const AllPlan = ({ navigation }) => {
             default:
                 return null;
         }
-    }, [AllPlanData, AllPlanStatus, dispatch, PlanCard]);
+    }, [AllPlanData, AllPlanStatus, error, dispatch, userId, PlanCard]);
 
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.headerButton}
-                    onPress={() => navigation.navigate('TabNavigation')}//i fix here goback về lỗi
+                    onPress={() => navigation.goBack()} // Sửa lại để quay về màn trước thay vì TabNavigation
                 >
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
                 <Text style={styles.title}>Kế hoạch của bạn</Text>
-                <TouchableOpacity 
+                <TouchableOpacity
                     style={styles.headerButton}
                     onPress={() => navigation.navigate('TabNavigation')}
                 >
@@ -175,7 +177,6 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         paddingHorizontal: 16,
-       
         paddingBottom: 16,
         backgroundColor: '#FFFFFF',
         borderBottomWidth: 1,
@@ -218,16 +219,16 @@ const styles = StyleSheet.create({
     },
     cardContainer: {
         marginBottom: 16,
-        borderRadius: 16, 
+        borderRadius: 16,
         backgroundColor: '#FFFFFF',
         shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 6 }, 
-        shadowOpacity: 0.15, 
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.15,
         shadowRadius: 8,
-        elevation: 5, 
+        elevation: 5,
         overflow: 'hidden',
         borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.03)', 
+        borderColor: 'rgba(0,0,0,0.03)',
     },
     card: {
         padding: 18,
@@ -240,29 +241,29 @@ const styles = StyleSheet.create({
     },
     productName: {
         fontSize: 18,
-        fontWeight: '700', 
+        fontWeight: '700',
         color: '#212121',
         flex: 1,
-        letterSpacing: 0.3, 
+        letterSpacing: 0.3,
     },
     statusBadge: {
         paddingHorizontal: 12,
         paddingVertical: 5,
-        borderRadius: 20, 
+        borderRadius: 20,
         marginLeft: 8,
         shadowColor: '#000000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 2,
-        elevation: 1, 
+        elevation: 1,
     },
     statusText: {
         fontSize: 12,
-        fontWeight: '700', 
+        fontWeight: '700',
         color: '#FFFFFF',
     },
     cardDivider: {
-        height: 1.5, 
+        height: 1.5,
         backgroundColor: 'rgba(0,0,0,0.06)',
         marginVertical: 14,
     },
@@ -276,12 +277,12 @@ const styles = StyleSheet.create({
     },
     priceLabel: {
         fontSize: 14,
-        fontWeight: '500', 
+        fontWeight: '500',
         color: '#757575',
         marginBottom: 4,
     },
     productPrice: {
-        fontSize: 20, 
+        fontSize: 20,
         fontWeight: 'bold',
         color: '#F44336',
     },
@@ -289,18 +290,18 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         alignItems: 'center',
         backgroundColor: '#200000',
-        paddingVertical: 10, 
-        paddingHorizontal: 16, 
-        borderRadius: 24, 
+        paddingVertical: 10,
+        paddingHorizontal: 16,
+        borderRadius: 24,
         shadowColor: '#222222',
         shadowOffset: { width: 0, height: 3 },
         shadowOpacity: 0.3,
         shadowRadius: 4,
-        elevation: 3, 
+        elevation: 3,
     },
     detailButtonText: {
         fontSize: 14,
-        fontWeight: '700', 
+        fontWeight: '700',
         color: '#FFFFFF',
         marginRight: 6,
     },
@@ -345,3 +346,4 @@ const styles = StyleSheet.create({
         fontWeight: '600',
     },
 });
+
