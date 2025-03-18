@@ -23,6 +23,8 @@ import DecorDetail from '../Screens/DecorDetail'
 import EmailOpt from '../Screens/EmailOpt'
 import EditPlan from '../Screens/EditPlan'
 import PanoramaView from '../Screens/PanoramaView'
+import Welcome from '../Screens/Welcome'
+import Intro from '../Screens/Intro'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -30,7 +32,8 @@ const GuestStack = createNativeStackNavigator();
 const GuestStackNavigation = () => {
   return (
     <GuestStack.Navigator screenOptions={{ headerShown: false }}>
-
+      <GuestStack.Screen name="Welcome" component={Welcome} />
+      <GuestStack.Screen name="Intro" component={Intro} />
       <GuestStack.Screen name="SignIn" component={SignIn} />
       <GuestStack.Screen name="EmailOpt" component={EmailOpt} />
       <GuestStack.Screen name="SignUp" component={SignUp} />
@@ -41,14 +44,12 @@ const GuestStackNavigation = () => {
 
 // START: Stack dành cho user đã đăng nhập
 import TabNavigation from './TabNavigation'
-import PanoramaView from '../Screens/PanoramaView'
 
 const Stack = createNativeStackNavigator();
 const StackNavigation = () => {
   return (
    
     <Stack.Navigator screenOptions={{ headerShown: false}}>
-
 
       <Stack.Screen name="TabNavigation" component={TabNavigation} />
       <Stack.Screen name="Dress" component={Dress} />
