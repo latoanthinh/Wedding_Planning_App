@@ -5,6 +5,7 @@ import { GuestStackNavigation, StackNavigation } from './StackNavigation'
 
 import { AppContext } from '../AppContext'
 const Appnavigation = () => {
+  
   const { user } = useContext(AppContext)
 
   return (

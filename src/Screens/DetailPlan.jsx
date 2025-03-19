@@ -32,7 +32,7 @@ const DetailPlan = ({ navigation, route }) => {
   useEffect(() => {
     if (routePlanData) {
       // Nếu có dữ liệu từ route.params, không cần gọi API
-      console.log('Sử dụng dữ liệu từ route.params:', routePlanData);
+      
       Animated.timing(fadeAnim, {
         toValue: 1,
         duration: 500,
@@ -71,7 +71,7 @@ const DetailPlan = ({ navigation, route }) => {
 
   // Sử dụng routePlanData nếu có, nếu không thì dùng ChitietPlanData
   const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || {};
-  console.log('PlanData trong DetailPlan:', planData);
+  
 
   const renderServiceItem = (title, services, iconName, color) => (
     <View style={styles.section}>
@@ -135,19 +135,30 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show('Không tìm thấy thông tin người dùng!', ToastAndroid.SHORT);
       return;
     }
-
-    const isOwner = planData.UserId && planData.UserId._id.toString() === userId.toString();
-
+  
+    // Kiểm tra UserId là chuỗi hay object
+    const userIdFromPlan = typeof planData.UserId === 'string' ? planData.UserId : planData.UserId?._id;
+    const isOwner = userIdFromPlan && userIdFromPlan.toString() === userId.toString();
+  
     if (isOwner) {
-      console.log('Chỉnh sửa plan hiện tại:', planId);
       navigation.navigate('EditPlan', { planId: planId, planData });
     } else {
-      console.log('Tạo bản sao mới cho plan:', planId);
       dispatch(duplicatePlan({ planId: planId, userId }))
         .unwrap()
         .then((newPlan) => {
-          console.log('Tạo bản sao thành công, newPlanId:', newPlan._id);
-          navigation.navigate('EditPlan', { planId: newPlan._id, planData: newPlan });
+          const combinedPlanData = {
+            ...planData,
+            _id: newPlan._id,
+            UserId: userId, // Đảm bảo UserId là chuỗi
+            name: newPlan.name || `Copy of ${planData.name}`,
+            plandateevent: newPlan.plandateevent || planData.plandateevent,
+            createdAt: newPlan.createdAt,
+            updatedAt: newPlan.updatedAt,
+            caterings: planData.caterings || newPlan.caterings || [],
+            decorates: planData.decorates || newPlan.decorates || [],
+            presents: planData.presents || newPlan.presents || [],
+          };
+          navigation.navigate('EditPlan', { planId: newPlan._id, planData: combinedPlanData });
           ToastAndroid.show('Đã tạo bản sao kế hoạch để chỉnh sửa!', ToastAndroid.SHORT);
         })
         .catch((err) => {

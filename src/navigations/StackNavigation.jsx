@@ -32,11 +32,12 @@ const GuestStack = createNativeStackNavigator();
 const GuestStackNavigation = () => {
   return (
     <GuestStack.Navigator screenOptions={{ headerShown: false }}>
-      <GuestStack.Screen name="Welcome" component={Welcome} />
-      <GuestStack.Screen name="Intro" component={Intro} />
+      
       <GuestStack.Screen name="SignIn" component={SignIn} />
       <GuestStack.Screen name="EmailOpt" component={EmailOpt} />
       <GuestStack.Screen name="SignUp" component={SignUp} />
+      {/* <GuestStack.Screen name="Welcome" component={Welcome} />
+      <GuestStack.Screen name="Intro" component={Intro} /> */}
     </GuestStack.Navigator>
   )
 }

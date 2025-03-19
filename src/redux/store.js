@@ -22,6 +22,8 @@ import  ChitietPlanReducer  from './ChitietPlanSlice';
 import  KhaoSatReducer  from './KhaoSatSlice';
 import  UserReducer  from './UserSlice';
 import  ForgotPasswordReducer  from './ForgotPasswordSlice';
+import  GetAllCateringReducer  from './GetAllCateringSlice';
+import  GetAllDecoratesReducer  from './GetAllDecoratesSlice';
 
 
 
@@ -30,6 +32,8 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    getalldecorates:GetAllDecoratesReducer,
+    getallcatering:GetAllCateringReducer,
     chitietplan:ChitietPlanReducer,
     user: UserReducer,
     khaosat:KhaoSatReducer,

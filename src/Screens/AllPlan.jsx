@@ -145,7 +145,7 @@ const AllPlan = ({ navigation }) => {
             <View style={styles.header}>
                 <TouchableOpacity
                     style={styles.headerButton}
-                    onPress={() => navigation.goBack()} // Sửa lại để quay về màn trước thay vì TabNavigation
+                    onPress={() => navigation.navigate('TabNavigation')} // Sửa lại để quay về màn trước thay vì TabNavigation
                 >
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
                 </TouchableOpacity>
