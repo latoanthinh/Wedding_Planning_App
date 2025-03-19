@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import {
-  StyleSheet,View,Text,Animated,Image,TouchableOpacity,ScrollView,StatusBar,
-  Dimensions,TextInput,ToastAndroid,Modal,FlatList,ActivityIndicator,
+  StyleSheet, View, Text, Animated, Image, TouchableOpacity, ScrollView, StatusBar,
+  Dimensions, TextInput, ToastAndroid, Modal, FlatList, ActivityIndicator,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,7 @@ import DatePicker from 'react-native-date-picker';
 import { useDispatch, useSelector } from 'react-redux';
 import { updatePlan } from '../redux/ChitietPlanSlice';
 import { fetchCaterings, resetCaterings } from '../redux/GetAllCateringSlice';
-import { fetchDecorates, resetDecorates } from '../redux/GetAllDecoratesSlice'; // Import actions từ decorateSlice
+import { fetchDecorates, resetDecorates } from '../redux/GetAllDecoratesSlice';
 import { AppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
@@ -22,11 +22,9 @@ const EditPlan = ({ navigation, route }) => {
   const { user } = useContext(AppContext);
   const userId = user?._id;
 
-  // Lấy dữ liệu từ Redux store
   const { caterings, cateringStatus, error: cateringError } = useSelector((state) => state.getallcatering);
   const { decorates, decorateStatus, error: decorateError } = useSelector((state) => state.getalldecorates);
 
-  // State cho các trường cơ bản
   const [name, setName] = useState(planData?.name || '');
   const [plandateevent, setPlandateevent] = useState(
     planData?.plandateevent && !isNaN(new Date(planData.plandateevent).getTime())
@@ -40,15 +38,12 @@ const EditPlan = ({ navigation, route }) => {
   const [planprice, setPlanprice] = useState(
     planData?.planprice ? String(planData.planprice) : ''
   );
-  const [totalPrice, setTotalPrice] = useState(
-    planData?.totalPrice ? String(planData.totalPrice) : ''
-  );
+  const [totalPrice, setTotalPrice] = useState('0'); // Khởi tạo totalPrice là '0'
   const [sanhId, setSanhId] = useState(planData?.SanhId?._id || '');
   const [cateringsList, setCateringsList] = useState(planData?.caterings || []);
-  const [decoratesList, setDecoratesList] = useState(planData?.decorates || []); // Danh sách decorates đã chọn
+  const [decoratesList, setDecoratesList] = useState(planData?.decorates || []);
   const [presents, setPresents] = useState(planData?.presents || []);
 
-  // State cho modal
   const [modalVisible, setModalVisible] = useState(false);
   const [currentType, setCurrentType] = useState('');
   const [availableItems, setAvailableItems] = useState([]);
@@ -65,7 +60,40 @@ const EditPlan = ({ navigation, route }) => {
     }).start();
   }, []);
 
-  // Dữ liệu giả lập cho presents (thay bằng API nếu có)
+  // Tính toán totalPrice tự động khi các danh sách thay đổi
+  useEffect(() => {
+    const calculateTotalPrice = () => {
+      let total = 0;
+
+      // Giá của sảnh
+      if (planData?.SanhId?.price) {
+        total += parseFloat(planData.SanhId.price) || 0;
+      }
+
+      // Tổng giá của caterings
+      if (cateringsList && cateringsList.length > 0) {
+        const cateringTotal = cateringsList.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+        total += cateringTotal;
+      }
+
+      // Tổng giá của decorates
+      if (decoratesList && decoratesList.length > 0) {
+        const decorateTotal = decoratesList.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+        total += decorateTotal;
+      }
+
+      // Tổng giá của presents
+      if (presents && presents.length > 0) {
+        const presentTotal = presents.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+        total += presentTotal;
+      }
+
+      setTotalPrice(total.toString());
+    };
+
+    calculateTotalPrice();
+  }, [cateringsList, decoratesList, presents, planData?.SanhId]);
+
   const mockData = {
     presents: [
       { _id: '6', name: 'Bút bi', price: 50000, imageUrl: 'https://example.com/but.jpg' },
@@ -73,7 +101,6 @@ const EditPlan = ({ navigation, route }) => {
     ],
   };
 
-  // Hàm mở modal và lấy dữ liệu
   const openChangeModal = (type, action = 'add', index = null) => {
     setCurrentType(type);
     setActionType(action);
@@ -83,13 +110,12 @@ const EditPlan = ({ navigation, route }) => {
     if (type === 'caterings') {
       dispatch(fetchCaterings());
     } else if (type === 'decorates') {
-      dispatch(fetchDecorates()); // Gọi API decorates qua Redux
+      dispatch(fetchDecorates());
     } else if (type === 'presents') {
       setAvailableItems(mockData.presents);
     }
   };
 
-  // Cập nhật availableItems khi dữ liệu từ Redux thay đổi
   useEffect(() => {
     if (currentType === 'caterings' && cateringStatus === 'succeeded') {
       setAvailableItems(caterings);
@@ -98,7 +124,6 @@ const EditPlan = ({ navigation, route }) => {
     }
   }, [caterings, cateringStatus, decorates, decorateStatus, currentType]);
 
-  // Hiển thị lỗi nếu có
   useEffect(() => {
     if (currentType === 'caterings' && cateringStatus === 'failed' && cateringError) {
       ToastAndroid.show(`Lỗi khi lấy danh sách món ăn: ${cateringError}`, ToastAndroid.SHORT);
@@ -107,7 +132,6 @@ const EditPlan = ({ navigation, route }) => {
     }
   }, [cateringStatus, cateringError, decorateStatus, decorateError, currentType]);
 
-  // Reset dữ liệu khi component unmount
   useEffect(() => {
     return () => {
       dispatch(resetCaterings());
@@ -115,8 +139,8 @@ const EditPlan = ({ navigation, route }) => {
     };
   }, [dispatch]);
 
-  // Hàm chọn item từ modal
   const handleSelectItem = (item) => {
+    console.log('Item được chọn:', JSON.stringify(item, null, 2));
     if (currentType === 'caterings') {
       if (actionType === 'add') {
         setCateringsList([...cateringsList, item]);
@@ -145,9 +169,11 @@ const EditPlan = ({ navigation, route }) => {
     setModalVisible(false);
     setReplaceIndex(null);
     setActionType('add');
+    console.log('CateringsList sau khi cập nhật:', JSON.stringify(cateringsList, null, 2));
+    console.log('DecoratesList sau khi cập nhật:', JSON.stringify(decoratesList, null, 2));
+    console.log('Presents sau khi cập nhật:', JSON.stringify(presents, null, 2));
   };
-
-  // Hàm xóa item
+  
   const handleRemoveItem = (type, index) => {
     if (type === 'caterings') {
       setCateringsList(cateringsList.filter((_, i) => i !== index));
@@ -156,6 +182,9 @@ const EditPlan = ({ navigation, route }) => {
     } else if (type === 'presents') {
       setPresents(presents.filter((_, i) => i !== index));
     }
+    console.log('CateringsList sau khi xóa:', JSON.stringify(cateringsList, null, 2));
+    console.log('DecoratesList sau khi xóa:', JSON.stringify(decoratesList, null, 2));
+    console.log('Presents sau khi xóa:', JSON.stringify(presents, null, 2));
   };
 
   const handleChangeSanh = () => {
@@ -180,10 +209,6 @@ const EditPlan = ({ navigation, route }) => {
       ToastAndroid.show('Ngân sách không hợp lệ!', ToastAndroid.SHORT);
       return;
     }
-    if (totalPrice && isNaN(parseFloat(totalPrice))) {
-      ToastAndroid.show('Tổng giá không hợp lệ!', ToastAndroid.SHORT);
-      return;
-    }
 
     const updateData = {
       UserId: userId,
@@ -193,7 +218,7 @@ const EditPlan = ({ navigation, route }) => {
         : undefined,
       plansoluongkhach: plansoluongkhach ? parseInt(plansoluongkhach, 10) : undefined,
       planprice: planprice ? parseFloat(planprice) : undefined,
-      totalPrice: totalPrice ? parseFloat(totalPrice) : undefined,
+      totalPrice: parseFloat(totalPrice) || 0, // Đảm bảo totalPrice là số
       SanhId: sanhId || undefined,
       caterings: cateringsList.map(item => item._id),
       decorates: decoratesList.map(item => item._id),
@@ -232,7 +257,6 @@ const EditPlan = ({ navigation, route }) => {
       });
   };
 
-  // Hàm hiển thị danh sách item
   const renderItemList = (items, type) => (
     <View>
       {items.length > 0 ? (
@@ -280,7 +304,6 @@ const EditPlan = ({ navigation, route }) => {
     </View>
   );
 
-  // Hàm render item trong modal
   const renderModalItem = ({ item }) => (
     <TouchableOpacity
       style={styles.modalItem}
@@ -375,10 +398,9 @@ const EditPlan = ({ navigation, route }) => {
               <Text style={styles.label}>Tổng giá:</Text>
               <TextInput
                 style={styles.input}
-                value={totalPrice}
-                onChangeText={(text) => setTotalPrice(text.replace(/[^0-9]/g, ''))}
-                placeholder="Nhập tổng giá (VNĐ)"
-                keyboardType="numeric"
+                value={totalPrice ? parseFloat(totalPrice).toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}
+                editable={false} // Không cho phép chỉnh sửa
+                placeholder="Tổng giá (VNĐ)"
               />
             </View>
 
@@ -423,7 +445,6 @@ const EditPlan = ({ navigation, route }) => {
         </Animated.View>
       </ScrollView>
 
-      {/* Modal hiển thị danh sách chọn item */}
       <Modal
         animationType="slide"
         transparent={true}
