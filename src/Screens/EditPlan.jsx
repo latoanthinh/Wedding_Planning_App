@@ -10,20 +10,24 @@ import { useDispatch, useSelector } from 'react-redux';
 import { updatePlan } from '../redux/ChitietPlanSlice';
 import { fetchCaterings, resetCaterings } from '../redux/GetAllCateringSlice';
 import { fetchDecorates, resetDecorates } from '../redux/GetAllDecoratesSlice';
+import { Hall, resetHall } from '../redux/HallSlice'; // Sửa tên action
+import { fetchPresents, resetPresents } from '../redux/GetAllPresentSlice';
 import { AppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
 
 const EditPlan = ({ navigation, route }) => {
   const { planId, planData } = route?.params || {};
-  
 
   const dispatch = useDispatch();
   const { user } = useContext(AppContext);
   const userId = user?._id;
 
+  // Lấy dữ liệu từ Redux store
   const { caterings, cateringStatus, error: cateringError } = useSelector((state) => state.getallcatering);
   const { decorates, decorateStatus, error: decorateError } = useSelector((state) => state.getalldecorates);
+  const { HallData, HallStatus, error: hallError } = useSelector((state) => state.hall);
+  const { presents, presentStatus, error: presentError } = useSelector((state) => state.getallpresent); // Sửa tên biến
 
   const [name, setName] = useState(planData?.name || '');
   const [plandateevent, setPlandateevent] = useState(
@@ -38,17 +42,19 @@ const EditPlan = ({ navigation, route }) => {
   const [planprice, setPlanprice] = useState(
     planData?.planprice ? String(planData.planprice) : ''
   );
-  const [totalPrice, setTotalPrice] = useState('0'); // Khởi tạo totalPrice là '0'
+  const [totalPrice, setTotalPrice] = useState('0');
   const [sanhId, setSanhId] = useState(planData?.SanhId?._id || '');
+  const [selectedSanh, setSelectedSanh] = useState(planData?.SanhId || null);
   const [cateringsList, setCateringsList] = useState(planData?.caterings || []);
   const [decoratesList, setDecoratesList] = useState(planData?.decorates || []);
-  const [presents, setPresents] = useState(planData?.presents || []);
+  const [presentsList, setPresentsList] = useState(planData?.presents || []); // Đổi tên để tránh nhầm lẫn với state Redux
 
   const [modalVisible, setModalVisible] = useState(false);
   const [currentType, setCurrentType] = useState('');
   const [availableItems, setAvailableItems] = useState([]);
   const [actionType, setActionType] = useState('add');
   const [replaceIndex, setReplaceIndex] = useState(null);
+  const [sanhModalVisible, setSanhModalVisible] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -65,26 +71,22 @@ const EditPlan = ({ navigation, route }) => {
     const calculateTotalPrice = () => {
       let total = 0;
 
-      // Giá của sảnh
-      if (planData?.SanhId?.price) {
-        total += parseFloat(planData.SanhId.price) || 0;
+      if (selectedSanh?.price) {
+        total += parseFloat(selectedSanh.price) || 0;
       }
 
-      // Tổng giá của caterings
       if (cateringsList && cateringsList.length > 0) {
         const cateringTotal = cateringsList.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
         total += cateringTotal;
       }
 
-      // Tổng giá của decorates
       if (decoratesList && decoratesList.length > 0) {
         const decorateTotal = decoratesList.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
         total += decorateTotal;
       }
 
-      // Tổng giá của presents
-      if (presents && presents.length > 0) {
-        const presentTotal = presents.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
+      if (presentsList && presentsList.length > 0) {
+        const presentTotal = presentsList.reduce((sum, item) => sum + (parseFloat(item.price) || 0), 0);
         total += presentTotal;
       }
 
@@ -92,14 +94,7 @@ const EditPlan = ({ navigation, route }) => {
     };
 
     calculateTotalPrice();
-  }, [cateringsList, decoratesList, presents, planData?.SanhId]);
-
-  const mockData = {
-    presents: [
-      { _id: '6', name: 'Bút bi', price: 50000, imageUrl: 'https://example.com/but.jpg' },
-      { _id: '7', name: 'Khăn tay', price: 100000, imageUrl: 'https://example.com/khan.jpg' },
-    ],
-  };
+  }, [cateringsList, decoratesList, presentsList, selectedSanh]);
 
   const openChangeModal = (type, action = 'add', index = null) => {
     setCurrentType(type);
@@ -112,7 +107,7 @@ const EditPlan = ({ navigation, route }) => {
     } else if (type === 'decorates') {
       dispatch(fetchDecorates());
     } else if (type === 'presents') {
-      setAvailableItems(mockData.presents);
+      dispatch(fetchPresents());
     }
   };
 
@@ -121,26 +116,33 @@ const EditPlan = ({ navigation, route }) => {
       setAvailableItems(caterings);
     } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
       setAvailableItems(decorates);
+    } else if (currentType === 'presents' && presentStatus === 'succeeded') {
+      setAvailableItems(presents); // Sửa để dùng presents từ Redux
     }
-  }, [caterings, cateringStatus, decorates, decorateStatus, currentType]);
+  }, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, currentType]);
 
   useEffect(() => {
     if (currentType === 'caterings' && cateringStatus === 'failed' && cateringError) {
       ToastAndroid.show(`Lỗi khi lấy danh sách món ăn: ${cateringError}`, ToastAndroid.SHORT);
     } else if (currentType === 'decorates' && decorateStatus === 'failed' && decorateError) {
       ToastAndroid.show(`Lỗi khi lấy danh sách trang trí: ${decorateError}`, ToastAndroid.SHORT);
+    } else if (currentType === 'presents' && presentStatus === 'failed' && presentError) {
+      ToastAndroid.show(`Lỗi khi lấy danh sách quà tặng: ${presentError}`, ToastAndroid.SHORT);
+    } else if (HallStatus === 'failed' && hallError) { // Thêm kiểm tra lỗi cho Hall
+      ToastAndroid.show(`Lỗi khi lấy danh sách sảnh: ${hallError}`, ToastAndroid.SHORT);
     }
-  }, [cateringStatus, cateringError, decorateStatus, decorateError, currentType]);
+  }, [cateringStatus, cateringError, decorateStatus, decorateError, presentStatus, presentError, HallStatus, hallError, currentType]);
 
   useEffect(() => {
     return () => {
       dispatch(resetCaterings());
       dispatch(resetDecorates());
+      dispatch(resetHall());
+      dispatch(resetPresents());
     };
   }, [dispatch]);
 
   const handleSelectItem = (item) => {
-    
     if (currentType === 'caterings') {
       if (actionType === 'add') {
         setCateringsList([...cateringsList, item]);
@@ -159,32 +161,37 @@ const EditPlan = ({ navigation, route }) => {
       }
     } else if (currentType === 'presents') {
       if (actionType === 'add') {
-        setPresents([...presents, item]);
+        setPresentsList([...presentsList, item]);
       } else if (actionType === 'replace' && replaceIndex !== null) {
-        const newPresents = [...presents];
+        const newPresents = [...presentsList];
         newPresents[replaceIndex] = item;
-        setPresents(newPresents);
+        setPresentsList(newPresents);
       }
     }
     setModalVisible(false);
     setReplaceIndex(null);
     setActionType('add');
-    
   };
-  
+
   const handleRemoveItem = (type, index) => {
     if (type === 'caterings') {
       setCateringsList(cateringsList.filter((_, i) => i !== index));
     } else if (type === 'decorates') {
       setDecoratesList(decoratesList.filter((_, i) => i !== index));
     } else if (type === 'presents') {
-      setPresents(presents.filter((_, i) => i !== index));
+      setPresentsList(presentsList.filter((_, i) => i !== index));
     }
-    
   };
 
   const handleChangeSanh = () => {
-    ToastAndroid.show('Chuyển đến màn hình chọn sảnh (chưa triển khai)', ToastAndroid.SHORT);
+    setSanhModalVisible(true);
+    dispatch(Hall()); // Sửa tên action
+  };
+
+  const handleSelectSanh = (sanh) => {
+    setSanhId(sanh._id);
+    setSelectedSanh(sanh);
+    setSanhModalVisible(false);
   };
 
   const handleSave = () => {
@@ -214,27 +221,24 @@ const EditPlan = ({ navigation, route }) => {
         : undefined,
       plansoluongkhach: plansoluongkhach ? parseInt(plansoluongkhach, 10) : undefined,
       planprice: planprice ? parseFloat(planprice) : undefined,
-      totalPrice: parseFloat(totalPrice) || 0, // Đảm bảo totalPrice là số
+      totalPrice: parseFloat(totalPrice) || 0,
       SanhId: sanhId || undefined,
       caterings: cateringsList.map(item => item._id),
       decorates: decoratesList.map(item => item._id),
-      presents: presents.map(item => item._id),
+      presents: presentsList.map(item => item._id), // Sửa để dùng presentsList
     };
-
-    
 
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
-       
         ToastAndroid.show('Cập nhật kế hoạch thành công!', ToastAndroid.SHORT);
         const combinedPlanData = {
           ...updatedPlan,
           UserId: updatedPlan.UserId || userId,
-          SanhId: planData?.SanhId || updatedPlan.SanhId,
+          SanhId: selectedSanh || updatedPlan.SanhId,
           caterings: cateringsList,
           decorates: decoratesList,
-          presents: presents,
+          presents: presentsList, // Sửa để dùng presentsList
           plansoluongkhach: updateData.plansoluongkhach || updatedPlan.plansoluongkhach,
           planprice: updateData.planprice || updatedPlan.planprice,
           totalPrice: updateData.totalPrice || updatedPlan.totalPrice,
@@ -245,10 +249,8 @@ const EditPlan = ({ navigation, route }) => {
           planId: planId,
           planData: combinedPlanData,
         });
-       
       })
       .catch((err) => {
-       
         ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || err}`, ToastAndroid.SHORT);
       });
   };
@@ -311,6 +313,22 @@ const EditPlan = ({ navigation, route }) => {
       <View style={styles.modalItemContent}>
         <Text style={styles.modalItemText}>{item.name}</Text>
         <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN')} VNĐ</Text>
+      </View>
+    </TouchableOpacity>
+  );
+
+  const renderSanhItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.modalItem}
+      onPress={() => handleSelectSanh(item)}
+    >
+      {item.imageUrl && (
+        <Image source={{ uri: item.imageUrl }} style={styles.modalItemImage} />
+      )}
+      <View style={styles.modalItemContent}>
+        <Text style={styles.modalItemText}>{item.name}</Text>
+        <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN')} VNĐ</Text>
+        <Text style={styles.modalItemPrice}>{item.SoLuongKhach}/người</Text>
       </View>
     </TouchableOpacity>
   );
@@ -395,7 +413,7 @@ const EditPlan = ({ navigation, route }) => {
               <TextInput
                 style={styles.input}
                 value={totalPrice ? parseFloat(totalPrice).toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}
-                editable={false} // Không cho phép chỉnh sửa
+                editable={false}
                 placeholder="Tổng giá (VNĐ)"
               />
             </View>
@@ -403,13 +421,13 @@ const EditPlan = ({ navigation, route }) => {
             <View style={styles.inputRow}>
               <Text style={styles.label}>Sảnh:</Text>
               <View style={styles.itemCard}>
-                {planData?.SanhId?.imageUrl && (
-                  <Image source={{ uri: planData.SanhId.imageUrl }} style={styles.itemImage} />
+                {selectedSanh?.imageUrl && (
+                  <Image source={{ uri: selectedSanh.imageUrl }} style={styles.itemImage} />
                 )}
                 <View style={styles.itemContent}>
-                  <Text style={styles.itemText}>{planData?.SanhId?.name || 'Chưa chọn sảnh'}</Text>
+                  <Text style={styles.itemText}>{selectedSanh?.name || 'Chưa chọn sảnh'}</Text>
                   <Text style={styles.itemPrice}>
-                    {planData?.SanhId?.price?.toLocaleString('vi-VN')} VNĐ
+                    {selectedSanh?.price?.toLocaleString('vi-VN') || '0'} VNĐ
                   </Text>
                 </View>
               </View>
@@ -430,7 +448,7 @@ const EditPlan = ({ navigation, route }) => {
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Quà tặng:</Text>
-              {renderItemList(presents, 'presents')}
+              {renderItemList(presentsList, 'presents')}
             </View>
 
             <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
@@ -441,6 +459,7 @@ const EditPlan = ({ navigation, route }) => {
         </Animated.View>
       </ScrollView>
 
+      {/* Modal chọn dịch vụ (caterings, decorates, presents) */}
       <Modal
         animationType="slide"
         transparent={true}
@@ -453,11 +472,14 @@ const EditPlan = ({ navigation, route }) => {
               {actionType === 'add' ? 'Thêm' : 'Thay đổi'} {currentType === 'caterings' ? 'món ăn' : currentType === 'decorates' ? 'trang trí' : 'quà tặng'}
             </Text>
             {(currentType === 'caterings' && cateringStatus === 'loading') ||
-            (currentType === 'decorates' && decorateStatus === 'loading') ? (
+            (currentType === 'decorates' && decorateStatus === 'loading') ||
+            (currentType === 'presents' && presentStatus === 'loading') ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#FF6F61" />
                 <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
               </View>
+            ) : (currentType === 'presents' && presentStatus === 'failed') ? (
+              <Text style={styles.errorText}>{presentError}</Text>
             ) : availableItems.length > 0 ? (
               <FlatList
                 data={availableItems}
@@ -477,11 +499,48 @@ const EditPlan = ({ navigation, route }) => {
           </View>
         </View>
       </Modal>
+
+      {/* Modal chọn sảnh */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={sanhModalVisible}
+        onRequestClose={() => setSanhModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Chọn sảnh</Text>
+            {HallStatus === 'loading' ? (
+              <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#FF6F61" />
+                <Text style={styles.loadingText}>Đang tải danh sách sảnh...</Text>
+              </View>
+            ) : HallStatus === 'failed' ? (
+              <Text style={styles.errorText}>{hallError}</Text>
+            ) : HallData.length > 0 ? (
+              <FlatList
+                data={HallData}
+                renderItem={renderSanhItem}
+                keyExtractor={(item) => item._id}
+                style={styles.modalList}
+              />
+            ) : (
+              <Text style={styles.noDataText}>Không có sảnh nào để hiển thị</Text>
+            )}
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => setSanhModalVisible(false)}
+            >
+              <Text style={styles.closeButtonText}>Đóng</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
-// Styles giữ nguyên
+// Styles (giữ nguyên)
 const styles = StyleSheet.create({
   homeIcon: { width: 22, height: 22 },
   container: { flex: 1, backgroundColor: '#F5F5F5' },
@@ -689,6 +748,12 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#FF4444',
+    textAlign: 'center',
+    marginVertical: 10,
   },
 });
 

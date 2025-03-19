@@ -24,6 +24,7 @@ import  UserReducer  from './UserSlice';
 import  ForgotPasswordReducer  from './ForgotPasswordSlice';
 import  GetAllCateringReducer  from './GetAllCateringSlice';
 import  GetAllDecoratesReducer  from './GetAllDecoratesSlice';
+import  GetAllPresentReducer  from './GetAllPresentSlice';
 
 
 
@@ -32,6 +33,7 @@ const dummyReducer = (state = {}) => state;
 
 export const store = configureStore({
   reducer: {
+    getallpresent:GetAllPresentReducer,
     getalldecorates:GetAllDecoratesReducer,
     getallcatering:GetAllCateringReducer,
     chitietplan:ChitietPlanReducer,
