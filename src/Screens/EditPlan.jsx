@@ -16,7 +16,7 @@ const { width } = Dimensions.get('window');
 
 const EditPlan = ({ navigation, route }) => {
   const { planId, planData } = route?.params || {};
-  console.log('planData trong EditPlan:', JSON.stringify(planData, null, 2));
+  
 
   const dispatch = useDispatch();
   const { user } = useContext(AppContext);
@@ -140,7 +140,7 @@ const EditPlan = ({ navigation, route }) => {
   }, [dispatch]);
 
   const handleSelectItem = (item) => {
-    console.log('Item được chọn:', JSON.stringify(item, null, 2));
+    
     if (currentType === 'caterings') {
       if (actionType === 'add') {
         setCateringsList([...cateringsList, item]);
@@ -169,9 +169,7 @@ const EditPlan = ({ navigation, route }) => {
     setModalVisible(false);
     setReplaceIndex(null);
     setActionType('add');
-    console.log('CateringsList sau khi cập nhật:', JSON.stringify(cateringsList, null, 2));
-    console.log('DecoratesList sau khi cập nhật:', JSON.stringify(decoratesList, null, 2));
-    console.log('Presents sau khi cập nhật:', JSON.stringify(presents, null, 2));
+    
   };
   
   const handleRemoveItem = (type, index) => {
@@ -182,9 +180,7 @@ const EditPlan = ({ navigation, route }) => {
     } else if (type === 'presents') {
       setPresents(presents.filter((_, i) => i !== index));
     }
-    console.log('CateringsList sau khi xóa:', JSON.stringify(cateringsList, null, 2));
-    console.log('DecoratesList sau khi xóa:', JSON.stringify(decoratesList, null, 2));
-    console.log('Presents sau khi xóa:', JSON.stringify(presents, null, 2));
+    
   };
 
   const handleChangeSanh = () => {
@@ -225,12 +221,12 @@ const EditPlan = ({ navigation, route }) => {
       presents: presents.map(item => item._id),
     };
 
-    console.log('Dữ liệu gửi đi:', JSON.stringify(updateData, null, 2));
+    
 
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
-        console.log('Cập nhật thành công, updatedPlan:', JSON.stringify(updatedPlan, null, 2));
+       
         ToastAndroid.show('Cập nhật kế hoạch thành công!', ToastAndroid.SHORT);
         const combinedPlanData = {
           ...updatedPlan,
@@ -249,10 +245,10 @@ const EditPlan = ({ navigation, route }) => {
           planId: planId,
           planData: combinedPlanData,
         });
-        console.log('Đã điều hướng về DetailPlan với planData:', JSON.stringify(combinedPlanData, null, 2));
+       
       })
       .catch((err) => {
-        console.error('Lỗi khi cập nhật:', JSON.stringify(err, null, 2));
+       
         ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || err}`, ToastAndroid.SHORT);
       });
   };
