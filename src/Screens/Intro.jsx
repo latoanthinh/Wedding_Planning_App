@@ -9,18 +9,18 @@ const { width} = Dimensions.get("window");
 const slides = [
     {
         image: require("../Assets/Images/intro1.png"),
-        description: "Start your journey to a magical wedding experience",
-        buttonText: "Next",
+        description: "Bắt đầu hành trình đến trải nghiệm đám cưới kỳ diệu",
+        buttonText: "Tiếp theo",
     },
     {
         image: require("../Assets/Images/intro2.png"),
-        description: "Discover the beauty that awaits on your special day.",
-        buttonText: "Next",
+        description: "Khám phá vẻ đẹp đang chờ đón bạn trong ngày đặc biệt.",
+        buttonText: "Tiếp theo",
     },
     {
         image: require("../Assets/Images/intro3.png"),
-        description: "Let us help you design the perfect wedding atmosphere.",
-        buttonText: "Go to Login",
+        description: "Hãy để chúng tôi giúp bạn thiết kế không gian đám cưới hoàn hảo.",
+        buttonText: "Đến đăng nhập",
     },
 ];
 

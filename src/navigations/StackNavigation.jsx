@@ -25,6 +25,8 @@ import EditPlan from '../Screens/EditPlan'
 import PanoramaView from '../Screens/PanoramaView'
 import Welcome from '../Screens/Welcome'
 import Intro from '../Screens/Intro'
+import ChangePass from '../Screens/ChangePass'
+import ForgotPassword from '../Screens/ForgotPassword'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 // START: dành cho user chưa đăng nhập
@@ -36,9 +38,10 @@ const GuestStackNavigation = () => {
       <GuestStack.Screen name="SignIn" component={SignIn} />
       <GuestStack.Screen name="EmailOpt" component={EmailOpt} />
       <GuestStack.Screen name="SignUp" component={SignUp} />
+      {/* <GuestStack.Screen name="ForgotPassword" component={ForgotPassword} /> */}
       {/* <GuestStack.Screen name="Welcome" component={Welcome} />
       <GuestStack.Screen name="Intro" component={Intro} /> */}
-    </GuestStack.Navigator>
+    </GuestStack.Navigator> 
   )
 }
 // END: dành cho user chưa đăng nhập
@@ -61,6 +64,8 @@ const StackNavigation = () => {
       <Stack.Screen name="GenPlan" component={GenPlan} />
       <Stack.Screen name="HallWeddings" component={HallWeddings} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
+      <Stack.Screen name="ChangePass" component={ChangePass} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="AllPlan" component={AllPlan} />
       <Stack.Screen name="Gift_Screen" component={Gift_Screen} />
       <Stack.Screen name="ComboDetail" component={ComboDetail} />

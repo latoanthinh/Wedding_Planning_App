@@ -16,7 +16,7 @@ const Settings = (props) => {
       {/* Header cố định */}
       <View style={styles.header}>
         <Image source={require('../Assets/Images/Sort.png')} style={styles.headerIcon} />
-        <Text style={styles.headerTitle}>Profile</Text>
+        <Text style={styles.headerTitle}>Hồ sơ</Text>
         <View style={styles.headerRight}>
           <Image source={require('../Assets/Images/home48.png')} style={styles.headerIcon} />
         </View>
@@ -38,7 +38,7 @@ const Settings = (props) => {
 
         {/* Edit Profile Button */}
         <TouchableOpacity onPress={() => handle('EditProfile')} style={styles.editProfileButton}>
-          <Text style={styles.editProfileButtonText}>Edit Profile</Text>
+          <Text style={styles.editProfileButtonText}>Chỉnh sửa hồ sơ</Text>
         </TouchableOpacity>
 
         <View style={styles.divider} />
@@ -47,7 +47,7 @@ const Settings = (props) => {
         <TouchableOpacity style={styles.optionRow}>
           <View style={styles.optionLeft}>
             <Image source={require('../Assets/Images/Users.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Account Type</Text>
+            <Text style={styles.optionText}>Loại tài khoản</Text>
           </View>
           <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
         </TouchableOpacity>
@@ -55,7 +55,7 @@ const Settings = (props) => {
         <TouchableOpacity style={styles.optionRow}>
           <View style={styles.optionLeft}>
             <Image source={require('../Assets/Images/addfolder.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Add Budget Limit</Text>
+            <Text style={styles.optionText}>Thêm giới hạn ngân sách</Text>
           </View>
           <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
         </TouchableOpacity>
@@ -63,7 +63,7 @@ const Settings = (props) => {
         <TouchableOpacity style={styles.optionRow} onPress={() => navigation.navigate("AllPlan")}>
           <View style={styles.optionLeft}>
             <Image source={require('../Assets/Images/addfolder.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Plan</Text>
+            <Text style={styles.optionText}>Kế hoạch</Text>
           </View>
           <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
         </TouchableOpacity>
@@ -71,14 +71,14 @@ const Settings = (props) => {
         <TouchableOpacity style={styles.optionRow}>
           <View style={styles.optionLeft}>
             <Image source={require('../Assets/Images/setting.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Settings</Text>
+            <Text style={styles.optionText}>Cài đặt</Text>
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.optionRow}>
           <View style={styles.optionLeft}>
             <Image source={require('../Assets/Images/question.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Help & Feedback</Text>
+            <Text style={styles.optionText}>Trợ giúp & Phản hồi</Text>
           </View>
         </TouchableOpacity>
       </ScrollView>

@@ -57,10 +57,10 @@ const TabNavigation = () => {
         },
         tabBarShowLabel: true,
       })}>
-      <Tab.Screen name="Home" component={Home} options={{ headerShown: false }} />
-      <Tab.Screen name="Message" component={Message} options={{ headerShown: false }} />
-      <Tab.Screen name="Favorites" component={Favorites} options={{ headerShown: false }} />
-      <Tab.Screen name="Setting" component={Settings} options={{ headerShown: false }} />
+      <Tab.Screen name="Home" component={Home} options={{ headerShown: false, tabBarLabel: 'Trang chủ' }} />
+      <Tab.Screen name="Message" component={Message} options={{ headerShown: false, tabBarLabel: 'Tin nhắn' }} />
+      <Tab.Screen name="Favorites" component={Favorites} options={{ headerShown: false, tabBarLabel: 'Yêu thích' }} />
+      <Tab.Screen name="Setting" component={Settings} options={{ headerShown: false, tabBarLabel: 'Cài đặt' }} />
     </Tab.Navigator>
   );
 };

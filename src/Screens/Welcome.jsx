@@ -48,8 +48,8 @@ const Welcome = () => {
         }
       ]}>
         <Image source={require('../Assets/Images/logopng.png')} style={styles.image} resizeMode="contain" />
-        <Text style={styles.title}>Wedding Planning</Text>
-        <Text style={styles.subtitle}>"Simplify your planning experience"</Text>
+        <Text style={styles.title}>Lập Kế Hoạch Cưới</Text>
+        <Text style={styles.subtitle}>"Đơn giản hóa trải nghiệm lập kế hoạch"</Text>
       </Animated.View>
       
       <Animated.View style={[styles.lineImageRight, { opacity: fadeAnim }]}>

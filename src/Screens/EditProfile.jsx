@@ -18,13 +18,7 @@ const EditProfile = (props) => {
   
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [oldPassword, setOldPassword] = useState('');
   const [avatar, setAvatar] = useState(null);
-  const [isChangingEmail, setIsChangingEmail] = useState(false);
-  const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const [secureTextEntry, setSecureTextEntry] = useState(true);
-  const [oldPasswordSecureEntry, setOldPasswordSecureEntry] = useState(true);
   const [hasImagePermission, setHasImagePermission] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
 
@@ -323,26 +317,9 @@ const EditProfile = (props) => {
     }
   };
 
-  // Function to handle email change
-  const handleEmailChange = (text) => {
-    setEmail(text);
-    setIsChangingEmail(text !== user?.email && text !== ''); // Set to true if email field is changed and not empty
-  };
-
-  // Function to handle password change
-  const handlePasswordChange = (text) => {
-    setNewPassword(text);
-    setIsChangingPassword(text !== ''); // Set to true if new password field is not empty
-  };
-
-  // Function to toggle password visibility
-  const toggleSecureEntry = () => {
-    setSecureTextEntry(!secureTextEntry);
-  };
-
-  // Function to toggle old password visibility
-  const toggleOldPasswordSecureEntry = () => {
-    setOldPasswordSecureEntry(!oldPasswordSecureEntry);
+  // Navigate to change password screen
+  const navigateToChangePassword = () => {
+    navigation.navigate('ChangePass');
   };
 
   // Function to check API before saving
@@ -376,8 +353,7 @@ const EditProfile = (props) => {
       
       // Check if any changes have been made
       const isNameChanged = name !== user?.name && name !== '';
-      const isEmailChanged = email !== user?.email && email !== '';
-      const isPasswordChanged = newPassword !== '';
+      const isEmailChanged = false; // Email change disabled
       const isAvatarChanged = avatar !== user?.avatar && avatar !== null;
       
       console.log('Current user data:', JSON.stringify({
@@ -387,23 +363,15 @@ const EditProfile = (props) => {
       console.log('Form values:', { 
         name, 
         email, 
-        newPassword: newPassword ? '[REDACTED]' : '', 
-        oldPassword: oldPassword ? '[REDACTED]' : '',
         avatarChanged: isAvatarChanged,
         avatarPresent: avatar ? true : false,
         avatarLength: avatar ? avatar.length : 0
       });
-      console.log('Changes detected:', { isNameChanged, isEmailChanged, isPasswordChanged, isAvatarChanged });
+      console.log('Changes detected:', { isNameChanged, isEmailChanged, isAvatarChanged });
       
       // If nothing has changed, show a message
-      if (!isNameChanged && !isEmailChanged && !isPasswordChanged && !isAvatarChanged) {
+      if (!isNameChanged && !isAvatarChanged) {
         Alert.alert('Thông báo', 'Không có thông tin nào được thay đổi.');
-        return;
-      }
-
-      // Validate old password if changing email or password
-      if ((isChangingEmail || isChangingPassword) && !oldPassword) {
-        Alert.alert('Lỗi', 'Vui lòng nhập mật khẩu cũ để xác nhận thay đổi.');
         return;
       }
 
@@ -411,8 +379,7 @@ const EditProfile = (props) => {
       const userData = {};
       
       if (isNameChanged) userData.name = name;
-      if (isEmailChanged) userData.email = email;
-      if (isPasswordChanged) userData.password = newPassword;
+      // Remove email from userData, as it's now disabled
       if (isAvatarChanged) {
         console.log('Avatar changed, including in update data');
         console.log('Avatar data type:', typeof avatar);
@@ -424,16 +391,9 @@ const EditProfile = (props) => {
           console.log('Avatar is null, not including in update');
         }
       }
-      
-      // Add old password if changing email or password
-      if (isChangingEmail || isChangingPassword) {
-        userData.oldPassword = oldPassword;
-      }
 
       console.log('Sending update data:', { 
         ...userData, 
-        password: userData.password ? '[REDACTED]' : undefined, 
-        oldPassword: userData.oldPassword ? '[REDACTED]' : undefined,
         avatar: userData.avatar ? 'BASE64_IMAGE_DATA_PRESENT' : undefined
       });
       console.log('User ID for update:', user._id);
@@ -499,52 +459,25 @@ const EditProfile = (props) => {
           />
           
           <TextInput
-            style={styles.input}
+            style={[styles.input, styles.disabledInput]}
             placeholder="Email"
             placeholderTextColor="#999"
             value={email}
-            onChangeText={handleEmailChange}
-            keyboardType="email-address"
-            autoCapitalize="none"
+            editable={false}
+            selectTextOnFocus={false}
           />
           
-          <View style={styles.passwordContainer}>
-            <TextInput
-              style={styles.passwordInput}
-              placeholder="Mật khẩu mới"
-              placeholderTextColor="#999"
-              value={newPassword}
-              onChangeText={handlePasswordChange}
-              secureTextEntry={secureTextEntry}
-              autoCapitalize="none"
+          {/* Change Password Button */}
+          <TouchableOpacity 
+            style={styles.changePasswordButton} 
+            onPress={navigateToChangePassword}
+          >
+            <Text style={styles.changePasswordText}>Đổi mật khẩu</Text>
+            <Image 
+              source={require('../Assets/Images/Next.png')} 
+              style={styles.arrowIcon}
             />
-            <TouchableOpacity onPress={toggleSecureEntry} style={styles.eyeIcon}>
-              <Text>{secureTextEntry ? '👁️' : '👁️‍🗨️'}</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Old Password Verification */}
-          {(isChangingEmail || isChangingPassword) && (
-            <View style={styles.verificationContainer}>
-              <Text style={styles.verificationText}>
-                Vui lòng nhập mật khẩu cũ để xác nhận thay đổi
-              </Text>
-              <View style={styles.passwordContainer}>
-                <TextInput
-                  style={styles.passwordInput}
-                  placeholder="Mật khẩu cũ"
-                  placeholderTextColor="#999"
-                  value={oldPassword}
-                  onChangeText={(text) => setOldPassword(text)}
-                  secureTextEntry={oldPasswordSecureEntry}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity onPress={toggleOldPasswordSecureEntry} style={styles.eyeIcon}>
-                  <Text>{oldPasswordSecureEntry ? '👁️' : '👁️‍🗨️'}</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          )}
+          </TouchableOpacity>
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
@@ -666,37 +599,29 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
   },
-  passwordContainer: {
+  disabledInput: {
+    backgroundColor: '#f0f0f0',
+    color: '#888',
+  },
+  changePasswordButton: {
+    flexDirection: 'row',
     width: '90%',
     height: 50,
-    flexDirection: 'row',
-    alignItems: 'center',
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',
-    marginBottom: 25,
-  },
-  passwordInput: {
-    flex: 1,
-    height: 50,
     paddingHorizontal: 10,
+    marginBottom: 25,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  changePasswordText: {
     fontSize: 16,
     color: '#333',
   },
-  eyeIcon: {
-    padding: 10,
-  },
-  verificationContainer: {
-    width: '90%',
-    backgroundColor: '#f0f0f0',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 25,
-  },
-  verificationText: {
-    fontSize: 14,
-    color: '#555',
-    marginBottom: 10,
-    textAlign: 'center',
+  arrowIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#555',
   },
   editButton: {
     flex: 1,
