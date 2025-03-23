@@ -289,6 +289,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: "#3E2723",
     marginTop: 20,
+    fontFamily: "Playfair_me",
   },
   container: {
     flex: 1,
@@ -384,9 +385,9 @@ const styles = StyleSheet.create({
     tintColor: "#4E342E",
   },
   dateText: {
-    fontSize: 18,
-    color: "#220000",
-    fontWeight: "600",
+    fontSize: 16,
+    color: "#3E2723",
+    fontFamily: "Playfair_me",
   },
   nextButton: {
     backgroundColor: "#000",
@@ -399,7 +400,8 @@ const styles = StyleSheet.create({
   },
   buttonText: {
     color: "#FFFFFF",
-    fontSize: 20,
+    fontSize: 16,
+    fontWeight: "600",
     fontFamily: "Playfair_me",
   },
 });

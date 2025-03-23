@@ -27,8 +27,13 @@ import Welcome from '../Screens/Welcome'
 import Intro from '../Screens/Intro'
 import ChangePass from '../Screens/ChangePass'
 import ForgotPassword from '../Screens/ForgotPassword'
+import Blog from '../Screens/Blog'
+import BlogDetail from '../Screens/BlogDetail'
+
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
+import { createSharedElementStackNavigator } from 'react-navigation-shared-element';
+
 // START: dành cho user chưa đăng nhập
 const GuestStack = createNativeStackNavigator();
 const GuestStackNavigation = () => {
@@ -50,11 +55,42 @@ const GuestStackNavigation = () => {
 import TabNavigation from './TabNavigation'
 
 const Stack = createNativeStackNavigator();
+const SharedElementStack = createSharedElementStackNavigator();
+
+// Stack riêng cho blog với shared element transitions - tạo hiệu ứng chuyển cảnh mượt mà
+const BlogStack = () => {
+  return (
+    <SharedElementStack.Navigator screenOptions={{ headerShown: false }}>
+      <SharedElementStack.Screen name="BlogScreen" component={Blog} />
+      <SharedElementStack.Screen 
+        name="BlogDetailScreen" 
+        component={BlogDetail} 
+        sharedElements={(route) => {
+          const { slug } = route.params;
+          return [`blog.${slug}.image`];
+        }}
+        options={{
+          gestureEnabled: false,
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 400 } },
+            close: { animation: 'timing', config: { duration: 400 } }
+          },
+          cardStyleInterpolator: ({ current: { progress } }) => {
+            return {
+              cardStyle: {
+                opacity: progress
+              }
+            };
+          }
+        }}
+      />
+    </SharedElementStack.Navigator>
+  );
+};
+
 const StackNavigation = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false}}>
-
-
       <Stack.Screen name="TabNavigation" component={TabNavigation} />
       <Stack.Screen name="Dress" component={Dress} />
       <Stack.Screen name="DetailClothes" component={DetailClothes} />
@@ -78,10 +114,31 @@ const StackNavigation = () => {
       <Stack.Screen name="DecorDetail" component={DecorDetail} />
       <Stack.Screen name="EditPlan" component={EditPlan} />
       <Stack.Screen name="PanoramaView" component={PanoramaView} />
+      
+      {/* Blog screens with SharedElement transitions */}
+      <Stack.Screen name="Blog" component={Blog} />
+      <Stack.Screen 
+        name="BlogDetail" 
+        component={BlogDetail}
+        options={{
+          gestureEnabled: false,
+          cardStyleInterpolator: ({ current: { progress } }) => {
+            return {
+              cardStyle: {
+                opacity: progress
+              }
+            };
+          }
+        }}
+        // Enable SharedElement transitions
+        sharedElements={(route) => {
+          const { slug } = route.params;
+          return [`blog.${slug}.image`];
+        }}
+      />
     </Stack.Navigator>
-
   )
 }
 // END: Stack dành cho user đã đăng nhập
 
-export { StackNavigation, GuestStackNavigation }
+export { StackNavigation, GuestStackNavigation, BlogStack }

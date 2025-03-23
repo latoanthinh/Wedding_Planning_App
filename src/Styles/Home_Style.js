@@ -269,6 +269,7 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 7,
     opacity: 0.9,
+    fontFamily: 'Playfair_me',
   },
   locationRow: {
     flexDirection: 'row',

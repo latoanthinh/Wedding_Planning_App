@@ -297,7 +297,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1A1A1A',
     width: '70%',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   ratingTag: {
     flexDirection: 'row',
@@ -319,7 +319,7 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     color: '#555555',
     marginBottom: 18,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   priceContainer: {
     alignSelf: 'flex-start',
@@ -338,7 +338,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
     color: '#FFFFFF',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
     letterSpacing: 1,
   },
   divider: {
@@ -351,7 +351,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1A1A1A',
     marginBottom: 14,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -367,7 +367,7 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: '#A67C52',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   nutritionContainer: {
     flexDirection: 'row',
@@ -423,7 +423,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     lineHeight: 22,
     color: '#555555',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   allergyContainer: {
     flexDirection: 'row',
@@ -461,7 +461,7 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: 16,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
     color: '#FF3B30',
     textAlign: 'center',
     marginTop: 20,

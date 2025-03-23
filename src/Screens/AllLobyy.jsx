@@ -35,7 +35,7 @@ const AllLobyy = ({ navigation }) => {
                 <View style={styles.bottomhall}>
                     <View style={{ flexDirection: "row", alignItems: "center" }}>
                         <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
-                        <Text>{item.SoLuongKhach} Khách</Text>
+                        <Text style={styles.guestText}>{item.SoLuongKhach} Khách</Text>
                     </View>
                 </View>
             </View>
@@ -168,5 +168,21 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 16,
         color: '#555',
+        fontFamily: 'Playfair_me',
+    },
+    errorContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    errorText: {
+        fontSize: 16,
+        color: '#FF3B30',
+        fontFamily: 'Playfair_me',
+    },
+    guestText: {
+        fontFamily: 'Playfair_me',
+        fontSize: 14,
+        color: '#666',
     },
 });

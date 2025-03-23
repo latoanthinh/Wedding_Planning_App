@@ -306,7 +306,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#1A1A1A',
     flex: 1,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   ratingTag: {
     flexDirection: 'row',
@@ -320,7 +320,7 @@ const styles = StyleSheet.create({
     marginLeft: 5,
     color: '#A67C52',
     fontWeight: 'bold',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   tagsContainer: {
     flexDirection: 'row',
@@ -339,7 +339,7 @@ const styles = StyleSheet.create({
     color: '#A67C52',
     fontSize: 12,
     fontWeight: '500',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   divider: {
     height: 1,
@@ -348,17 +348,17 @@ const styles = StyleSheet.create({
   },
   sectionTitle: {
     fontSize: 20,
-    fontWeight: '600',
+    fontWeight: 'bold',
     color: '#1A1A1A',
-    marginBottom: 14,
-    fontFamily: 'serif',
+    marginBottom: 15,
+    fontFamily: 'Playfair_me',
   },
   descriptionText: {
     fontSize: 15,
     color: '#555555',
     lineHeight: 22,
     marginBottom: 10,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   featuresSection: {
     marginBottom: 20,
@@ -372,7 +372,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
     fontSize: 14,
     color: '#444444',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   priceContainer: {
     flexDirection: 'row',
@@ -392,13 +392,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#FFFFFF',
     marginRight: 10,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   priceValue: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#FFFFFF',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
     letterSpacing: 1,
   },
   noteContainer: {
@@ -413,7 +413,7 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#A67C52',
     marginLeft: 10,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   relatedSection: {
     marginBottom: 80,
@@ -445,13 +445,13 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     marginTop: 5,
     color: '#333333',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   relatedPrice: {
     fontSize: 12,
     color: '#A67C52',
     fontWeight: 'bold',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   actionButtons: {
     position: 'absolute',
@@ -480,7 +480,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#A67C52',
     fontWeight: '600',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   addToCartButton: {
     flex: 2,
@@ -500,11 +500,11 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     color: '#FFFFFF',
     fontWeight: '600',
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   errorText: {
     fontSize: 16,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
     color: '#FF3B30',
     textAlign: 'center',
     marginTop: 20,
