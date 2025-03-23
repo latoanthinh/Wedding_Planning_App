@@ -225,22 +225,22 @@ const ScreenHome = ({ navigation }) => {
 
           {/* Wedding Dresses Section */}
           <View style={styles.dressContainer}>
-            <Text style={styles.sectionTitle}>Váy Cưới</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('Dress')}>
+            <Text style={styles.sectionTitle}>Blog và Xu hướng</Text>
+            <TouchableOpacity onPress={() => navigation.navigate('Blog')}>
               <Text style={styles.viewAll}>Xem tất cả</Text>
             </TouchableOpacity>
           </View>
 
           <TouchableOpacity
             style={styles.imageContainer}
-            onPress={() => navigation.navigate('Dress')}>
+            onPress={() => navigation.navigate('Blog')}>
             <Image
               source={require('../Assets/Images/dresse.png')}
               style={styles.dressImage}
             />
             <View style={styles.dressTextOverlay}>
-              <Text style={styles.dressCollectionText}>Bộ sưu tập váy cưới 2025</Text>
-              <Text style={styles.dressSubtitle}>100+ mẫu đang có sẵn</Text>
+              <Text style={styles.dressCollectionText}>Blog và Xu hướng</Text>
+              <Text style={styles.dressSubtitle}>Cập nhật xu hướng mới nhất</Text>
             </View>
           </TouchableOpacity>
 

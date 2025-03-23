@@ -25,7 +25,7 @@ import  ForgotPasswordReducer  from './ForgotPasswordSlice';
 import  GetAllCateringReducer  from './GetAllCateringSlice';
 import  GetAllDecoratesReducer  from './GetAllDecoratesSlice';
 import  GetAllPresentReducer  from './GetAllPresentSlice';
-
+import  BlogReducer  from './BlogSlice';
 
 
 const dummyReducer = (state = {}) => state;
@@ -60,5 +60,6 @@ export const store = configureStore({
     hall: HallReducer,
     dummy: dummyReducer,
     forgotPassword: ForgotPasswordReducer,
+    blog: BlogReducer,
   },
 });

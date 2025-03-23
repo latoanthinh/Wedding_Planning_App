@@ -101,5 +101,112 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
 - When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
 - Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
+- In React Native Redux apps, ensure the component is destructuring the correct state properties that match the property names in the Redux slice
+- Never use localhost URLs in mobile apps - always use actual IP addresses or domain names
+- Add detailed error handling with proper try/catch blocks and rejectWithValue in Redux async thunks for better debugging
+- Include helpful empty states and retry buttons when fetching data in React Native apps
+- Use Platform.OS to conditionally set different configurations for iOS and Android
+- For Android emulator, use 10.0.2.2 to refer to the host machine's localhost
+- Always use axios params object instead of manually constructing query strings
+- Improve error logging by capturing error.code, error.message, and error.response details
+- React Navigation Shared Element requires specific configuration for animations between screens
+- Đảm bảo tên state trong redux slice phải nhất quán và tuân theo quy ước chung trong toàn ứng dụng
+- Sử dụng status dạng chuỗi ('idle', 'loading', 'succeeded', 'failed') để theo dõi trạng thái của request thay vì biến boolean
 
 # Scratchpad
+
+## Cấu trúc lại BlogSlice
+
+[X] Phân tích cấu trúc các slice khác trong dự án để nắm được chuẩn chung
+[X] Cập nhật BlogSlice.js để phù hợp với chuẩn chung
+[X] Cập nhật Blog.jsx để sử dụng các state mới từ BlogSlice
+[X] Cập nhật BlogDetail.jsx để sử dụng các state mới từ BlogSlice
+
+### Các thay đổi chính trong BlogSlice
+
+1. **Đổi tên các state để nhất quán:**
+   - `blogs` -> `blogData`
+   - `loadingBlogs` -> `blogStatus` (sử dụng chuỗi thay vì boolean: 'idle', 'loading', 'succeeded', 'failed')
+   - `loadingDetail` -> `detailStatus`
+   - `loadingRelated` -> `relatedStatus`
+   - `errorBlogs` -> `error`
+   - `errorDetail` -> `detailError`
+   - `errorRelated` -> `relatedError`
+
+2. **Bổ sung action mới:**
+   - Thêm `resetBlogData` để reset trạng thái blog về ban đầu
+
+3. **Cải thiện cú pháp và tổ chức:**
+   - Định dạng lại các `createAsyncThunk` để dễ đọc hơn
+   - Loại bỏ các console.log không cần thiết
+   - Tổ chức lại code để dễ đọc và bảo trì
+
+4. **Đồng bộ formatReducers:**
+   - Cập nhật các reducers để phản ánh tên state mới
+   - Sử dụng status là chuỗi thay vì boolean
+
+### Cập nhật các component
+
+1. **Blog.jsx:**
+   - Cập nhật để sử dụng `blogData` thay vì `blogs`
+   - Thay đổi kiểm tra trạng thái từ boolean sang so sánh chuỗi: `blogStatus === 'loading'`
+   - Điều chỉnh các tên biến khác cho phù hợp
+
+2. **BlogDetail.jsx:**
+   - Cập nhật để sử dụng các trạng thái mới: `detailStatus`, `relatedStatus`
+   - Điều chỉnh kiểm tra trạng thái để sử dụng chuỗi thay vì boolean
+   - Cập nhật tên các biến error
+
+Các thay đổi này giúp cơ sở mã nhất quán hơn, dễ đọc và dễ bảo trì hơn. Việc sử dụng một tiêu chuẩn đặt tên và cấu trúc nhất quán giúp các nhà phát triển mới dễ dàng hiểu và làm việc với codebase.
+
+## Cải thiện giao diện BlogDetail và thêm tính năng SharedElement
+[X] Thêm SharedElement vào Blog và BlogDetail để tạo hiệu ứng chuyển tiếp
+[X] Tạo component IconButton để sử dụng trong BlogDetail
+[X] Cập nhật Blog component để hiển thị dữ liệu và có giao diện đẹp
+[X] Cập nhật BlogDetail để có giao diện tương tự như DecorDetail
+[X] Thêm phần hiển thị bài viết liên quan trong BlogDetail
+[X] Cập nhật BlogSlice để xử lý relatedBlogs riêng biệt
+[X] Cập nhật Navigation để hỗ trợ SharedElement Transition
+[X] Thêm phần Blog vào Home screen
+
+## Debugging Blog Component Issue - No Data Displaying
+[X] Identify the issue with Blog component not displaying data
+[X] Check the Redux BlogSlice implementation and fix property name mismatch (blogs, loadingBlogs, errorBlogs)
+[X] Replace localhost URLs with actual IP addresses
+[X] Add console logging for improved debugging
+[X] Enhance the UI to show proper loading, error and empty states
+[X] Fix connection issues by using correct IP for Android Emulator (10.0.2.2)
+[X] Improve error handling with better error messages and timeout settings
+[X] Add platform-specific URL handling for different devices (Android, iOS)
+[X] Update API calls to match the server's actual endpoint structure
+[X] Implement device detection to use correct IP for physical devices
+[X] Add fallback API endpoints in case primary endpoint doesn't exist
+[X] Test the app to ensure blog data displays correctly
+
+Notes:
+- Đã cài đặt thư viện react-navigation-shared-element để tạo hiệu ứng chuyển tiếp đẹp mắt giữa Blog và BlogDetail
+- Đã cập nhật BlogDetail để có thiết kế hiện đại và hấp dẫn, tương tự như DecorDetail
+- Đã thêm phần hiển thị bài viết liên quan trong BlogDetail
+- Đã thêm animations để tăng tính tương tác cho người dùng
+- Đã cập nhật navigation để hỗ trợ Shared Element
+- Đã thêm phần Blog vào Home screen để dễ dàng truy cập
+- Đã cập nhật BlogSlice để quản lý relatedBlogs riêng biệt
+- Đã tạo component IconButton để sử dụng lại trong ứng dụng
+
+## Cursor learned
+
+- For search results, ensure proper handling of different character encodings (UTF-8) for international queries
+- Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
+- When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
+- Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
+- In React Native Redux apps, ensure the component is destructuring the correct state properties that match the property names in the Redux slice
+- Never use localhost URLs in mobile apps - always use actual IP addresses or domain names
+- Add detailed error handling with proper try/catch blocks and rejectWithValue in Redux async thunks for better debugging
+- Include helpful empty states and retry buttons when fetching data in React Native apps
+- Use Platform.OS to conditionally set different configurations for iOS and Android
+- For Android emulator, use 10.0.2.2 to refer to the host machine's localhost
+- Always use axios params object instead of manually constructing query strings
+- Improve error logging by capturing error.code, error.message, and error.response details
+- React Navigation Shared Element requires specific configuration for animations between screens
+- Đảm bảo tên state trong redux slice phải nhất quán và tuân theo quy ước chung trong toàn ứng dụng
+- Sử dụng status dạng chuỗi ('idle', 'loading', 'succeeded', 'failed') để theo dõi trạng thái của request thay vì biến boolean

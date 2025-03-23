@@ -12,7 +12,7 @@ const SignIn = (props) => {
     const { navigation } = props;
 
     const [email, setEmail] = useState('lmao2@gmail.com');
-    const [password, setPassword] = useState('112233');
+    const [password, setPassword] = useState('123456');
     const { user, setUser } = useContext(AppContext);
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
