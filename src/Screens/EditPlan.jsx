@@ -347,13 +347,9 @@ const EditPlan = ({ navigation, route }) => {
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Icon name="arrow-left" size={28} color="#FFF" />
-            </TouchableOpacity>
+            
             <Text style={styles.headerTitle}>Chỉnh sửa kế hoạch</Text>
-            <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')} style={styles.backButton}>
-              <Image source={require('../Assets/Images/home48.png')} style={styles.homeIcon} />
-            </TouchableOpacity>
+            
           </View>
 
           <View style={styles.planInfoCard}>
