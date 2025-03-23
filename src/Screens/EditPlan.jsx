@@ -61,6 +61,7 @@ const EditPlan = ({ navigation, route }) => {
   const [sanhModalVisible, setSanhModalVisible] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSanhFavorites, setShowSanhFavorites] = useState(false);
+  const [selectedItemDetail, setSelectedItemDetail] = useState(null); // State để lưu chi tiết item được chọn
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -87,6 +88,7 @@ const EditPlan = ({ navigation, route }) => {
     setReplaceIndex(index);
     setModalVisible(true);
     setShowFavorites(false);
+    setSelectedItemDetail(null); // Reset chi tiết khi mở modal
 
     if (type === 'caterings') dispatch(fetchCaterings());
     else if (type === 'decorates') dispatch(fetchDecorates());
@@ -96,6 +98,7 @@ const EditPlan = ({ navigation, route }) => {
   const handleChangeSanh = () => {
     setSanhModalVisible(true);
     setShowSanhFavorites(false);
+    setSelectedItemDetail(null); // Reset chi tiết khi mở modal
     dispatch(Hall());
     if (userId) dispatch(fetchUserFavorites(userId));
   };
@@ -272,6 +275,18 @@ const EditPlan = ({ navigation, route }) => {
       });
   };
 
+  const handleViewDetail = (item) => {
+    const normalizedItem = {
+      _id: item.itemId || item._id,
+      name: item.name || 'Không có tên',
+      price: item.price || 0,
+      imageUrl: item.imageUrl || item.image || null,
+      description: item.Description || 'Không có mô tả',
+      SoLuongKhach: item.SoLuongKhach || null, // Chỉ dành cho sảnh
+    };
+    setSelectedItemDetail(normalizedItem); // Hiển thị chi tiết item
+  };
+
   const renderItemList = (items, type) => (
     <View>
       {items.length > 0 ? (
@@ -282,7 +297,7 @@ const EditPlan = ({ navigation, route }) => {
               <View style={styles.itemContent}>
                 <Text style={styles.itemText}>{item.name}</Text>
                 <Text style={styles.itemPrice}>{item.price.toLocaleString('vi-VN')} VNĐ</Text>
-                {item.description && <Text style={styles.itemDescription}>{item.description}</Text>}
+                
               </View>
               <View style={styles.itemActions}>
                 <TouchableOpacity style={styles.replaceButton} onPress={() => openChangeModal(type, 'replace', index)}>
@@ -312,32 +327,61 @@ const EditPlan = ({ navigation, route }) => {
 
   const renderModalItem = ({ item }) => (
     item ? (
-      <TouchableOpacity style={styles.modalItem} onPress={() => handleSelectItem(item)}>
-        {(item.imageUrl || item.image) && (
-          <Image source={{ uri: item.imageUrl || item.image }} style={styles.modalItemImage} />
-        )}
-        <View style={styles.modalItemContent}>
-          <Text style={styles.modalItemText}>{item.name || 'Không có tên'}</Text>
-          <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
-        </View>
-      </TouchableOpacity>
+      <View style={styles.modalItem}>
+        <TouchableOpacity style={styles.modalItemSelect} onPress={() => handleSelectItem(item)}>
+          {(item.imageUrl || item.image) && (
+            <Image source={{ uri: item.imageUrl || item.image }} style={styles.modalItemImage} />
+          )}
+          <View style={styles.modalItemContent}>
+            <Text style={styles.modalItemText}>{item.name || 'Không có tên'}</Text>
+            <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.viewButton} onPress={() => handleViewDetail(item)}>
+          <Text style={styles.buttonText}>View</Text>
+        </TouchableOpacity>
+      </View>
     ) : null
   );
 
   const renderSanhItem = ({ item }) => (
     item ? (
-      <TouchableOpacity style={styles.modalItem} onPress={() => handleSelectSanh(item)}>
-        {(item.imageUrl || item.image) && (
-          <Image source={{ uri: item.imageUrl || item.image }} style={styles.modalItemImage} />
-        )}
-        <View style={styles.modalItemContent}>
-          <Text style={styles.modalItemText}>{item.name || 'Không có tên'}</Text>
-          <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
-          {item.SoLuongKhach && (
-            <Text style={styles.modalItemPrice}>{item.SoLuongKhach}/người</Text>
+      <View style={styles.modalItem}>
+        <TouchableOpacity style={styles.modalItemSelect} onPress={() => handleSelectSanh(item)}>
+          {(item.imageUrl || item.image) && (
+            <Image source={{ uri: item.imageUrl || item.image }} style={styles.modalItemImage} />
           )}
-        </View>
-      </TouchableOpacity>
+          <View style={styles.modalItemContent}>
+            <Text style={styles.modalItemText}>{item.name || 'Không có tên'}</Text>
+            <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+            {item.SoLuongKhach && (
+              <Text style={styles.modalItemPrice}>{item.SoLuongKhach}/người</Text>
+            )}
+          </View>
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.viewButton} onPress={() => handleViewDetail(item)}>
+          <Text style={styles.buttonText}>View</Text>
+        </TouchableOpacity>
+      </View>
+    ) : null
+  );
+
+  const renderDetailView = () => (
+    selectedItemDetail ? (
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailTitle}>{selectedItemDetail.name}</Text>
+        {selectedItemDetail.imageUrl && (
+          <Image source={{ uri: selectedItemDetail.imageUrl }} style={styles.detailImage} />
+        )}
+        <Text style={styles.detailPrice}>{selectedItemDetail.price.toLocaleString('vi-VN')} VNĐ</Text>
+        <Text style={styles.detailDescription}>{selectedItemDetail.description}</Text>
+        {selectedItemDetail.SoLuongKhach && (
+          <Text style={styles.detailCapacity}>Sức chứa: {selectedItemDetail.SoLuongKhach}/người</Text>
+        )}
+        <TouchableOpacity style={styles.backButtonDetail} onPress={() => setSelectedItemDetail(null)}>
+          <Text style={styles.buttonText}>Quay lại</Text>
+        </TouchableOpacity>
+      </View>
     ) : null
   );
 
@@ -347,9 +391,7 @@ const EditPlan = ({ navigation, route }) => {
       <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.header}>
-            
             <Text style={styles.headerTitle}>Chỉnh sửa kế hoạch</Text>
-            
           </View>
 
           <View style={styles.planInfoCard}>
@@ -476,29 +518,35 @@ const EditPlan = ({ navigation, route }) => {
                 <Text style={styles.toggleText}>Yêu thích</Text>
               </TouchableOpacity>
             </View>
-            {(currentType === 'caterings' && cateringStatus === 'loading') ||
-            (currentType === 'decorates' && decorateStatus === 'loading') ||
-            (currentType === 'presents' && presentStatus === 'loading') ||
-            (showFavorites && favoriteStatus === 'loading') ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF6F61" />
-                <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-              </View>
-            ) : availableItems.length > 0 ? (
-              <FlatList
-                data={availableItems}
-                renderItem={renderModalItem}
-                keyExtractor={(item) => item._id || item.itemId || Math.random().toString()}
-                style={styles.modalList}
-              />
+            {selectedItemDetail ? (
+              renderDetailView()
             ) : (
-              <Text style={styles.noDataText}>
-                {showFavorites ? 'Không có mục yêu thích nào' : 'Không có dữ liệu để hiển thị'}
-              </Text>
+              <>
+                {(currentType === 'caterings' && cateringStatus === 'loading') ||
+                (currentType === 'decorates' && decorateStatus === 'loading') ||
+                (currentType === 'presents' && presentStatus === 'loading') ||
+                (showFavorites && favoriteStatus === 'loading') ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#FF6F61" />
+                    <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+                  </View>
+                ) : availableItems.length > 0 ? (
+                  <FlatList
+                    data={availableItems}
+                    renderItem={renderModalItem}
+                    keyExtractor={(item) => item._id || item.itemId || Math.random().toString()}
+                    style={styles.modalList}
+                  />
+                ) : (
+                  <Text style={styles.noDataText}>
+                    {showFavorites ? 'Không có mục yêu thích nào' : 'Không có dữ liệu để hiển thị'}
+                  </Text>
+                )}
+                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                  <Text style={styles.closeButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              </>
             )}
-            <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Đóng</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -521,26 +569,32 @@ const EditPlan = ({ navigation, route }) => {
                 <Text style={styles.toggleText}>Yêu thích</Text>
               </TouchableOpacity>
             </View>
-            {(HallStatus === 'loading' || (showSanhFavorites && favoriteStatus === 'loading')) ? (
-              <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#FF6F61" />
-                <Text style={styles.loadingText}>Đang tải danh sách sảnh...</Text>
-              </View>
-            ) : availableItems.length > 0 ? (
-              <FlatList
-                data={availableItems}
-                renderItem={renderSanhItem}
-                keyExtractor={(item) => item._id || item.itemId || Math.random().toString()}
-                style={styles.modalList}
-              />
+            {selectedItemDetail ? (
+              renderDetailView()
             ) : (
-              <Text style={styles.noDataText}>
-                {showSanhFavorites ? 'Không có sảnh yêu thích nào' : 'Không có sảnh nào để hiển thị'}
-              </Text>
+              <>
+                {(HallStatus === 'loading' || (showSanhFavorites && favoriteStatus === 'loading')) ? (
+                  <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="large" color="#FF6F61" />
+                    <Text style={styles.loadingText}>Đang tải danh sách sảnh...</Text>
+                  </View>
+                ) : availableItems.length > 0 ? (
+                  <FlatList
+                    data={availableItems}
+                    renderItem={renderSanhItem}
+                    keyExtractor={(item) => item._id || item.itemId || Math.random().toString()}
+                    style={styles.modalList}
+                  />
+                ) : (
+                  <Text style={styles.noDataText}>
+                    {showSanhFavorites ? 'Không có sảnh yêu thích nào' : 'Không có sảnh nào để hiển thị'}
+                  </Text>
+                )}
+                <TouchableOpacity style={styles.closeButton} onPress={() => setSanhModalVisible(false)}>
+                  <Text style={styles.closeButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              </>
             )}
-            <TouchableOpacity style={styles.closeButton} onPress={() => setSanhModalVisible(false)}>
-              <Text style={styles.closeButtonText}>Đóng</Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -624,15 +678,47 @@ const styles = StyleSheet.create({
   modalContent: { width: width * 0.9, backgroundColor: '#FFF', borderRadius: 15, padding: 20, maxHeight: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 15, textAlign: 'center' },
   modalList: { flexGrow: 0 },
-  modalItem: { flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderBottomColor: '#EEE', alignItems: 'center' },
+  modalItem: { 
+    flexDirection: 'row', 
+    padding: 10, 
+    borderBottomWidth: 1, 
+    borderBottomColor: '#EEE', 
+    alignItems: 'center', 
+    justifyContent: 'space-between' 
+  },
+  modalItemSelect: { 
+    flexDirection: 'row', 
+    flex: 1, 
+    alignItems: 'center' 
+  },
   modalItemImage: { width: 50, height: 50, borderRadius: 8, marginRight: 10 },
   modalItemContent: { flex: 1 },
   modalItemText: { fontSize: 16, color: '#444', fontWeight: '500' },
   modalItemPrice: { fontSize: 14, color: '#FF6F61', marginTop: 5 },
+  viewButton: { 
+    backgroundColor: '#2196F3', 
+    paddingVertical: 5, 
+    paddingHorizontal: 10, 
+    borderRadius: 15, 
+    marginLeft: 10 
+  },
   closeButton: { backgroundColor: '#FF6F61', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, alignSelf: 'center', marginTop: 15 },
   closeButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   loadingContainer: { justifyContent: 'center', alignItems: 'center', padding: 20 },
   loadingText: { marginTop: 10, fontSize: 16, color: '#666' },
+  detailContainer: { padding: 10 },
+  detailTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 10, textAlign: 'center' },
+  detailImage: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10 },
+  detailPrice: { fontSize: 18, color: '#FF6F61', marginBottom: 10, textAlign: 'center' },
+  detailDescription: { fontSize: 16, color: '#666', marginBottom: 10, textAlign: 'center' },
+  detailCapacity: { fontSize: 16, color: '#666', marginBottom: 10, textAlign: 'center' },
+  backButtonDetail: { 
+    backgroundColor: '#FFB300', 
+    paddingVertical: 10, 
+    paddingHorizontal: 20, 
+    borderRadius: 25, 
+    alignSelf: 'center' 
+  },
 });
 
 export default EditPlan;

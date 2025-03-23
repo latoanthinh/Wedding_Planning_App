@@ -184,7 +184,7 @@ const FoodDetailScreen = (props) => {
             <View style={styles.tagItem}><Text style={styles.tagText}>Hấp dẫn</Text></View>
           </View>
           <Animated.Text style={[styles.description, { opacity: descAnim, transform: [{ translateY: descAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
-            {displayData.description || 'Không có mô tả'}
+            {displayData.Description || 'Không có mô tả'}
           </Animated.Text>
           <Animated.View style={[styles.priceContainer, { opacity: priceAnim, transform: [{ translateY: priceAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
             <Text style={styles.priceText}>{formattedPrice}/phần</Text>
