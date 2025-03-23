@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, {useEffect, useRef} from 'react';
 import {
   View,
   ScrollView,
@@ -11,33 +11,32 @@ import {
   StatusBar,
   Platform,
   Dimensions,
-  Share
+  Share,
 } from 'react-native';
-import { useDispatch, useSelector } from 'react-redux';
-import { fetchBlogDetail, clearSelectedBlog, fetchBlogRelated } from '../redux/BlogSlice';
-import { useNavigation } from '@react-navigation/native';
+import {useDispatch, useSelector} from 'react-redux';
+import {
+  fetchBlogDetail,
+  clearSelectedBlog,
+  fetchBlogRelated,
+} from '../redux/BlogSlice';
+import {useNavigation} from '@react-navigation/native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import moment from 'moment';
-import 'moment/locale/vi'; // Import Vietnamese locale
-import { SharedElement } from 'react-navigation-shared-element';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import 'moment/locale/vi';
+import {SharedElement} from 'react-navigation-shared-element';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import IconButton from '../components/IconButton';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
-const BlogDetail = ({ route }) => {
-  const { slug } = route.params;
+const BlogDetail = ({route}) => {
+  const {slug} = route.params;
   const dispatch = useDispatch();
   const navigation = useNavigation();
-  
+
   // Get state from Redux store
-  const { 
-    selectedBlog, 
-    relatedBlogs, 
-    detailStatus,
-    relatedStatus,
-    detailError,
-  } = useSelector((state) => state.blog);
+  const {selectedBlog, relatedBlogs, detailStatus, relatedStatus, detailError} =
+    useSelector(state => state.blog);
 
   // Set moment locale to Vietnamese
   moment.locale('vi');
@@ -54,7 +53,7 @@ const BlogDetail = ({ route }) => {
   useEffect(() => {
     // Fetch blog details
     dispatch(fetchBlogDetail(slug));
-    
+
     // Cleanup when unmounting
     return () => {
       dispatch(clearSelectedBlog());
@@ -104,30 +103,39 @@ const BlogDetail = ({ route }) => {
             useNativeDriver: true,
           }),
           Animated.timing(relatedAnim, {
-            toValue: 1, 
+            toValue: 1,
             duration: 600,
             useNativeDriver: true,
-          })
-        ])
+          }),
+        ]),
       ]).start();
     }
-  }, [fadeAnim, slideAnim, titleAnim, contentAnim, imageAnim, metaAnim, relatedAnim, selectedBlog]);
+  }, [
+    fadeAnim,
+    slideAnim,
+    titleAnim,
+    contentAnim,
+    imageAnim,
+    metaAnim,
+    relatedAnim,
+    selectedBlog,
+  ]);
 
   const handleRetry = () => {
     dispatch(fetchBlogDetail(slug));
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = dateString => {
     return moment(dateString).format('DD MMMM, YYYY');
   };
 
-  const navigateToRelatedBlog = (relatedSlug) => {
-    navigation.push('BlogDetail', { slug: relatedSlug });
+  const navigateToRelatedBlog = relatedSlug => {
+    navigation.push('BlogDetail', {slug: relatedSlug});
   };
 
   const handleShare = async () => {
     if (!selectedBlog) return;
-    
+
     try {
       const result = await Share.share({
         message: `Xem bài viết "${selectedBlog.title}" trên ứng dụng Wedding Planning`,
@@ -157,7 +165,10 @@ const BlogDetail = ({ route }) => {
       <SafeAreaView style={styles.errorContainer}>
         <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
         <View style={styles.errorContent}>
-          <Image source={require('../Assets/Images/error.png')} style={{ width: 70, height: 70, marginBottom: 10 }} />
+          <Image
+            source={require('../Assets/Images/error.png')}
+            style={{width: 70, height: 70, marginBottom: 10}}
+          />
           <Text style={styles.errorTitle}>Không thể tải bài viết</Text>
           <Text style={styles.errorMessage}>{detailError}</Text>
           <TouchableOpacity style={styles.retryButton} onPress={handleRetry}>
@@ -183,171 +194,187 @@ const BlogDetail = ({ route }) => {
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-      
+
       {/* Header with back button and home button */}
       <SafeAreaView style={styles.safeHeader}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.goBack()}>
-            <Image 
-              source={require('../Assets/Images/back.png')} 
-              style={styles.headerIcon} 
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => navigation.goBack()}>
+            <Image
+              source={require('../Assets/Images/back.png')}
+              style={styles.headerIcon}
               resizeMode="contain"
             />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Chi tiết bài viết</Text>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('TabNavigation')}>
-            <Image 
-              source={require('../Assets/Images/home48.png')} 
-              style={styles.headerIcon} 
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => navigation.navigate('TabNavigation')}>
+            <Image
+              source={require('../Assets/Images/home48.png')}
+              style={styles.headerIcon}
               resizeMode="contain"
             />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
-      
-      <ScrollView 
+
+      <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollViewContent}
-      >
+        contentContainerStyle={styles.scrollViewContent}>
         {/* Featured Image */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.imageContainer,
             {
               opacity: imageAnim,
-              transform: [{ scale: imageAnim.interpolate({
-                inputRange: [0, 1],
-                outputRange: [0.9, 1]
-              })}]
-            }
-          ]}
-        >
+              transform: [
+                {
+                  scale: imageAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [0.9, 1],
+                  }),
+                },
+              ],
+            },
+          ]}>
           <SharedElement id={`blog.${slug}.image`}>
             <Image
-              source={{ uri: selectedBlog.coverImage || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog' }}
+              source={{
+                uri:
+                  selectedBlog.coverImage ||
+                  'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog',
+              }}
               style={styles.featuredImage}
               resizeMode="cover"
             />
           </SharedElement>
-          
+
           {/* Action buttons */}
           <View style={styles.actionButtonsContainer}>
-            <IconButton 
-              icon="arrow-back" 
-              size={22} 
-              color="#333" 
+            <IconButton
+              icon="arrow-back"
+              size={22}
+              color="#333"
               onPress={() => navigation.goBack()}
               style={styles.backButton}
             />
-            <IconButton 
-              icon="share" 
-              size={22} 
-              color="#333" 
+            <IconButton
+              icon="share"
+              size={22}
+              color="#333"
               onPress={handleShare}
               style={styles.shareButton}
             />
           </View>
         </Animated.View>
-        
+
         {/* Blog Content Container */}
-        <Animated.View 
+        <Animated.View
           style={[
             styles.contentContainer,
             {
               opacity: fadeAnim,
-              transform: [{ translateY: slideAnim }]
-            }
-          ]}
-        >
+              transform: [{translateY: slideAnim}],
+            },
+          ]}>
           {/* Title */}
-          <Animated.Text 
-            style={[
-              styles.title,
-              { opacity: titleAnim }
-            ]}
-          >
+          <Animated.Text style={[styles.title, {opacity: titleAnim}]}>
             {selectedBlog.title}
           </Animated.Text>
-          
+
           {/* Meta Information */}
-          <Animated.View 
-            style={[
-              styles.metaContainer,
-              { opacity: metaAnim }
-            ]}
-          >
+          <Animated.View style={[styles.metaContainer, {opacity: metaAnim}]}>
             <View style={styles.metaItem}>
-              <Image source={require('../Assets/Images/calendar.png')} style={styles.metaIcon} />
+              <Image
+                source={require('../Assets/Images/calendar.png')}
+                style={styles.metaIcon}
+              />
               <Text style={styles.metaText}>
                 {formatDate(selectedBlog.created_at)}
               </Text>
             </View>
-            
+
             {selectedBlog.author && (
               <View style={styles.metaItem}>
-                <Image source={require('../Assets/Images/user.png')} style={styles.metaIcon} />
+                <Image
+                  source={require('../Assets/Images/user.png')}
+                  style={styles.metaIcon}
+                />
                 <Text style={styles.metaText}>
-                  {typeof selectedBlog.author === 'object' ? selectedBlog.author.name || 'Không rõ tác giả' : selectedBlog.author.toString()}
+                  {typeof selectedBlog.author === 'object'
+                    ? selectedBlog.author.name || 'Không rõ tác giả'
+                    : selectedBlog.author.toString()}
                 </Text>
               </View>
             )}
-            
+
+            {selectedBlog.viewCount !== undefined && (
+              <View style={styles.metaItem}>
+                <Image
+                  source={require('../Assets/Images/eye.png')}
+                  style={styles.metaIcon}
+                />
+                <Text style={styles.metaText}>
+                  {selectedBlog.viewCount} lượt xem
+                </Text>
+              </View>
+            )}
+
             {selectedBlog.category && (
               <View style={styles.metaItem}>
-                <Image source={require('../Assets/Images/addfolder.png')} style={styles.metaIcon} />
-                <Text style={styles.metaText}>
-                  {selectedBlog.category}
-                </Text>
+                <Image
+                  source={require('../Assets/Images/addfolder.png')}
+                  style={styles.metaIcon}
+                />
+                <Text style={styles.metaText}>{selectedBlog.category}</Text>
               </View>
             )}
           </Animated.View>
-          
+
           {/* Blog Content */}
-          <Animated.View 
-            style={[
-              styles.bodyContainer,
-              { opacity: contentAnim }
-            ]}
-          >
-            <Text style={styles.bodyText}>
-              {selectedBlog.content}
-            </Text>
+          <Animated.View style={[styles.bodyContainer, {opacity: contentAnim}]}>
+            <Text style={styles.bodyText}>{selectedBlog.content}</Text>
           </Animated.View>
-          
+
           {/* Related Blogs Section */}
           <Animated.View
-            style={[
-              styles.relatedContainer,
-              { opacity: relatedAnim }
-            ]}
-          >
+            style={[styles.relatedContainer, {opacity: relatedAnim}]}>
             <Text style={styles.relatedTitle}>Bài viết liên quan</Text>
-            
+
             {relatedStatus === 'loading' ? (
-              <ActivityIndicator size="small" color="#FF6B6B" style={styles.relatedLoading} />
+              <ActivityIndicator
+                size="small"
+                color="#FF6B6B"
+                style={styles.relatedLoading}
+              />
             ) : relatedBlogs && relatedBlogs.length > 0 ? (
               <View style={styles.relatedBlogsContainer}>
-                {relatedBlogs.map((blog) => {
+                {relatedBlogs.map(blog => {
                   // Check for valid blog data
                   if (!blog || typeof blog !== 'object') return null;
-                  
+
                   // Ensure properties are valid
                   const blogId = blog.id || blog._id || '';
                   const blogSlug = blog.slug ? blog.slug.toString() : '';
-                  const blogTitle = blog.title ? blog.title.toString() : 'Bài viết không tiêu đề';
-                  const blogImage = blog.coverImage || 'https://via.placeholder.com/300x200/EDEFF1/333333?text=Blog';
-                  
+                  const blogTitle = blog.title
+                    ? blog.title.toString()
+                    : 'Bài viết không tiêu đề';
+                  const blogImage =
+                    blog.coverImage ||
+                    'https://via.placeholder.com/300x200/EDEFF1/333333?text=Blog';
+
                   return (
-                    <TouchableOpacity 
-                      key={blogId} 
+                    <TouchableOpacity
+                      key={blogId}
                       style={styles.relatedBlogItem}
                       onPress={() => navigateToRelatedBlog(blogSlug)}
-                      activeOpacity={0.7}
-                    >
-                      <Image 
-                        source={{ uri: blogImage }} 
-                        style={styles.relatedBlogImage} 
+                      activeOpacity={0.7}>
+                      <Image
+                        source={{uri: blogImage}}
+                        style={styles.relatedBlogImage}
                         resizeMode="cover"
                       />
                       <View style={styles.relatedBlogContent}>
@@ -363,7 +390,9 @@ const BlogDetail = ({ route }) => {
                 })}
               </View>
             ) : (
-              <Text style={styles.noRelatedText}>Không có bài viết liên quan</Text>
+              <Text style={styles.noRelatedText}>
+                Không có bài viết liên quan
+              </Text>
             )}
           </Animated.View>
         </Animated.View>
@@ -381,7 +410,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     zIndex: 10,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 3,
@@ -397,6 +426,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    fontFamily: 'Playfair_me'
   },
   headerButton: {
     width: 40,
@@ -457,6 +487,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 16,
     lineHeight: 32,
+    fontFamily: 'Playfair_me'
   },
   metaContainer: {
     flexDirection: 'row',
@@ -490,6 +521,7 @@ const styles = StyleSheet.create({
     color: '#444',
     lineHeight: 26,
     textAlign: 'justify',
+    fontFamily: 'Playfair_me'
   },
   relatedContainer: {
     marginTop: 10,
@@ -502,6 +534,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#333',
     marginBottom: 16,
+    fontFamily: 'Playfair_me'
   },
   relatedLoading: {
     marginVertical: 20,
@@ -516,7 +549,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     overflow: 'hidden',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
@@ -537,10 +570,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
     lineHeight: 20,
+    fontFamily: 'Playfair_me'
   },
   relatedBlogDate: {
     fontSize: 12,
     color: '#777',
+    fontFamily: 'Playfair_me',
   },
   noRelatedText: {
     fontSize: 14,
@@ -548,8 +583,9 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     paddingVertical: 16,
+    fontFamily: 'Playfair_me',
   },
-  
+
   // Loading state styles
   loadingContainer: {
     flex: 1,
@@ -565,8 +601,9 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
+    fontFamily: 'Playfair_me',
   },
-  
+
   // Error state styles
   errorContainer: {
     flex: 1,
@@ -584,6 +621,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
     textAlign: 'center',
+    fontFamily: 'Playfair_me',
   },
   errorMessage: {
     fontSize: 14,
@@ -591,6 +629,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
+    fontFamily: 'Playfair_me',
   },
   retryButton: {
     backgroundColor: '#FF6B6B',
@@ -598,7 +637,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
+    shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
@@ -607,11 +646,13 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 14,
+    fontFamily: 'Playfair_me',
   },
   noDataText: {
     fontSize: 18,
     color: '#666',
     textAlign: 'center',
+    fontFamily: 'Playfair_me',
   },
 });
 

@@ -110,6 +110,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '600',
     color: '#333',
+    fontFamily: 'Playfair_me',
   },
   headerRight: {
     flexDirection: 'row',
@@ -145,11 +146,13 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '600',
     color: '#333',
+    fontFamily: 'Playfair_me',
   },
   profileEmail: {
     fontSize: 14,
     color: '#888',
     marginTop: 3,
+    fontFamily: 'Playfair_me',
   },
   editProfileButton: {
     backgroundColor: '#200000',
@@ -162,6 +165,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 16,
     fontWeight: '600',
+    fontFamily: 'Playfair_me',
   },
   divider: {
     borderBottomWidth: 1,
@@ -197,6 +201,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#333',
     flexShrink: 1,
+    fontFamily: 'Playfair_me',
   },
   nextIcon: {
     width: 20,

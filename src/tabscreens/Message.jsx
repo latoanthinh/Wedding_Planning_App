@@ -174,6 +174,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 16,
+    fontFamily: 'Playfair_me',
   },
   userText: {
     color: '#fff',
@@ -211,6 +212,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontWeight: 'bold',
+    fontFamily: 'Playfair_me',
   },
   typingContainer: {
     flexDirection: 'row',
@@ -220,11 +222,13 @@ const styles = StyleSheet.create({
   typingText: {
     color: '#999',
     marginRight: 5,
+    fontFamily: 'Playfair_me',
   },
   timeText: {
     fontSize: 12,
     color: '#999',
     marginTop: 5,
     alignSelf: 'flex-end',
+    fontFamily: 'Playfair_me',
   },
 });

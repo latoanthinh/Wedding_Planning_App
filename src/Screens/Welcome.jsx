@@ -88,7 +88,7 @@ const styles = StyleSheet.create({
     color: '#3D3D3D',
     marginBottom: 10,
     letterSpacing: 1,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
     textShadowColor: 'rgba(0, 0, 0, 0.1)',
     textShadowOffset: { width: 0, height: 2 },
     textShadowRadius: 4,
@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     color: '#8A8A8A',
     fontStyle: 'italic',
     letterSpacing: 0.5,
-    fontFamily: 'serif',
+    fontFamily: 'Playfair_me',
   },
   lineImage: {
     width: 300,

@@ -317,6 +317,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '600',
     color: '#333',
+    fontFamily: 'Playfair_me'
   },
   headerButton: {
     width: 40,
@@ -354,6 +355,7 @@ const styles = StyleSheet.create({
     height: 48,
     fontSize: 16,
     color: '#333',
+    fontFamily: 'Playfair_me'
   },
   clearButton: {
     padding: 8,
@@ -387,12 +389,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
     marginBottom: 8,
+    fontFamily: 'Playfair_me'
   },
   summary: {
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
     marginBottom: 12,
+    fontFamily: 'Playfair_me'
   },
   metaContainer: {
     flexDirection: 'row',
@@ -414,6 +418,7 @@ const styles = StyleSheet.create({
   metaText: {
     fontSize: 12,
     color: '#888',
+    fontFamily: 'Playfair_me',
   },
   
   // Loading state styles
@@ -431,6 +436,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     color: '#666',
+    fontFamily: 'Playfair_me',
   },
   
   // Error state styles
@@ -450,6 +456,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
     textAlign: 'center',
+    fontFamily: 'Playfair_me',
   },
   errorText: {
     fontSize: 14,
@@ -457,6 +464,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
+    fontFamily: 'Playfair_me',
   },
   buttonContainer: {
     flexDirection: 'row',
@@ -481,6 +489,7 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
     fontSize: 14,
+    fontFamily: 'Playfair_me',
   },
   checkButton: {
     backgroundColor: '#5C6BC0',
@@ -503,6 +512,7 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 8,
     textAlign: 'center',
+    fontFamily: 'Playfair_me',
   },
   emptyText: {
     fontSize: 14,
@@ -510,6 +520,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
+    fontFamily: 'Playfair_me',
   },
   
   // No results styles
@@ -523,6 +534,7 @@ const styles = StyleSheet.create({
     color: '#666',
     textAlign: 'center',
     marginBottom: 16,
+    fontFamily: 'Playfair_me',
   },
   clearSearchButton: {
     backgroundColor: '#F2F2F2',
@@ -534,6 +546,7 @@ const styles = StyleSheet.create({
     color: '#666',
     fontWeight: '500',
     fontSize: 14,
+    fontFamily: 'Playfair_me',
   },
 });
 
