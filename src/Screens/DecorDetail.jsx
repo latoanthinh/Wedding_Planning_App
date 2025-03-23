@@ -14,47 +14,57 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChitietDecor, resetChitietDecor } from '../redux/ChitietDecorSlice';
-import { addFavoriteItem } from '../redux/FavoriteDeanAddSlice';
+import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice'; // Thêm removeFavoriteItem và fetchUserFavorites
 import { AppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
 
 const DecorDetail = (props) => {
   const { navigation, route } = props;
-  const { decorId } = route?.params || {};
+  const { decorId, item } = route?.params || {}; // Lấy cả item từ params
   const dispatch = useDispatch();
   const { ChitietDecorData, ChitietDecorStatus, error } = useSelector(state => state.chitietdecor);
+  const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset); // Lấy danh sách yêu thích từ Redux
   const { user } = useContext(AppContext);
+  const userId = user?._id;
 
-  // Animation references
   const nameAnim = useRef(new Animated.Value(0)).current;
   const descAnim = useRef(new Animated.Value(0)).current;
   const priceAnim = useRef(new Animated.Value(0)).current;
   const imageAnim = useRef(new Animated.Value(0)).current;
 
-  // State for favorite
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
 
+  // Tải danh sách yêu thích và kiểm tra trạng thái yêu thích khi component mount
   useEffect(() => {
-    if (decorId) {
+    console.log('Route params:', JSON.stringify(route.params, null, 2));
+    if (userId && decorId) {
+      dispatch(fetchUserFavorites(userId)); // Tải danh sách yêu thích của user
+    }
+    if (!item && decorId) {
       console.log('Fetching detail for Id:', decorId);
       dispatch(ChitietDecor(decorId));
-    } else {
-      console.error('No decorId provided:', route?.params);
     }
     return () => {
       console.log('Resetting state for Id:', decorId);
       dispatch(resetChitietDecor());
     };
-  }, [dispatch, decorId]);
+  }, [dispatch, decorId, item, userId]);
 
+  // Cập nhật trạng thái isFavorite dựa trên danh sách yêu thích
   useEffect(() => {
-    // Start animations when data is loaded
-    if (ChitietDecorStatus === 'succeeded' && ChitietDecorData) {
+    if (favorites && decorId) {
+      const isFav = favorites.some((fav) => fav.itemId === decorId && fav.type === 'decorate');
+      setIsFavorite(isFav);
+    }
+  }, [favorites, decorId]);
+
+  // Animation khi dữ liệu sẵn sàng
+  useEffect(() => {
+    if ((ChitietDecorStatus === 'succeeded' && ChitietDecorData) || item) {
       Animated.stagger(300, [
         Animated.timing(imageAnim, { toValue: 1, duration: 600, useNativeDriver: true }),
         Animated.timing(nameAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
@@ -62,54 +72,40 @@ const DecorDetail = (props) => {
         Animated.timing(priceAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
       ]).start();
     }
-  }, [ChitietDecorStatus, ChitietDecorData]);
+  }, [ChitietDecorStatus, ChitietDecorData, item]);
 
-  // For debugging - log the data to see what's available
-  console.log("Decor Data received:", JSON.stringify(ChitietDecorData, null, 2));
-
-  // Handle adding to favorites
-  const handleAddToFavorites = () => {
-    if (!decorId) {
-      ToastAndroid.show('Không thể thêm vào yêu thích, thiếu ID sản phẩm', ToastAndroid.SHORT);
-      return;
-    }
-
-    // Log user data for debugging
-    console.log('User from AppContext:', user);
-    
-    if (!user || !user._id) {
-      ToastAndroid.show('Vui lòng đăng nhập để thêm vào yêu thích', ToastAndroid.SHORT);
+  // Hàm xử lý bật/tắt yêu thích giống GiftDetail
+  const handleToggleFavorite = () => {
+    if (!decorId || !user || !user._id) {
+      ToastAndroid.show('Vui lòng đăng nhập để sử dụng tính năng này', ToastAndroid.SHORT);
+      navigation.navigate('LoginScreen');
       return;
     }
 
     setIsFavoriteLoading(true);
-    
-    // Log the parameters being sent to the API
-    console.log('Adding to favorites with params:', {
-      userId: user._id,
-      type: 'Decorate',
-      itemId: decorId
-    });
-    
-    dispatch(addFavoriteItem({
-      userId: user._id,
-      type: 'Decorate', // Type is 'Decorate' for decorations
-      itemId: decorId
-    }))
-      .unwrap()
-      .then((result) => {
-        console.log('Favorite added successfully:', result);
-        setIsFavorite(true);
-        ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
-      })
-      .catch((err) => {
-        console.error('Error adding to favorites:', err);
-        console.error('Error details:', JSON.stringify(err, null, 2));
-        ToastAndroid.show('Không thể thêm vào yêu thích: ' + (err.message || 'Lỗi không xác định'), ToastAndroid.SHORT);
-      })
-      .finally(() => {
-        setIsFavoriteLoading(false);
-      });
+    if (isFavorite) {
+      dispatch(removeFavoriteItem({ userId: user._id, type: 'decorate', itemId: decorId }))
+        .unwrap()
+        .then(() => {
+          setIsFavorite(false);
+          ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .catch((err) => {
+          ToastAndroid.show('Không thể xóa: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
+        })
+        .finally(() => setIsFavoriteLoading(false));
+    } else {
+      dispatch(addFavoriteItem({ userId: user._id, type: 'decorate', itemId: decorId }))
+        .unwrap()
+        .then(() => {
+          setIsFavorite(true);
+          ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .catch((err) => {
+          ToastAndroid.show('Không thể thêm: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
+        })
+        .finally(() => setIsFavoriteLoading(false));
+    }
   };
 
   if (!decorId) {
@@ -120,7 +116,7 @@ const DecorDetail = (props) => {
     );
   }
 
-  if (ChitietDecorStatus === 'loading') {
+  if (!item && ChitietDecorStatus === 'loading') {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator size="large" color="#A67C52" />
@@ -128,7 +124,7 @@ const DecorDetail = (props) => {
     );
   }
 
-  if (ChitietDecorStatus === 'failed') {
+  if (!item && ChitietDecorStatus === 'failed') {
     return (
       <SafeAreaView style={styles.container}>
         <Text style={styles.errorText}>{error || 'Không thể tải chi tiết'}</Text>
@@ -136,207 +132,126 @@ const DecorDetail = (props) => {
     );
   }
 
-  if (ChitietDecorStatus === 'succeeded') {
-    if (!ChitietDecorData) {
-      return (
-        <SafeAreaView style={styles.container}>
-          <Text style={styles.errorText}>Không có dữ liệu chi tiết</Text>
-        </SafeAreaView>
-      );
-    }
-
-    // Format price to VND currency
-    const formattedPrice = ChitietDecorData?.price
-      ? ChitietDecorData.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
-      : '0 VNĐ';
-
+  const displayData = item || ChitietDecorData;
+  if (!displayData) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        
-        {/* Image Container with Animation */}
-        <View style={styles.imageContainer}>
-          <Animated.View style={{ 
-            opacity: imageAnim,
-            transform: [{ scale: imageAnim.interpolate({ 
-              inputRange: [0, 1], 
-              outputRange: [0.9, 1] 
-            }) }]
-          }}>
-            <Image 
-              source={{ uri: ChitietDecorData?.imageUrl || 'https://via.placeholder.com/300' }} 
-              style={styles.decorImage} 
-              resizeMode="cover" 
-            />
-            {/* Overlay gradient effect */}
-            <View style={styles.imageOverlay} />
-          </Animated.View>
-          
-          {/* Header Buttons */}
-          <View style={styles.headerButtons}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <Icon name="chevron-left" size={28} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity 
-              style={styles.favoriteButton} 
-              onPress={handleAddToFavorites}
-              disabled={isFavoriteLoading}
-            >
-              {isFavoriteLoading ? (
-                <ActivityIndicator size="small" color="#fff" />
-              ) : (
-                <Icon 
-                  name={isFavorite ? "heart" : "heart-outline"} 
-                  size={24} 
-                  color={isFavorite ? "#FF6B6B" : "#fff"} 
-                />
-              )}
-            </TouchableOpacity>
-          </View>
-        </View>
-
-        {/* Content Card */}
-        <View style={styles.contentCard}>
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
-            {/* Product Name */}
-            <View style={styles.titleContainer}>
-              <Animated.Text 
-                style={[
-                  styles.decorName, 
-                  { 
-                    opacity: nameAnim,
-                    transform: [{ translateY: nameAnim.interpolate({ 
-                      inputRange: [0, 1], 
-                      outputRange: [20, 0] 
-                    }) }] 
-                  }
-                ]}
-              >
-                {ChitietDecorData?.name}
-              </Animated.Text>
-              <View style={styles.ratingTag}>
-                <Icon name="star" size={16} color="#A67C52" />
-                <Text style={styles.ratingText}>4.9</Text>
-              </View>
-            </View>
-
-            {/* Category Tags */}
-            <View style={styles.tagsContainer}>
-              <View style={styles.tagItem}>
-                <Text style={styles.tagText}>{ChitietDecorData?.Cate_decorateId?.name || 'Trang trí'}</Text>
-              </View>
-              <View style={styles.tagItem}>
-                <Text style={styles.tagText}>Trang trí</Text>
-              </View>
-              <View style={styles.tagItem}>
-                <Text style={styles.tagText}>Cao cấp</Text>
-              </View>
-            </View>
-            
-            {/* Description */}
-            <Animated.View 
-              style={{ 
-                opacity: descAnim,
-                transform: [{ translateY: descAnim.interpolate({ 
-                  inputRange: [0, 1], 
-                  outputRange: [20, 0] 
-                }) }] 
-              }}
-            >
-              <Text style={styles.sectionTitle}>Mô tả</Text>
-              <Text style={styles.descriptionText}>{ChitietDecorData?.Description || 'Không có mô tả'}</Text>
-            </Animated.View>
-
-            <View style={styles.divider} />
-
-            {/* Features */}
-            <View style={styles.featuresSection}>
-              <Text style={styles.sectionTitle}>Đặc điểm</Text>
-              <View style={styles.featureItem}>
-                <Icon name="flower" size={20} color="#A67C52" />
-                <Text style={styles.featureText}>Hoa tươi cao cấp</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Icon name="palette" size={20} color="#A67C52" />
-                <Text style={styles.featureText}>Thiết kế sang trọng</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Icon name="check-circle" size={20} color="#A67C52" />
-                <Text style={styles.featureText}>Bao gồm dịch vụ lắp đặt</Text>
-              </View>
-              <View style={styles.featureItem}>
-                <Icon name="clock-outline" size={20} color="#A67C52" />
-                <Text style={styles.featureText}>Thời gian chuẩn bị: 2-3 ngày</Text>
-              </View>
-            </View>
-
-            <View style={styles.divider} />
-
-            {/* Price */}
-            <Animated.View 
-              style={[
-                styles.priceContainer, 
-                { 
-                  opacity: priceAnim,
-                  transform: [{ translateY: priceAnim.interpolate({ 
-                    inputRange: [0, 1], 
-                    outputRange: [20, 0] 
-                  }) }] 
-                }
-              ]}
-            >
-              <Text style={styles.priceLabel}>Giá:</Text>
-              <Text style={styles.priceValue}>{formattedPrice}</Text>
-            </Animated.View>
-
-            {/* Note */}
-            <View style={styles.noteContainer}>
-              <Icon name="information-outline" size={22} color="#A67C52" />
-              <Text style={styles.noteText}>Giá có thể thay đổi tùy theo mùa và số lượng hoa</Text>
-            </View>
-
-            {/* Related Products Placeholder */}
-            <View style={styles.relatedSection}>
-              <Text style={styles.sectionTitle}>Sản phẩm liên quan</Text>
-              <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll}>
-                {[1, 2, 3].map((item) => (
-                  <TouchableOpacity key={item} style={styles.relatedItem}>
-                    <Image 
-                      source={{ uri: 'https://hoatuoidatviet.vn/upload/sanpham/cong-hoa-cuoi-dep-dv2-7308.jpg' }} 
-                      style={styles.relatedImage} 
-                    />
-                    <View style={styles.relatedImageOverlay} />
-                    <Text style={styles.relatedName}>Cổng hoa {item + 1}</Text>
-                    <Text style={styles.relatedPrice}>{(ChitietDecorData?.price * 0.8).toLocaleString('vi-VN')} đ</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          </ScrollView>
-
-          {/* Bottom Action Buttons */}
-          <View style={styles.actionButtons}>
-            <TouchableOpacity style={styles.contactButton}>
-              <Icon name="phone" size={20} color="#A67C52" />
-              <Text style={styles.contactButtonText}>Liên hệ</Text>
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.addToCartButton}>
-              <Icon name="cart-plus" size={20} color="#FFFFFF" />
-              <Text style={styles.addToCartText}>Thêm vào kế hoạch</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
+        <Text style={styles.errorText}>Không có dữ liệu chi tiết</Text>
       </SafeAreaView>
     );
   }
 
+  const formattedPrice = displayData.price
+    ? displayData.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+    : '0 VNĐ';
+
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.errorText}>Đang tải dữ liệu...</Text>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.imageContainer}>
+        <Animated.View style={{ 
+          opacity: imageAnim,
+          transform: [{ scale: imageAnim.interpolate({ inputRange: [0, 1], outputRange: [0.9, 1] }) }]
+        }}>
+          <Image 
+            source={{ uri: displayData.image || displayData.imageUrl || 'https://via.placeholder.com/300' }} 
+            style={styles.decorImage} 
+            resizeMode="cover" 
+          />
+          <View style={styles.imageOverlay} />
+        </Animated.View>
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Icon name="chevron-left" size={28} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.favoriteButton} 
+            onPress={handleToggleFavorite} // Sử dụng handleToggleFavorite thay vì handleAddToFavorites
+            disabled={isFavoriteLoading}
+          >
+            {isFavoriteLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Icon 
+                name={isFavorite ? "heart" : "heart-outline"} 
+                size={24} 
+                color={isFavorite ? "#FF6B6B" : "#fff"} 
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.contentCard}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={styles.titleContainer}>
+            <Animated.Text 
+              style={[styles.decorName, { opacity: nameAnim, transform: [{ translateY: nameAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}
+            >
+              {displayData.name || 'Không có tên'}
+            </Animated.Text>
+            <View style={styles.ratingTag}>
+              <Icon name="star" size={16} color="#A67C52" />
+              <Text style={styles.ratingText}>4.9</Text>
+            </View>
+          </View>
+          <View style={styles.tagsContainer}>
+            <View style={styles.tagItem}>
+              <Text style={styles.tagText}>{displayData.Cate_decorateId?.name || 'Trang trí'}</Text>
+            </View>
+            <View style={styles.tagItem}><Text style={styles.tagText}>Trang trí</Text></View>
+            <View style={styles.tagItem}><Text style={styles.tagText}>Cao cấp</Text></View>
+          </View>
+          <Animated.View style={{ opacity: descAnim, transform: [{ translateY: descAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
+            <Text style={styles.sectionTitle}>Mô tả</Text>
+            <Text style={styles.descriptionText}>{displayData.Description || displayData.description || 'Không có mô tả'}</Text>
+          </Animated.View>
+          <View style={styles.divider} />
+          <View style={styles.featuresSection}>
+            <Text style={styles.sectionTitle}>Đặc điểm</Text>
+            <View style={styles.featureItem}><Icon name="flower" size={20} color="#A67C52" /><Text style={styles.featureText}>Hoa tươi cao cấp</Text></View>
+            <View style={styles.featureItem}><Icon name="palette" size={20} color="#A67C52" /><Text style={styles.featureText}>Thiết kế sang trọng</Text></View>
+            <View style={styles.featureItem}><Icon name="check-circle" size={20} color="#A67C52" /><Text style={styles.featureText}>Bao gồm dịch vụ lắp đặt</Text></View>
+            <View style={styles.featureItem}><Icon name="clock-outline" size={20} color="#A67C52" /><Text style={styles.featureText}>Thời gian chuẩn bị: 2-3 ngày</Text></View>
+          </View>
+          <View style={styles.divider} />
+          <Animated.View style={[styles.priceContainer, { opacity: priceAnim, transform: [{ translateY: priceAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+            <Text style={styles.priceLabel}>Giá:</Text>
+            <Text style={styles.priceValue}>{formattedPrice}</Text>
+          </Animated.View>
+          <View style={styles.noteContainer}>
+            <Icon name="information-outline" size={22} color="#A67C52" />
+            <Text style={styles.noteText}>Giá có thể thay đổi tùy theo mùa và số lượng hoa</Text>
+          </View>
+          <View style={styles.relatedSection}>
+            <Text style={styles.sectionTitle}>Sản phẩm liên quan</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll}>
+              {[1, 2, 3].map((i) => (
+                <TouchableOpacity key={i} style={styles.relatedItem}>
+                  <Image source={{ uri: 'https://hoatuoidatviet.vn/upload/sanpham/cong-hoa-cuoi-dep-dv2-7308.jpg' }} style={styles.relatedImage} />
+                  <View style={styles.relatedImageOverlay} />
+                  <Text style={styles.relatedName}>Cổng hoa {i + 1}</Text>
+                  <Text style={styles.relatedPrice}>{(displayData.price * 0.8).toLocaleString('vi-VN')} đ</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+          </View>
+        </ScrollView>
+        <View style={styles.actionButtons}>
+          <TouchableOpacity style={styles.contactButton}>
+            <Icon name="phone" size={20} color="#A67C52" />
+            <Text style={styles.contactButtonText}>Liên hệ</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.addToCartButton}>
+            <Icon name="cart-plus" size={20} color="#FFFFFF" />
+            <Text style={styles.addToCartText}>Thêm vào kế hoạch</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
     </SafeAreaView>
   );
 };
 
+// Styles giữ nguyên
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState, useContext } from 'react'; // Thêm useState và useContext
 import { 
   StyleSheet, 
   View, 
@@ -9,85 +9,106 @@ import {
   ScrollView, 
   StatusBar,
   ActivityIndicator,
+  ToastAndroid // Thêm ToastAndroid
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation } from '@react-navigation/native';
-import { ChitietCatering, resetChitietCatering } from '../redux/ChitietCateringSlice';
-import { useDispatch, useSelector } from 'react-redux';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useDispatch, useSelector } from 'react-redux';
+import { ChitietCatering, resetChitietCatering } from '../redux/ChitietCateringSlice';
+import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice'; // Thêm actions
+import { AppContext } from '../AppContext'; // Thêm AppContext
 
 const FoodDetailScreen = (props) => {
   const { navigation, route } = props;
-  const { Id } = route?.params || {}; // Đảm bảo Id không undefined
+  const { Id, item } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietCateringData, ChitietCateringStatus, error } = useSelector(state => state.chitietcatering);
+  const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset); // Lấy danh sách yêu thích
+  const { user } = useContext(AppContext); // Lấy thông tin user
+  const userId = user?._id;
 
-  useEffect(() => {
-    if (Id) {
-      // console.log('Fetching detail for Id:', Id); 
-      dispatch(ChitietCatering(Id));
-    } else {
-      console.error('Id không được cung cấp:', route?.params);
-    }
-
-    // Cleanup: Reset trạng thái khi rời màn hình
-    return () => {
-      // console.log('Cleaning up and resetting state for Id:', Id);
-      dispatch(resetChitietCatering());
-    };
-  }, [dispatch, Id]);
-
-  // Animated values cho phần tên, mô tả và giá
   const nameAnim = useRef(new Animated.Value(0)).current;
   const descAnim = useRef(new Animated.Value(0)).current;
   const priceAnim = useRef(new Animated.Value(0)).current;
-
-  // Animated values cho thanh tiến trình của các thành phần dinh dưỡng
   const carbWidth = useRef(new Animated.Value(0)).current;
   const proteinWidth = useRef(new Animated.Value(0)).current;
   const fatWidth = useRef(new Animated.Value(0)).current;
 
+  const [isFavorite, setIsFavorite] = useState(false); // Trạng thái yêu thích
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false); // Trạng thái đang xử lý
+
+  // Tải danh sách yêu thích và dữ liệu chi tiết
   useEffect(() => {
-    Animated.stagger(300, [
-      Animated.timing(nameAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: false,
-      }),
-      Animated.timing(descAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: false,
-      }),
-      Animated.timing(priceAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: false,
-      }),
-    ]).start();
+    if (userId && Id) {
+      dispatch(fetchUserFavorites(userId)); // Tải danh sách yêu thích
+    }
+    if (!item && Id) {
+      dispatch(ChitietCatering(Id));
+    }
+    return () => {
+      dispatch(resetChitietCatering());
+    };
+  }, [dispatch, Id, item, userId]);
 
-    Animated.parallel([
-      Animated.timing(carbWidth, {
-        toValue: 40, 
-        duration: 800,
-        useNativeDriver: false,
-      }),
-      Animated.timing(proteinWidth, {
-        toValue: 35, 
-        duration: 800,
-        useNativeDriver: false,
-      }),
-      Animated.timing(fatWidth, {
-        toValue: 25, 
-        duration: 800,
-        useNativeDriver: false,
-      }),
-    ]).start();
-  }, [nameAnim, descAnim, priceAnim, carbWidth, proteinWidth, fatWidth]);
+  // Cập nhật trạng thái yêu thích
+  useEffect(() => {
+    if (favorites && Id) {
+      const isFav = favorites.some((fav) => fav.itemId === Id && fav.type === 'catering');
+      setIsFavorite(isFav);
+    }
+  }, [favorites, Id]);
 
-  // Xử lý hiển thị dựa trên trạng thái
-  if (ChitietCateringStatus === 'loading') {
-    console.log('Loading state...'); // Debug log
+  // Animation khi dữ liệu sẵn sàng
+  useEffect(() => {
+    if ((ChitietCateringStatus === 'succeeded' && ChitietCateringData) || item) {
+      Animated.stagger(300, [
+        Animated.timing(nameAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
+        Animated.timing(descAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
+        Animated.timing(priceAnim, { toValue: 1, duration: 500, useNativeDriver: false }),
+      ]).start();
+      Animated.parallel([
+        Animated.timing(carbWidth, { toValue: 40, duration: 800, useNativeDriver: false }),
+        Animated.timing(proteinWidth, { toValue: 35, duration: 800, useNativeDriver: false }),
+        Animated.timing(fatWidth, { toValue: 25, duration: 800, useNativeDriver: false }),
+      ]).start();
+    }
+  }, [ChitietCateringStatus, ChitietCateringData, item]);
+
+  // Hàm xử lý bật/tắt yêu thích
+  const handleToggleFavorite = () => {
+    if (!Id || !user || !user._id) {
+      ToastAndroid.show('Vui lòng đăng nhập để sử dụng tính năng này', ToastAndroid.SHORT);
+      navigation.navigate('LoginScreen');
+      return;
+    }
+
+    setIsFavoriteLoading(true);
+    if (isFavorite) {
+      dispatch(removeFavoriteItem({ userId: user._id, type: 'catering', itemId: Id }))
+        .unwrap()
+        .then(() => {
+          setIsFavorite(false);
+          ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .catch((err) => {
+          ToastAndroid.show('Không thể xóa: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
+        })
+        .finally(() => setIsFavoriteLoading(false));
+    } else {
+      dispatch(addFavoriteItem({ userId: user._id, type: 'catering', itemId: Id }))
+        .unwrap()
+        .then(() => {
+          setIsFavorite(true);
+          ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .catch((err) => {
+          ToastAndroid.show('Không thể thêm: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
+        })
+        .finally(() => setIsFavoriteLoading(false));
+    }
+  };
+
+  if (!item && ChitietCateringStatus === 'loading') {
     return (
       <SafeAreaView style={styles.container}>
         <ActivityIndicator size="large" color="#0000ff" />
@@ -95,202 +116,115 @@ const FoodDetailScreen = (props) => {
     );
   }
 
-  if (ChitietCateringStatus === 'failed' || !Id) {
-    console.log('Failed state or invalid Id:', { error, Id }); // Debug log
+  if (!Id || (!item && ChitietCateringStatus === 'failed')) {
     return (
       <SafeAreaView style={styles.container}>
-        <Text style={styles.errorText}>
-          {error || 'Không thể tải chi tiết hoặc ID không hợp lệ'}
-        </Text>
+        <Text style={styles.errorText}>{error || 'Không thể tải chi tiết hoặc ID không hợp lệ'}</Text>
       </SafeAreaView>
     );
   }
 
-  if (ChitietCateringStatus === 'succeeded') {
-    console.log('Succeeded state, Data:', ChitietCateringData); // Debug log
-    const formattedPrice = ChitietCateringData?.price?.toLocaleString('vi-VN', {
-      style: 'currency',
-      currency: 'VND',
-    }) || '0 VNĐ'; // Xử lý trường hợp price là null hoặc undefined
-
+  const displayData = item || ChitietCateringData;
+  if (!displayData) {
     return (
       <SafeAreaView style={styles.container}>
-        <StatusBar barStyle="light-content" />
-        
-        {/* Header with Image */}
-        <View style={styles.imageContainer}>
-          <Image 
-            source={{ uri: ChitietCateringData?.imageUrl || 'https://via.placeholder.com/300' }} 
-            style={styles.foodImage} 
-            resizeMode="cover" 
-          />
-          
-          {/* Navigation buttons */}
-          <View style={styles.headerButtons}>
-            <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
-              <Icon name="chevron-left" size={28} color="#fff" />
-            </TouchableOpacity>
-            <TouchableOpacity style={styles.favoriteButton}>
-              <Icon name="heart-outline" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
-        </View>
-        
-        {/* Content Card */}
-        <View style={styles.contentCard}>
-          <ScrollView 
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 100 }}
-          >
-            {/* Title and Rating */}
-            <View style={styles.titleContainer}>
-              <Animated.Text 
-                style={[
-                  styles.foodName, 
-                  {
-                    opacity: nameAnim,
-                    transform: [{
-                      translateY: nameAnim.interpolate({
-                        inputRange: [0, 1],
-                        outputRange: [10, 0]
-                      })
-                    }]
-                  }
-                ]}
-              >
-                {ChitietCateringData?.name || 'Không có tên'}
-              </Animated.Text>
-              <View style={styles.ratingTag}>
-                <Icon name="star" size={16} color="#DCA34B" />
-                <Text style={styles.ratingText}>4.8</Text>
-              </View>
-            </View>
-            
-            {/* Tags */}
-            <View style={styles.tagsContainer}>
-              <View style={styles.tagItem}>
-                <Text style={styles.tagText}>Đồ ngọt</Text>
-              </View>
-              <View style={styles.tagItem}>
-                <Text style={styles.tagText}>Tráng miệng</Text>
-              </View>
-              <View style={styles.tagItem}>
-                <Text style={styles.tagText}>Hấp dẫn</Text>
-              </View>
-            </View>
-            
-            {/* Description */}
-            <Animated.Text 
-              style={[
-                styles.description, 
-                {
-                  opacity: descAnim,
-                  transform: [{
-                    translateY: descAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [10, 0]
-                    })
-                  }]
-                }
-              ]}
-            >
-              {ChitietCateringData?.description || 'Không có mô tả'}
-            </Animated.Text>
-            
-            {/* Price Section */}
-            <Animated.View 
-              style={[
-                styles.priceContainer,
-                {
-                  opacity: priceAnim,
-                  transform: [{
-                    translateY: priceAnim.interpolate({
-                      inputRange: [0, 1],
-                      outputRange: [10, 0]
-                    })
-                  }]
-                }
-              ]}
-            >
-              <Text style={styles.priceText}>{formattedPrice}/phần</Text>
-            </Animated.View>
-            
-            {/* Divider */}
-            <View style={styles.divider} />
-            
-            {/* Nutrition Section */}
-            <Text style={styles.sectionTitle}>Thành phần dinh dưỡng</Text>
-            
-            <View style={styles.nutritionContainer}>
-              {/* Chart Area */}
-              <View style={styles.nutritionChart}>
-                <View style={styles.chartPlaceholder}>
-                  <Animated.View 
-                    style={[styles.chartSegment, { backgroundColor: '#DCA34B', width: carbWidth }]} 
-                  />
-                  <Animated.View 
-                    style={[styles.chartSegment, { backgroundColor: '#76A878', width: proteinWidth }]} 
-                  />
-                  <Animated.View 
-                    style={[styles.chartSegment, { backgroundColor: '#7D93B0', width: fatWidth }]} 
-                  />
-                </View>
-              </View>
-              
-              {/* Nutrition Details */}
-              <View style={styles.nutritionDetails}>
-                <View style={styles.nutritionItem}>
-                  <View style={[styles.nutritionDot, { backgroundColor: '#DCA34B' }]} />
-                  <Text style={styles.nutritionText}>Carb: 48g</Text>
-                </View>
-                <View style={styles.nutritionItem}>
-                  <View style={[styles.nutritionDot, { backgroundColor: '#76A878' }]} />
-                  <Text style={styles.nutritionText}>Protein: 42g</Text>
-                </View>
-                <View style={styles.nutritionItem}>
-                  <View style={[styles.nutritionDot, { backgroundColor: '#7D93B0' }]} />
-                  <Text style={styles.nutritionText}>Chất béo: 25g</Text>
-                </View>
-                <Text style={styles.caloriesText}>Calo: 580</Text>
-              </View>
-            </View>
-            
-            {/* Divider */}
-            <View style={styles.divider} />
-            
-            {/* Ingredients Section */}
-            <Text style={styles.sectionTitle}>Nguyên liệu</Text>
-            <View style={styles.ingredientsContainer}>
-              <Text style={styles.ingredients}>
-                Nguyên liệu chủ yếu: bột, trứng, đường, bơ...
-              </Text>
-            </View>
-            
-            {/* Allergy Info */}
-            <View style={styles.allergyContainer}>
-              <Icon name="alert-circle-outline" size={20} color="#A67C52" />
-              <Text style={styles.allergyText}>Có thể chứa: gluten, trứng</Text>
-            </View>
-          </ScrollView>
-          
-          {/* Bottom Button */}
-          <TouchableOpacity style={styles.addButton}>
-            <Text style={styles.addButtonText}>Thêm vào thực đơn</Text>
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.errorText}>Không có dữ liệu chi tiết</Text>
       </SafeAreaView>
     );
   }
+
+  const formattedPrice = displayData.price
+    ? displayData.price.toLocaleString('vi-VN', { style: 'currency', currency: 'VND' })
+    : '0 VNĐ';
 
   return (
     <SafeAreaView style={styles.container}>
-      <Text style={styles.errorText}>Đang tải dữ liệu...</Text>
+      <StatusBar barStyle="light-content" />
+      <View style={styles.imageContainer}>
+        <Image 
+          source={{ uri: displayData.image || displayData.imageUrl || 'https://via.placeholder.com/300' }} 
+          style={styles.foodImage} 
+          resizeMode="cover" 
+        />
+        <View style={styles.headerButtons}>
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <Icon name="chevron-left" size={28} color="#fff" />
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.favoriteButton} 
+            onPress={handleToggleFavorite} // Thêm sự kiện nhấn
+            disabled={isFavoriteLoading} // Vô hiệu hóa khi đang xử lý
+          >
+            {isFavoriteLoading ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <Icon 
+                name={isFavorite ? "heart" : "heart-outline"} 
+                size={24} 
+                color={isFavorite ? "#FF6B6B" : "#fff"} 
+              />
+            )}
+          </TouchableOpacity>
+        </View>
+      </View>
+      <View style={styles.contentCard}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+          <View style={styles.titleContainer}>
+            <Animated.Text style={[styles.foodName, { opacity: nameAnim, transform: [{ translateY: nameAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
+              {displayData.name || 'Không có tên'}
+            </Animated.Text>
+            <View style={styles.ratingTag}>
+              <Icon name="star" size={16} color="#DCA34B" />
+              <Text style={styles.ratingText}>4.8</Text>
+            </View>
+          </View>
+          <View style={styles.tagsContainer}>
+            <View style={styles.tagItem}><Text style={styles.tagText}>Đồ ngọt</Text></View>
+            <View style={styles.tagItem}><Text style={styles.tagText}>Tráng miệng</Text></View>
+            <View style={styles.tagItem}><Text style={styles.tagText}>Hấp dẫn</Text></View>
+          </View>
+          <Animated.Text style={[styles.description, { opacity: descAnim, transform: [{ translateY: descAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
+            {displayData.Description || 'Không có mô tả'}
+          </Animated.Text>
+          <Animated.View style={[styles.priceContainer, { opacity: priceAnim, transform: [{ translateY: priceAnim.interpolate({ inputRange: [0, 1], outputRange: [10, 0] }) }] }]}>
+            <Text style={styles.priceText}>{formattedPrice}/phần</Text>
+          </Animated.View>
+          <View style={styles.divider} />
+          <Text style={styles.sectionTitle}>Thành phần dinh dưỡng</Text>
+          <View style={styles.nutritionContainer}>
+            <View style={styles.nutritionChart}>
+              <View style={styles.chartPlaceholder}>
+                <Animated.View style={[styles.chartSegment, { backgroundColor: '#DCA34B', width: carbWidth }]} />
+                <Animated.View style={[styles.chartSegment, { backgroundColor: '#76A878', width: proteinWidth }]} />
+                <Animated.View style={[styles.chartSegment, { backgroundColor: '#7D93B0', width: fatWidth }]} />
+              </View>
+            </View>
+            <View style={styles.nutritionDetails}>
+              <View style={styles.nutritionItem}><View style={[styles.nutritionDot, { backgroundColor: '#DCA34B' }]} /><Text style={styles.nutritionText}>Carb: 48g</Text></View>
+              <View style={styles.nutritionItem}><View style={[styles.nutritionDot, { backgroundColor: '#76A878' }]} /><Text style={styles.nutritionText}>Protein: 42g</Text></View>
+              <View style={styles.nutritionItem}><View style={[styles.nutritionDot, { backgroundColor: '#7D93B0' }]} /><Text style={styles.nutritionText}>Chất béo: 25g</Text></View>
+              <Text style={styles.caloriesText}>Calo: 580</Text>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          <Text style={styles.sectionTitle}>Nguyên liệu</Text>
+          <View style={styles.ingredientsContainer}>
+            <Text style={styles.ingredients}>Nguyên liệu chủ yếu: bột, trứng, đường, bơ...</Text>
+          </View>
+          <View style={styles.allergyContainer}>
+            <Icon name="alert-circle-outline" size={20} color="#A67C52" />
+            <Text style={styles.allergyText}>Có thể chứa: gluten, trứng</Text>
+          </View>
+        </ScrollView>
+        <TouchableOpacity style={styles.addButton}>
+          <Text style={styles.addButtonText}>Thêm vào thực đơn</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
-  ); // Fallback khi chưa có trạng thái hợp lệ
+  );
 };
 
-export default FoodDetailScreen;
-
+// Styles giữ nguyên
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -309,7 +243,7 @@ const styles = StyleSheet.create({
   },
   headerButtons: {
     position: 'absolute',
-    top: 20, // Thêm lại top để định vị chính xác
+    top: 20,
     left: 0,
     right: 0,
     flexDirection: 'row',
@@ -533,3 +467,5 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
 });
+
+export default FoodDetailScreen;
