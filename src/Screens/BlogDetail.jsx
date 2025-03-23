@@ -20,6 +20,7 @@ import {
 } from '../redux/BlogSlice';
 import {useNavigation} from '@react-navigation/native';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import Ionicons from 'react-native-vector-icons/Ionicons';
 import moment from 'moment';
 import 'moment/locale/vi';
 import {SharedElement} from 'react-navigation-shared-element';
@@ -47,6 +48,14 @@ const BlogDetail = ({route}) => {
   const imageAnim = useRef(new Animated.Value(0)).current;
   const metaAnim = useRef(new Animated.Value(0)).current;
   const relatedAnim = useRef(new Animated.Value(0)).current;
+
+  // Estimate reading time - roughly 200 words per minute
+  const calculateReadingTime = content => {
+    if (!content) return '1 phút đọc';
+    const words = content.trim().split(/\s+/).length;
+    const minutes = Math.max(1, Math.round(words / 200));
+    return `${minutes} phút đọc`;
+  };
 
   useEffect(() => {
     // Fetch blog details
@@ -178,67 +187,106 @@ const BlogDetail = ({route}) => {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-
-      {/* Simplified Header */}
-      <SafeAreaView style={styles.safeHeader}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => navigation.goBack()}>
-            <Image
-              source={require('../Assets/Images/back.png')}
-              style={styles.headerIcon}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Chi tiết bài viết</Text>
-          <TouchableOpacity
-            style={styles.headerButton}
-            onPress={() => navigation.navigate('TabNavigation')}>
-            <Image
-              source={require('../Assets/Images/home48.png')}
-              style={styles.headerIcon}
-              resizeMode="contain"
-            />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
+      <StatusBar
+        translucent
+        backgroundColor="transparent"
+        barStyle="light-content"
+      />
 
       <ScrollView
         style={styles.scrollView}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollViewContent}>
-        {/* Featured Image */}
-        <Animated.View
-          style={[
-            styles.imageContainer,
-            {
-              opacity: imageAnim,
-              transform: [
-                {
-                  scale: imageAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [0.9, 1],
-                  }),
-                },
-              ],
-            },
-          ]}>
+        {/* Featured Image with Overlay */}
+        <View style={styles.heroSection}>
           <SharedElement id={`blog.${slug}.image`}>
-            <Image
-              source={{
-                uri:
-                  selectedBlog.coverImage ||
-                  'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog',
-              }}
-              style={styles.featuredImage}
-              resizeMode="cover"
-            />
+            <Animated.View
+              style={[
+                styles.imageContainer,
+                {
+                  opacity: imageAnim,
+                  transform: [
+                    {
+                      scale: imageAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.9, 1],
+                      }),
+                    },
+                  ],
+                },
+              ]}>
+              <Image
+                source={{
+                  uri:
+                    selectedBlog.coverImage ||
+                    'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog',
+                }}
+                style={styles.featuredImage}
+                resizeMode="cover"
+              />
+              <View style={styles.imageDarkOverlay} />
+              {/* Gradient overlay replacement using multiple Views with opacity */}
+              <View style={styles.gradientOverlayTop} />
+              <View style={styles.gradientOverlayBottom} />
+            </Animated.View>
           </SharedElement>
-        </Animated.View>
 
-        {/* Blog Content Container */}
+          {/* Category Badge */}
+          {selectedBlog.category && (
+            <View style={styles.categoryBadge}>
+              <Text style={styles.categoryText}>{selectedBlog.category}</Text>
+            </View>
+          )}
+
+          {/* Back and Home Buttons */}
+          <View style={styles.headerButtons}>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.goBack()}>
+              <AntDesign name="arrowleft" size={22} color="#333" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.iconButton}
+              onPress={() => navigation.navigate('TabNavigation')}>
+              <AntDesign name="home" size={22} color="#333" />
+            </TouchableOpacity>
+          </View>
+
+          {/* Title on Image */}
+          <Animated.View
+            style={[
+              styles.titleOnImage,
+              {
+                opacity: titleAnim,
+                transform: [
+                  {
+                    translateY: titleAnim.interpolate({
+                      inputRange: [0, 1],
+                      outputRange: [20, 0],
+                    }),
+                  },
+                ],
+              },
+            ]}>
+            <Text style={styles.heroTitle}>{selectedBlog.title}</Text>
+            <View style={styles.heroMeta}>
+              <View style={styles.heroMetaItem}>
+                <AntDesign name="clockcircleo" size={14} color="#FFF" />
+                <Text style={styles.heroMetaText}>
+                  {calculateReadingTime(selectedBlog.content)}
+                </Text>
+              </View>
+              <View style={styles.heroMetaItem}>
+                <AntDesign name="calendar" size={14} color="#FFF" />
+                <Text style={styles.heroMetaText}>
+                  {formatDate(selectedBlog.created_at)}
+                </Text>
+              </View>
+            </View>
+          </Animated.View>
+        </View>
+
+        {/* Main Content Section */}
         <Animated.View
           style={[
             styles.contentContainer,
@@ -247,69 +295,124 @@ const BlogDetail = ({route}) => {
               transform: [{translateY: slideAnim}],
             },
           ]}>
-          {/* Title */}
-          <Animated.Text style={[styles.title, {opacity: titleAnim}]}>
-            {selectedBlog.title}
-          </Animated.Text>
-
-          {/* Meta Information */}
-          <Animated.View style={[styles.metaContainer, {opacity: metaAnim}]}>
-            <View style={styles.metaItem}>
+          {/* Author Section */}
+          <Animated.View style={[styles.authorSection, {opacity: metaAnim}]}>
+            <View style={styles.authorImageContainer}>
               <Image
-                source={require('../Assets/Images/calendar.png')}
-                style={styles.metaIcon}
+                source={{
+                  uri:
+                    (selectedBlog.author &&
+                      typeof selectedBlog.author === 'object' &&
+                      selectedBlog.author.avatar) ||
+                    'https://via.placeholder.com/60x60/EDEFF1/333333?text=A',
+                }}
+                style={styles.authorImage}
+                resizeMode="cover"
               />
-              <Text style={styles.metaText}>
-                {formatDate(selectedBlog.created_at)}
+            </View>
+            <View style={styles.authorInfo}>
+              <Text style={styles.authorName}>
+                {typeof selectedBlog.author === 'object'
+                  ? selectedBlog.author.name || 'Không rõ tác giả'
+                  : selectedBlog.author?.toString() || 'Không rõ tác giả'}
+              </Text>
+              <Text style={styles.authorRole}>
+                {typeof selectedBlog.author === 'object' && selectedBlog.author.role
+                  ? selectedBlog.author.role
+                  : 'Chuyên gia đám cưới'}
               </Text>
             </View>
-
-            {selectedBlog.author && (
-              <View style={styles.metaItem}>
-                <Image
-                  source={require('../Assets/Images/user.png')}
-                  style={styles.metaIcon}
-                />
-                <Text style={styles.metaText}>
-                  {typeof selectedBlog.author === 'object'
-                    ? selectedBlog.author.name || 'Không rõ tác giả'
-                    : selectedBlog.author.toString()}
+            <View style={styles.articleStats}>
+              {selectedBlog.views !== undefined && (
+                <View style={styles.statsItem}>
+                  <AntDesign name="eyeo" size={16} color="#666" />
+                  <Text style={styles.statsText}>{selectedBlog.views}</Text>
+                </View>
+              )}
+              <View style={styles.statsItem}>
+                <AntDesign name="hearto" size={16} color="#666" />
+                <Text style={styles.statsText}>
+                  {selectedBlog.likes || '0'}
                 </Text>
               </View>
-            )}
+            </View>
+          </Animated.View>
 
-            {selectedBlog.views !== undefined && (
-              <View style={styles.metaItem}>
-                <Image
-                  source={require('../Assets/Images/eye.png')}
-                  style={styles.metaIcon}
-                />
-                <Text style={styles.metaText}>
-                  {selectedBlog.views} lượt xem
+          {/* Article Content */}
+          <Animated.View style={[styles.articleContent, {opacity: contentAnim}]}>
+            {selectedBlog.content && selectedBlog.content.length > 0 ? (
+              <View>
+                {/* Introduction/Subtitle */}
+                <Text style={styles.introText}>
+                  {selectedBlog.excerpt ||
+                    'Khám phá những ý tưởng tuyệt vời về đám cưới trong bài viết này.'}
                 </Text>
-              </View>
-            )}
 
-            {selectedBlog.category && (
-              <View style={styles.metaItem}>
-                <Image
-                  source={require('../Assets/Images/addfolder.png')}
-                  style={styles.metaIcon}
-                />
-                <Text style={styles.metaText}>{selectedBlog.category}</Text>
+                {/* Main Content - Split into paragraphs */}
+                <View style={styles.mainContent}>
+                  {selectedBlog.content
+                    .split('\n\n')
+                    .map((paragraph, index) => {
+                      if (!paragraph.trim()) return null;
+                      
+                      // Check if paragraph is a heading (starts with # character)
+                      if (paragraph.trim().startsWith('#')) {
+                        return (
+                          <Text key={index} style={styles.subheading}>
+                            {paragraph.replace(/^#+\s+/, '')}
+                          </Text>
+                        );
+                      }
+                      
+                      return (
+                        <Text key={index} style={styles.paragraph}>
+                          {paragraph}
+                        </Text>
+                      );
+                    })}
+                </View>
               </View>
+            ) : (
+              <Text style={styles.noContentText}>
+                Không có nội dung bài viết
+              </Text>
             )}
           </Animated.View>
 
-          {/* Blog Content */}
-          <Animated.View style={[styles.bodyContainer, {opacity: contentAnim}]}>
-            <Text style={styles.bodyText}>{selectedBlog.content}</Text>
-          </Animated.View>
+          {/* Social Sharing Section */}
+          <View style={styles.socialSection}>
+            <Text style={styles.socialLabel}>Chia sẻ bài viết:</Text>
+            <View style={styles.socialButtons}>
+              <TouchableOpacity
+                style={[styles.socialButton, {backgroundColor: '#3b5998'}]}>
+                <AntDesign name="facebook-square" size={18} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.socialButton, {backgroundColor: '#1DA1F2'}]}>
+                <AntDesign name="twitter" size={18} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.socialButton, {backgroundColor: '#E60023'}]}>
+                <AntDesign name="link" size={18} color="#FFF" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.socialButton, {backgroundColor: '#25D366'}]}>
+                <AntDesign name="message1" size={18} color="#FFF" />
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* Related Blogs Section */}
           <Animated.View
-            style={[styles.relatedContainer, {opacity: relatedAnim}]}>
-            <Text style={styles.relatedTitle}>Bài viết liên quan</Text>
+            style={[styles.relatedSection, {opacity: relatedAnim}]}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Bài viết liên quan</Text>
+              {relatedBlogs && relatedBlogs.length > 3 && (
+                <TouchableOpacity>
+                  <Text style={styles.viewAllText}>Xem tất cả</Text>
+                </TouchableOpacity>
+              )}
+            </View>
 
             {relatedStatus === 'loading' ? (
               <ActivityIndicator
@@ -318,8 +421,8 @@ const BlogDetail = ({route}) => {
                 style={styles.relatedLoading}
               />
             ) : relatedBlogs && relatedBlogs.length > 0 ? (
-              <View style={styles.relatedBlogsContainer}>
-                {relatedBlogs.map(blog => {
+              <View style={styles.relatedList}>
+                {relatedBlogs.slice(0, 3).map(blog => {
                   // Check for valid blog data
                   if (!blog || typeof blog !== 'object') return null;
 
@@ -336,19 +439,20 @@ const BlogDetail = ({route}) => {
                   return (
                     <TouchableOpacity
                       key={blogId}
-                      style={styles.relatedBlogItem}
+                      style={styles.relatedItem}
                       onPress={() => navigateToRelatedBlog(blogSlug)}
-                      activeOpacity={0.7}>
+                      activeOpacity={0.8}>
                       <Image
                         source={{uri: blogImage}}
-                        style={styles.relatedBlogImage}
+                        style={styles.relatedImage}
                         resizeMode="cover"
                       />
-                      <View style={styles.relatedBlogContent}>
-                        <Text style={styles.relatedBlogTitle} numberOfLines={2}>
+                      <View style={styles.relatedImageOverlay} />
+                      <View style={styles.relatedContent}>
+                        <Text style={styles.relatedTitle} numberOfLines={2}>
                           {blogTitle}
                         </Text>
-                        <Text style={styles.relatedBlogDate}>
+                        <Text style={styles.relatedDate}>
                           {formatDate(blog.created_at)}
                         </Text>
                       </View>
@@ -371,160 +475,330 @@ const BlogDetail = ({route}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
-  },
-  safeHeader: {
-    backgroundColor: '#FFFFFF',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 3,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 12,
-  },
-  headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#333',
-    fontFamily: 'Playfair_me'
-  },
-  headerButton: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 20,
-  },
-  headerIcon: {
-    width: 24,
-    height: 24,
+    backgroundColor: '#FFF',
   },
   scrollView: {
     flex: 1,
   },
   scrollViewContent: {
-    paddingBottom: 40,
+    paddingBottom: 0,
+  },
+  heroSection: {
+    height: height * 0.6,
+    position: 'relative',
   },
   imageContainer: {
     width: '100%',
-    height: width * 0.7,
-    position: 'relative',
+    height: '100%',
   },
   featuredImage: {
     width: '100%',
     height: '100%',
-    backgroundColor: '#E1E4E8',
   },
-  contentContainer: {
-    backgroundColor: '#FFFFFF',
-    marginTop: -30,
-    borderTopLeftRadius: 30,
-    borderTopRightRadius: 30,
-    paddingHorizontal: 20,
-    paddingTop: 25,
-    paddingBottom: 40,
-    minHeight: height * 0.6,
+  imageDarkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  title: {
-    fontSize: 24,
-    color: '#333',
-    marginBottom: 16,
-    lineHeight: 32,
-    fontFamily: 'Playfair_me'
+
+  gradientOverlayTop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: '30%',
+    backgroundColor: 'transparent',
+    opacity: 0,
   },
-  metaContainer: {
+  gradientOverlayBottom: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: '30%',
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    opacity: 0.8,
+  },
+  categoryBadge: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 55 : 45,
+    right: 16,
+    backgroundColor: '#FF6B6B',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 4,
+  },
+  categoryText: {
+    color: '#FFF',
+    fontSize: 12,
+    fontWeight: 'bold',
+    fontFamily: 'Playfair_me',
+  },
+  headerButtons: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 50 : 40,
+    left: 16,
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 24,
-    paddingBottom: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EEEEEE',
   },
-  metaItem: {
+  iconButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+    elevation: 3,
+  },
+  titleOnImage: {
+    position: 'absolute',
+    bottom: 30,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 20,
+  },
+  heroTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 12,
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 5,
+    fontFamily: 'Playfair_me',
+  },
+  heroMeta: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroMetaItem: {
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 16,
-    marginBottom: 8,
   },
-  metaIcon: {
-    width: 16,
-    height: 16,
-    marginRight: 6,
-    opacity: 0.7,
+  heroMetaText: {
+    color: '#FFF',
+    fontSize: 14,
+    marginLeft: 5,
+    fontFamily: 'Playfair_me',
   },
-  metaText: {
+  contentContainer: {
+    backgroundColor: '#FFF',
+    paddingHorizontal: 20,
+    paddingTop: 24,
+    paddingBottom: 20,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    marginTop: -20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -3,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  authorSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
+  },
+  authorImageContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    overflow: 'hidden',
+    marginRight: 14,
+    borderWidth: 2,
+    borderColor: '#FFE0E0',
+  },
+  authorImage: {
+    width: '100%',
+    height: '100%',
+  },
+  authorInfo: {
+    flex: 1,
+  },
+  authorName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 3,
+    fontFamily: 'Playfair_me',
+  },
+  authorRole: {
     fontSize: 13,
-    color: '#777',
+    color: '#888',
+    fontFamily: 'Playfair_me',
   },
-  bodyContainer: {
+  articleStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  statsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  statsText: {
+    fontSize: 13,
+    color: '#666',
+    marginLeft: 4,
+    fontFamily: 'Playfair_me',
+  },
+  articleContent: {
     marginBottom: 30,
   },
-  bodyText: {
-    fontSize: 16,
-    color: '#444',
+  introText: {
+    fontSize: 17,
+    color: '#555',
     lineHeight: 26,
-    textAlign: 'justify',
-    fontFamily: 'Playfair_me'
+    marginBottom: 20,
+    fontStyle: 'italic',
+    fontFamily: 'Playfair_me',
+    borderLeftWidth: 3,
+    borderLeftColor: '#FF6B6B',
+    paddingLeft: 12,
   },
-  relatedContainer: {
-    marginTop: 10,
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: '#EEEEEE',
+  mainContent: {
+    marginBottom: 20,
   },
-  relatedTitle: {
-    fontSize: 18,
-    fontWeight: '700',
+  subheading: {
+    fontSize: 20,
+    fontWeight: 'bold',
     color: '#333',
+    marginTop: 24,
     marginBottom: 16,
-    fontFamily: 'Playfair_me'
+    fontFamily: 'Playfair_me',
+  },
+  paragraph: {
+    fontSize: 16,
+    color: '#333',
+    lineHeight: 26,
+    marginBottom: 16,
+    textAlign: 'justify',
+    fontFamily: 'Playfair_me',
+  },
+  noContentText: {
+    fontSize: 16,
+    color: '#888',
+    fontStyle: 'italic',
+    textAlign: 'center',
+    padding: 20,
+    fontFamily: 'Playfair_me',
+  },
+  socialSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 30,
+    paddingTop: 10,
+    paddingBottom: 24,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EFEFEF',
+  },
+  socialLabel: {
+    fontSize: 15,
+    color: '#555',
+    fontFamily: 'Playfair_me',
+  },
+  socialButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  socialButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#FF6B6B',
+    marginLeft: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  relatedSection: {
+    marginTop: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    fontFamily: 'Playfair_me',
+  },
+  viewAllText: {
+    fontSize: 14,
+    color: '#FF6B6B',
+    fontFamily: 'Playfair_me',
   },
   relatedLoading: {
     marginVertical: 20,
   },
-  relatedBlogsContainer: {
-    marginBottom: 10,
+  relatedList: {
+    flex: 1,
   },
-  relatedBlogItem: {
-    flexDirection: 'row',
-    marginBottom: 16,
-    backgroundColor: '#F8F9FA',
+  relatedItem: {
+    height: 180,
     borderRadius: 12,
     overflow: 'hidden',
+    marginBottom: 16,
+    position: 'relative',
     shadowColor: '#000',
-    shadowOffset: {width: 0, height: 1},
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    shadowOffset: {
+      width: 0,
+      height: 3,
+    },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
   },
-  relatedBlogImage: {
-    width: 100,
-    height: 100,
-    backgroundColor: '#E1E4E8',
+  relatedImage: {
+    width: '100%',
+    height: '100%',
   },
-  relatedBlogContent: {
-    flex: 1,
-    padding: 12,
-    justifyContent: 'space-between',
+  relatedImageOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.4)',
   },
-  relatedBlogTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 8,
-    lineHeight: 20,
-    fontFamily: 'Playfair_me'
+  relatedContent: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: 16,
   },
-  relatedBlogDate: {
+  relatedTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#FFF',
+    marginBottom: 6,
+    fontFamily: 'Playfair_me',
+  },
+  relatedDate: {
     fontSize: 12,
-    color: '#777',
+    color: 'rgba(255,255,255,0.9)',
     fontFamily: 'Playfair_me',
   },
   noRelatedText: {
@@ -539,7 +813,7 @@ const styles = StyleSheet.create({
   // Loading state styles
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFF',
   },
   loadingContent: {
     flex: 1,
@@ -557,7 +831,7 @@ const styles = StyleSheet.create({
   // Error state styles
   errorContainer: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FFF',
   },
   errorContent: {
     flex: 1,
