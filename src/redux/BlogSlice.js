@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 
+const API_BASE_URL = 'https://apidatn.onrender.com/blog';
 
 // Async thunk để lấy danh sách bài viết
 export const fetchBlogs = createAsyncThunk(
@@ -8,18 +9,30 @@ export const fetchBlogs = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       console.log('Fetching blogs from:', API_BASE_URL);
-      const response = await api.get('/blog/public');
+      const response = await fetch(`${API_BASE_URL}/public`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
       
-      if (response.data && response.data.status) {
-        return response.data.data || [];
-      } else if (response.data && Array.isArray(response.data)) {
-        return response.data;
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data && data.status) {
+        return data.data || [];
+      } else if (data && Array.isArray(data)) {
+        return data;
       }
       
       return rejectWithValue('Không thể lấy danh sách bài viết');
     } catch (error) {
       console.error('Blog fetch error:', error.message);
-      return rejectWithValue(error.response?.data?.message || error.message || 'Không thể kết nối đến máy chủ');
+      return rejectWithValue(error.message || 'Không thể kết nối đến máy chủ');
     }
   }
 );
@@ -30,15 +43,27 @@ export const fetchBlogDetail = createAsyncThunk(
   async (slug, { rejectWithValue }) => {
     try {
       console.log('Fetching blog detail for slug:', slug);
-      const response = await api.get(`/blog/public/${slug}`);
+      const response = await fetch(`${API_BASE_URL}/public/${slug}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
       
-      if (response.data && response.data.status) {
-        return response.data.data;
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
       }
-      return rejectWithValue(response.data?.message || 'Không tìm thấy bài viết');
+      
+      const data = await response.json();
+      
+      if (data && data.status) {
+        return data.data;
+      }
+      return rejectWithValue(data?.message || 'Không tìm thấy bài viết');
     } catch (error) {
       console.error('Blog detail fetch error:', error.message);
-      return rejectWithValue(error.response?.data?.message || error.message || 'Không thể tải chi tiết bài viết');
+      return rejectWithValue(error.message || 'Không thể tải chi tiết bài viết');
     }
   }
 );
@@ -49,10 +74,22 @@ export const fetchBlogRelated = createAsyncThunk(
   async (slug, { rejectWithValue }) => {
     try {
       console.log('Fetching related blogs for slug:', slug);
-      const response = await api.get(`/blog/public/${slug}/related`);
+      const response = await fetch(`${API_BASE_URL}/public/${slug}/related`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache',
+        },
+      });
       
-      if (response.data && response.data.status) {
-        return response.data.data || [];
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      if (data && data.status) {
+        return data.data || [];
       }
       return [];
     } catch (error) {

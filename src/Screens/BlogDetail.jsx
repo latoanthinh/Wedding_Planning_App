@@ -225,7 +225,7 @@ const BlogDetail = ({ route }) => {
         >
           <SharedElement id={`blog.${slug}.image`}>
             <Image
-              source={{ uri: selectedBlog.featured_image || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog' }}
+              source={{ uri: selectedBlog.coverImage || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog' }}
               style={styles.featuredImage}
               resizeMode="cover"
             />
@@ -336,7 +336,7 @@ const BlogDetail = ({ route }) => {
                   const blogId = blog.id || blog._id || '';
                   const blogSlug = blog.slug ? blog.slug.toString() : '';
                   const blogTitle = blog.title ? blog.title.toString() : 'Bài viết không tiêu đề';
-                  const blogImage = blog.featured_image || 'https://via.placeholder.com/300x200/EDEFF1/333333?text=Blog';
+                  const blogImage = blog.coverImage || 'https://via.placeholder.com/300x200/EDEFF1/333333?text=Blog';
                   
                   return (
                     <TouchableOpacity 

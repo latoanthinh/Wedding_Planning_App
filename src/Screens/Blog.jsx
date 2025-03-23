@@ -79,7 +79,8 @@ const Blog = () => {
     const slug = item.slug ? item.slug.toString() : '';
     const title = item.title ? item.title.toString() : 'Bài viết không tiêu đề';
     const content = item.content ? item.content.toString() : '';
-    const featuredImage = item.featured_image || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog';
+    const coverImage = item.coverImage || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog';
+
     
     return (
       <TouchableOpacity
@@ -89,7 +90,7 @@ const Blog = () => {
       >
         <SharedElement id={`blog.${slug}.image`}>
           <Image 
-            source={{ uri: featuredImage }} 
+            source={{ uri: coverImage }} 
             style={styles.coverImage} 
             resizeMode="cover"
           />
