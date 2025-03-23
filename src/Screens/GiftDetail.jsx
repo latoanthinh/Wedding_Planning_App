@@ -16,7 +16,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChitietGift, resetChitietGift } from '../redux/ChitietGiftSlice';
-import { addFavoriteItem } from '../redux/FavoriteDeanAddSlice';
+import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice'; // Thêm removeFavoriteItem và fetchUserFavorites
 import { AppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
@@ -26,9 +26,12 @@ const GiftDetail = (props) => {
   const { GitflId } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietGiftData, ChitietGiftStatus, error } = useSelector(state => state.chitietgift);
+  const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset); // Lấy danh sách yêu thích
+  const { user } = useContext(AppContext);
+  const userId = user?._id;
+
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
   const [isFavorite, setIsFavorite] = useState(false);
-  const { user } = useContext(AppContext);
 
   // Animation references
   const nameAnim = useRef(new Animated.Value(0)).current;
@@ -36,15 +39,30 @@ const GiftDetail = (props) => {
   const priceAnim = useRef(new Animated.Value(0)).current;
   const imageAnim = useRef(new Animated.Value(0)).current;
 
+  // Fetch danh sách yêu thích khi component mount
+  useEffect(() => {
+    if (userId && GitflId) {
+      dispatch(fetchUserFavorites(userId));
+    }
+  }, [dispatch, userId, GitflId]);
+
+  // Kiểm tra trạng thái yêu thích của item
+  useEffect(() => {
+    if (favorites && GitflId) {
+      const isFav = favorites.some((fav) => fav.itemId === GitflId);
+      setIsFavorite(isFav);
+    }
+  }, [favorites, GitflId]);
+
   useEffect(() => {
     if (GitflId) {
-      console.log('Fetching detail for Id:', GitflId);
+     
       dispatch(ChitietGift(GitflId));
     } else {
-      console.error('No GitflId provided:', route?.params);
+      
     }
     return () => {
-      console.log('Resetting state for Id:', GitflId);
+      
       dispatch(resetChitietGift());
     };
   }, [dispatch, GitflId]);
@@ -60,53 +78,65 @@ const GiftDetail = (props) => {
     }
   }, [ChitietGiftStatus, ChitietGiftData]);
 
-  // Function to add gift to favorites
-  const handleAddToFavorites = () => {
+  // Hàm xử lý thêm/xóa yêu thích
+  const handleToggleFavorite = () => {
     if (!GitflId) {
-      ToastAndroid.show('Không thể thêm vào yêu thích, thiếu ID sản phẩm', ToastAndroid.SHORT);
+      ToastAndroid.show('Không thể thực hiện, thiếu ID sản phẩm', ToastAndroid.SHORT);
       return;
     }
 
-    // Log user data for debugging
-    console.log('User from AppContext:', user);
-    
     if (!user || !user._id) {
-      ToastAndroid.show('Vui lòng đăng nhập để thêm vào yêu thích', ToastAndroid.SHORT);
+      ToastAndroid.show('Vui lòng đăng nhập để sử dụng tính năng này', ToastAndroid.SHORT);
+      navigation.navigate('LoginScreen');
       return;
     }
 
     setIsFavoriteLoading(true);
-    
-    // Log the parameters being sent to the API
-    console.log('Adding to favorites with params:', {
-      userId: user._id,
-      type: 'Present',
-      itemId: GitflId
-    });
-    
-    dispatch(addFavoriteItem({
-      userId: user._id,
-      type: 'Present', // Type is 'Present' for gifts
-      itemId: GitflId
-    }))
-      .unwrap()
-      .then((result) => {
-        console.log('Favorite added successfully:', result);
-        setIsFavorite(true);
-        ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
-      })
-      .catch((err) => {
-        console.error('Error adding to favorites:', err);
-        console.error('Error details:', JSON.stringify(err, null, 2));
-        ToastAndroid.show('Không thể thêm vào yêu thích: ' + (err.message || 'Lỗi không xác định'), ToastAndroid.SHORT);
-      })
-      .finally(() => {
-        setIsFavoriteLoading(false);
-      });
+
+    if (isFavorite) {
+      // Xóa khỏi danh sách yêu thích
+      dispatch(removeFavoriteItem({
+        userId: user._id,
+        type: 'present',
+        itemId: GitflId
+      }))
+        .unwrap()
+        .then(() => {
+          setIsFavorite(false);
+          ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .catch((err) => {
+          console.error('Error removing from favorites:', err);
+          ToastAndroid.show('Không thể xóa khỏi yêu thích: ' + (err.message || 'Lỗi không xác định'), ToastAndroid.SHORT);
+        })
+        .finally(() => {
+          setIsFavoriteLoading(false);
+        });
+    } else {
+      // Thêm vào danh sách yêu thích
+      dispatch(addFavoriteItem({
+        userId: user._id,
+        type: 'present',
+        itemId: GitflId
+      }))
+        .unwrap()
+        .then(() => {
+          setIsFavorite(true);
+          ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .catch((err) => {
+          console.error('Error adding to favorites:', err);
+          ToastAndroid.show('Không thể thêm vào yêu thích: ' + (err.message || 'Lỗi không xác định'), ToastAndroid.SHORT);
+        })
+        .finally(() => {
+          setIsFavoriteLoading(false);
+        });
+    }
   };
 
   // For debugging - log the data to see what's available
   console.log("Gift Data received:", JSON.stringify(ChitietGiftData, null, 2));
+  console.log("Favorites Data:", JSON.stringify(favorites, null, 2));
 
   if (!GitflId) {
     return (
@@ -174,7 +204,7 @@ const GiftDetail = (props) => {
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.favoriteButton} 
-              onPress={handleAddToFavorites}
+              onPress={handleToggleFavorite}
               disabled={isFavoriteLoading}
             >
               {isFavoriteLoading ? (

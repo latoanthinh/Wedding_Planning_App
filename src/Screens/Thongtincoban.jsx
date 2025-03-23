@@ -18,7 +18,7 @@ import DatePicker from "react-native-date-picker";
 import { useNavigation } from "@react-navigation/native";
 import { AppContext } from "../AppContext";
 import { useDispatch, useSelector } from "react-redux";
-import { fetchKhaoSatPlans, resetKhaoSat } from "../redux/KhaoSatSlice"; // Đường dẫn tới KhaoSatSlice
+import { fetchKhaoSatPlans, resetKhaoSat } from "../redux/KhaoSatSlice";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
@@ -67,7 +67,7 @@ const Thongtincoban = () => {
   const navigation = useNavigation();
   const { user } = useContext(AppContext);
   const dispatch = useDispatch();
-  const { status, error } = useSelector((state) => state.khaosat); // Lấy trạng thái từ Redux
+  const { status } = useSelector((state) => state.khaosat);
 
   const slideAnim = useRef(new Animated.Value(0)).current;
 
@@ -85,7 +85,7 @@ const Thongtincoban = () => {
 
   useEffect(() => {
     return () => {
-      dispatch(resetKhaoSat()); // Reset Redux state khi rời màn hình
+      dispatch(resetKhaoSat());
     };
   }, [dispatch]);
 
@@ -96,87 +96,99 @@ const Thongtincoban = () => {
         return;
       }
       sound.play((success) => {
-        if (success) {
-          setTtsPlayed(true);
-        } else {
-          console.log("TTS playback failed");
-        }
+        if (success) setTtsPlayed(true);
+        else console.log("TTS playback failed");
       });
     });
     return () => sound.release();
   };
 
-  const handleNext = () => {
-    Keyboard.dismiss();
-    if (surveyData[currentIndex].question.includes("Ngân sách")) {
-      setAnswers((prev) => ({
-        ...prev,
-        budget: Number(prev.budget.replace(/\./g, "")),
-      }));
-    }
+  // Thongtincoban.js (chỉ sửa phần handleNext)
+const handleNext = () => {
+  Keyboard.dismiss();
 
+  const formattedBudget = Number(answers.budget.replace(/\./g, ""));
+
+  if (currentIndex === 0) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    if (answers.eventDate < today) {
+      alert("Vui lòng chọn ngày trong tương lai!");
+      return;
+    }
+  } else if (currentIndex === 1) {
+    if (!answers.guestCount || isNaN(answers.guestCount) || Number(answers.guestCount) <= 0) {
+      alert("Vui lòng nhập số lượng khách hợp lệ!");
+      return;
+    }
+  } else if (currentIndex === 2) {
+    if (isNaN(formattedBudget) || formattedBudget <= 0) {
+      alert("Vui lòng nhập ngân sách hợp lệ!");
+      return;
+    }
+    if (formattedBudget < 50000000) {
+      alert("Ngân sách tối thiểu là 50.000.000 VNĐ!");
+      return;
+    }
+  }
+
+  Animated.timing(slideAnim, {
+    toValue: -screenWidth,
+    duration: 300,
+    useNativeDriver: true,
+  }).start(() => {
+    if (currentIndex < surveyData.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    } else {
+      const surveyParams = {
+        eventDate: answers.eventDate.toISOString(),
+        guestCount: answers.guestCount,
+        budget: formattedBudget,
+        userId: answers.userId,
+      };
+      console.log("Data sent to GenPlan:", surveyParams);
+
+      dispatch(
+        fetchKhaoSatPlans({
+          planprice: formattedBudget.toString(),
+          plansoluongkhach: answers.guestCount,
+        })
+      ).then((result) => {
+        if (result.meta.requestStatus === "fulfilled") {
+          navigation.navigate("GenPlan", surveyParams); // Truyền trực tiếp sang GenPlan
+        } else {
+          console.error("Error fetching plans:", result.payload);
+          alert("Đã xảy ra lỗi khi lấy gợi ý kế hoạch. Vui lòng thử lại.");
+          setCurrentIndex(currentIndex - 1);
+        }
+      });
+    }
+    slideAnim.setValue(screenWidth);
     Animated.timing(slideAnim, {
-      toValue: -screenWidth,
+      toValue: 0,
       duration: 300,
       useNativeDriver: true,
-    }).start(() => {
-      if (currentIndex < surveyData.length - 1) {
-        setCurrentIndex(currentIndex + 1);
-      } else {
-        // Gửi dữ liệu khảo sát qua Redux khi hoàn thành
-        dispatch(
-          fetchKhaoSatPlans({
-            planprice: answers.budget.toString(), // Chuyển thành string để gửi API
-            plansoluongkhach: answers.guestCount,
-          })
-        ).then((result) => {
-          if (result.meta.requestStatus === "fulfilled") {
-            navigation.navigate("TransitionLoading", {
-              nextScreen: "GenPlan",
-              params: {
-                ...answers,
-                eventDate: answers.eventDate.toISOString(),
-              },
-            });
-          } else {
-            console.error("Lỗi khi lấy kế hoạch:", result.payload);
-            alert("Đã xảy ra lỗi khi lấy gợi ý kế hoạch. Vui lòng thử lại.");
-          }
-        });
-      }
-      slideAnim.setValue(screenWidth);
-      Animated.timing(slideAnim, {
-        toValue: 0,
-        duration: 300,
-        useNativeDriver: true,
-      }).start();
-    });
-  };
+    }).start();
+  });
+};
 
   const isTextRequired =
     surveyData[currentIndex].type === "text" &&
     surveyData[currentIndex].question !==
       "Chúng tôi đã gợi ý cho bạn một số combo theo khảo sát của bạn!";
-
   let requiredValue = "";
   if (isTextRequired) {
-    if (currentIndex === 1) requiredValue = answers.guestCount;
-    else if (currentIndex === 2) requiredValue = answers.budget;
-    else if (currentIndex === 3) requiredValue = answers.planLocation;
+    requiredValue =
+      currentIndex === 1 ? answers.guestCount : currentIndex === 2 ? answers.budget : answers.planLocation;
   }
 
   const isNextDisabled =
     (isTextRequired && requiredValue.toString().trim() === "") ||
-    (surveyData[currentIndex].question.includes("Ngân sách") &&
-      Number(answers.budget.toString().replace(/\./g, "")) < 50000000) ||
-    status === "loading"; // Vô hiệu hóa nút khi đang gọi API
+    status === "loading";
 
   return (
     <SafeAreaView style={styles.container}>
-      <ScrollView
-        contentContainerStyle={styles.scrollContainer}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <Text style={styles.header}>Thông tin cơ bản</Text>
 
         <View style={styles.videoContainer}>
@@ -194,10 +206,7 @@ const Thongtincoban = () => {
           {surveyData.map((_, index) => (
             <View
               key={index}
-              style={[
-                styles.progressDot,
-                currentIndex === index && styles.progressDotActive,
-              ]}
+              style={[styles.progressDot, currentIndex === index && styles.progressDotActive]}
             />
           ))}
         </View>
@@ -230,23 +239,13 @@ const Thongtincoban = () => {
                   ? answers.budget
                   : answers.planLocation
               }
-              keyboardType={
-                surveyData[currentIndex].numericOnly ? "numeric" : "default"
-              }
+              keyboardType={surveyData[currentIndex].numericOnly ? "numeric" : "default"}
             />
           ) : surveyData[currentIndex].type === "date" ? (
-            <TouchableOpacity
-              onPress={() => setOpenDatePicker(true)}
-              style={styles.datePickerButton}
-            >
-              <Image
-                source={require("../Assets/Images/calendar.png")}
-                style={styles.calendarIcon}
-              />
+            <TouchableOpacity onPress={() => setOpenDatePicker(true)} style={styles.datePickerButton}>
+              <Image source={require("../Assets/Images/calendar.png")} style={styles.calendarIcon} />
               <Text style={styles.dateText}>
-                {`${answers.eventDate.getDate()}/${
-                  answers.eventDate.getMonth() + 1
-                }/${answers.eventDate.getFullYear()}`}
+                {`${answers.eventDate.getDate()}/${answers.eventDate.getMonth() + 1}/${answers.eventDate.getFullYear()}`}
               </Text>
             </TouchableOpacity>
           ) : null}
@@ -293,7 +292,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    backgroundColor: "#FAF5F0", 
+    backgroundColor: "#FAF5F0",
   },
   scrollContainer: {
     flexGrow: 1,
@@ -302,16 +301,16 @@ const styles = StyleSheet.create({
   },
   header: {
     fontSize: 30,
-    fontFamily:'Playfair_me',
+    fontFamily: "Playfair_me",
     marginBottom: 25,
     textAlign: "center",
-    color: "#3E2723", 
+    color: "#3E2723",
   },
   videoContainer: {
-    width: '100%',
+    width: "100%",
     height: screenHeight * 0.35,
     borderRadius: 20,
-    overflow: 'hidden',
+    overflow: "hidden",
     marginBottom: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 4 },
@@ -320,8 +319,8 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   video: {
-    width: '100%',
-    height: '100%',
+    width: "100%",
+    height: "100%",
   },
   progressContainer: {
     flexDirection: "row",
@@ -332,15 +331,15 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: "#D7CCC8", 
+    backgroundColor: "#D7CCC8",
     marginHorizontal: 6,
   },
   progressDotActive: {
-    backgroundColor: "#3E2723", 
+    backgroundColor: "#3E2723",
     width: 24,
   },
   card: {
-    backgroundColor: "#EFEBE9", 
+    backgroundColor: "#EFEBE9",
     borderRadius: 20,
     padding: 25,
     shadowColor: "#000",
@@ -351,21 +350,21 @@ const styles = StyleSheet.create({
   },
   question: {
     fontSize: 22,
-    fontFamily:"Playfair_me",
+    fontFamily: "Playfair_me",
     marginBottom: 20,
     textAlign: "center",
-    color: "#000", 
+    color: "#000",
   },
   input: {
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#8C7F75", 
+    borderColor: "#8C7F75",
     borderRadius: 15,
     paddingHorizontal: 15,
     paddingVertical: 12,
     fontSize: 18,
     marginBottom: 20,
-    color: "#3E2723", 
+    color: "#3E2723",
   },
   datePickerButton: {
     flexDirection: "row",
@@ -373,7 +372,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#FFFFFF",
     borderWidth: 1,
-    borderColor: "#8C7F75", 
+    borderColor: "#8C7F75",
     borderRadius: 15,
     paddingVertical: 12,
     marginBottom: 20,
@@ -382,11 +381,11 @@ const styles = StyleSheet.create({
     width: 28,
     height: 28,
     marginRight: 10,
-    tintColor: "#4E342E", 
+    tintColor: "#4E342E",
   },
   dateText: {
     fontSize: 18,
-    color: "#220000", 
+    color: "#220000",
     fontWeight: "600",
   },
   nextButton: {
@@ -401,6 +400,6 @@ const styles = StyleSheet.create({
   buttonText: {
     color: "#FFFFFF",
     fontSize: 20,
-    fontFamily:"Playfair_me",
+    fontFamily: "Playfair_me",
   },
 });

@@ -1,28 +1,31 @@
+// TransitionLoading.js
 import React, { useEffect } from "react";
-import { View, Text, StyleSheet } from "react-native";
-import LottieView from "lottie-react-native"; // Nếu muốn dùng animation
+import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { useNavigation, useRoute } from "@react-navigation/native";
 
-const TransitionLoading = ({ route, navigation }) => {
-  const { nextScreen, params } = route.params;
+const TransitionLoading = () => {
+  const navigation = useNavigation();
+  const route = useRoute();
+  const { nextScreen, params } = route.params || {};
 
   useEffect(() => {
+    if (!nextScreen || !params) {
+      console.error("Missing nextScreen or params in TransitionLoading");
+      return;
+    }
+
+    console.log("Data received in TransitionLoading:", { nextScreen, params });
     const timer = setTimeout(() => {
-      navigation.navigate(nextScreen, params);
-    }, 2000); // Chuyển tiếp sau 2 giây
+      console.log("Data sent to GenPlan:", params); // Log dữ liệu trước khi gửi
+      navigation.navigate(nextScreen, { ...params });
+    }, 2000);
 
     return () => clearTimeout(timer);
   }, [navigation, nextScreen, params]);
 
   return (
     <View style={styles.container}>
-      <Text style={styles.text}>Đang tải gợi ý của bạn...</Text>
-      {/* Optional: Thêm animation */}
-      <LottieView
-        source={require("../Assets/Animations/loading.json")} // Đường dẫn đến file animation
-        autoPlay
-        loop
-        style={styles.animation}
-      />
+      <ActivityIndicator size="large" color="#3E2723" />
     </View>
   );
 };
@@ -32,16 +35,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    backgroundColor: "#FFFFFF",
-  },
-  text: {
-    fontSize: 20,
-    color: "#333",
-    marginBottom: 20,
-  },
-  animation: {
-    width: 200,
-    height: 200,
+    backgroundColor: "#FAF5F0",
   },
 });
 
