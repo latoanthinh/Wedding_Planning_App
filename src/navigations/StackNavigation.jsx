@@ -114,8 +114,6 @@ const StackNavigation = () => {
       <Stack.Screen name="DecorDetail" component={DecorDetail} />
       <Stack.Screen name="EditPlan" component={EditPlan} />
       <Stack.Screen name="PanoramaView" component={PanoramaView} />
-      
-      {/* Blog screens with SharedElement transitions */}
       <Stack.Screen name="Blog" component={Blog} />
       <Stack.Screen 
         name="BlogDetail" 

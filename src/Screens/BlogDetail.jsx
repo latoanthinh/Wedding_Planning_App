@@ -11,7 +11,6 @@ import {
   StatusBar,
   Platform,
   Dimensions,
-  Share,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {
@@ -25,7 +24,6 @@ import moment from 'moment';
 import 'moment/locale/vi';
 import {SharedElement} from 'react-navigation-shared-element';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import IconButton from '../components/IconButton';
 
 const {width, height} = Dimensions.get('window');
 
@@ -133,19 +131,6 @@ const BlogDetail = ({route}) => {
     navigation.push('BlogDetail', {slug: relatedSlug});
   };
 
-  const handleShare = async () => {
-    if (!selectedBlog) return;
-
-    try {
-      const result = await Share.share({
-        message: `Xem bài viết "${selectedBlog.title}" trên ứng dụng Wedding Planning`,
-        title: selectedBlog.title,
-      });
-    } catch (error) {
-      console.error('Error sharing:', error);
-    }
-  };
-
   // Render loading state
   if (detailStatus === 'loading') {
     return (
@@ -195,7 +180,7 @@ const BlogDetail = ({route}) => {
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
 
-      {/* Header with back button and home button */}
+      {/* Simplified Header */}
       <SafeAreaView style={styles.safeHeader}>
         <View style={styles.header}>
           <TouchableOpacity
@@ -251,24 +236,6 @@ const BlogDetail = ({route}) => {
               resizeMode="cover"
             />
           </SharedElement>
-
-          {/* Action buttons */}
-          <View style={styles.actionButtonsContainer}>
-            <IconButton
-              icon="arrow-back"
-              size={22}
-              color="#333"
-              onPress={() => navigation.goBack()}
-              style={styles.backButton}
-            />
-            <IconButton
-              icon="share"
-              size={22}
-              color="#333"
-              onPress={handleShare}
-              style={styles.shareButton}
-            />
-          </View>
         </Animated.View>
 
         {/* Blog Content Container */}
@@ -311,14 +278,14 @@ const BlogDetail = ({route}) => {
               </View>
             )}
 
-            {selectedBlog.viewCount !== undefined && (
+            {selectedBlog.views !== undefined && (
               <View style={styles.metaItem}>
                 <Image
                   source={require('../Assets/Images/eye.png')}
                   style={styles.metaIcon}
                 />
                 <Text style={styles.metaText}>
-                  {selectedBlog.viewCount} lượt xem
+                  {selectedBlog.views} lượt xem
                 </Text>
               </View>
             )}
@@ -455,22 +422,6 @@ const styles = StyleSheet.create({
     height: '100%',
     backgroundColor: '#E1E4E8',
   },
-  actionButtonsContainer: {
-    position: 'absolute',
-    top: Platform.OS === 'ios' ? 50 : 16,
-    left: 0,
-    right: 0,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    zIndex: 10,
-  },
-  backButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
-  shareButton: {
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-  },
   contentContainer: {
     backgroundColor: '#FFFFFF',
     marginTop: -30,
@@ -483,7 +434,6 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: 24,
-    fontWeight: '700',
     color: '#333',
     marginBottom: 16,
     lineHeight: 32,
