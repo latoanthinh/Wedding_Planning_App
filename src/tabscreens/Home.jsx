@@ -255,7 +255,7 @@ const ScreenHome = ({ navigation }) => {
 
             <TouchableOpacity style={styles.locationItem} onPress={() => navigation.navigate("DiaDiem_Screen")}>
               <Image source={require('../Assets/Images/diadiem.png')} style={styles.serviceIcon} />
-              <Text style={styles.locationTitle}>Địa Điểm</Text>
+              <Text style={styles.locationTitle}>Trang Trí</Text>
             </TouchableOpacity>
           </View>
 

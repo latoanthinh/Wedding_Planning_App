@@ -81,24 +81,28 @@ const DetailPlan = ({ navigation, route }) => {
       </View>
       {services && services.length > 0 ? (
         services.map((item, index) => (
-          <View key={index} style={styles.serviceCard}>
-            {item.imageUrl && (
-              <Image source={{ uri: item.imageUrl }} style={styles.serviceImage} />
-            )}
-            <View style={styles.serviceContent}>
-              <Text style={styles.serviceText}>{item.name || 'Không có tên'}</Text>
-              {item.price !== undefined && (
-                <Text style={styles.servicePrice}>
-                  Giá: {item.price.toLocaleString('vi-VN')} VNĐ
-                </Text>
+          item ? ( // Kiểm tra item có tồn tại
+            <View key={index} style={styles.serviceCard}>
+              {item.imageUrl && (
+                <Image source={{ uri: item.imageUrl }} style={styles.serviceImage} />
               )}
-              {item.description && (
-                <Text style={styles.serviceDescription}>
-                  {item.description || 'Không có mô tả'}
-                </Text>
-              )}
+              <View style={styles.serviceContent}>
+                <Text style={styles.serviceText}>{item.name || 'Không có tên'}</Text>
+                {item.price !== undefined && (
+                  <Text style={styles.servicePrice}>
+                    Giá: {item.price.toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                )}
+                {item.description && (
+                  <Text style={styles.serviceDescription}>
+                    {item.description || 'Không có mô tả'}
+                  </Text>
+                )}
+              </View>
             </View>
-          </View>
+          ) : (
+            <Text key={index} style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
+          )
         ))
       ) : (
         <Text style={styles.noDataText}>Không có dữ liệu</Text>
