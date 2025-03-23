@@ -28,7 +28,7 @@ export const fetchUserFavorites = createAsyncThunk(
             const categories = {
                 catering: data.data.Catering || [],
                 decorate: data.data.Decorate || [],
-                lobby: data.data.Lobby || [],
+                Sanh: data.data.Lobby || [],
                 present: data.data.Present || [],
             };
 
@@ -46,7 +46,7 @@ export const fetchUserFavorites = createAsyncThunk(
                     }
 
                     favorites.push({
-                        type: type.toLowerCase(), // Chuẩn hóa type thành chữ thường
+                        type: type, // Chuẩn hóa type thành chữ thường
                         itemId: order._id.toString(),
                         _id: order._id.toString(),
                         image: item.imageUrl || item.image || 'https://via.placeholder.com/80',
@@ -102,7 +102,7 @@ export const addFavoriteItem = createAsyncThunk(
             const categories = {
                 catering: updatedData.data.Catering || [],
                 decorate: updatedData.data.Decorate || [],
-                lobby: updatedData.data.Lobby || [],
+                Sanh: updatedData.data.Lobby || [],
                 present: updatedData.data.Present || [],
             };
 
@@ -113,7 +113,7 @@ export const addFavoriteItem = createAsyncThunk(
                     const item = order[itemKey];
                     if (!item || !order._id) return;
                     favorites.push({
-                        type: type.toLowerCase(),
+                        type: type,
                         itemId: order._id.toString(),
                         _id: order._id.toString(),
                         image: item.imageUrl || item.image || 'https://via.placeholder.com/80',

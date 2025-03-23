@@ -11,14 +11,12 @@ const Favorites = ({ navigation }) => {
     const { user } = useContext(AppContext);
     const userId = user?._id;
 
-    console.log('userId:', userId);
-    console.log('Data from Redux:', data);
-    console.log('Status:', status);
-    console.log('Error:', error);
-
+    
+    console.log('Data from Redux:', JSON.stringify(data, null, 2));
+    console.log('Grouped Data:', JSON.stringify(groupedData, null, 2));
     useEffect(() => {
         if (!userId) {
-            console.warn('userId không tồn tại, điều hướng đến màn hình đăng nhập');
+            
             navigation.navigate('LoginScreen');
         } else {
             dispatch(resetFavorites());
@@ -26,13 +24,11 @@ const Favorites = ({ navigation }) => {
         }
     }, [dispatch, userId, navigation]);
 
-    // Flatten và loại bỏ trùng lặp dữ liệu
     const flattenData = Array.isArray(data) ? data.flat() : [];
     const validatedData = Array.from(
         new Map(flattenData.map(item => [item._id, item])).values()
     );
 
-    // Phân loại dữ liệu theo type
     const groupedData = validatedData.reduce((acc, item) => {
         const type = item.type || 'unknown';
         if (!acc[type]) {
@@ -42,7 +38,7 @@ const Favorites = ({ navigation }) => {
         return acc;
     }, {});
 
-    console.log('Grouped Data:', groupedData);
+    
 
     const formatPrice = (price) => {
         return price ? price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' VNĐ' : '0 VNĐ';
@@ -60,14 +56,11 @@ const Favorites = ({ navigation }) => {
                 'Xác nhận',
                 'Bạn có chắc chắn muốn xóa sản phẩm này khỏi danh sách yêu thích?',
                 [
-                    {
-                        text: 'Hủy',
-                        style: 'cancel',
-                    },
+                    { text: 'Hủy', style: 'cancel' },
                     {
                         text: 'Xóa',
                         onPress: () => {
-                            console.log(`Xóa mục yêu thích: userId=${userId}, type=${item.type}, itemId=${item.itemId}`);
+                          
                             dispatch(removeFavoriteItem({ userId, type: item.type, itemId: item.itemId }))
                                 .catch((error) => {
                                     console.error('Lỗi khi xóa mục yêu thích:', error);
@@ -79,8 +72,51 @@ const Favorites = ({ navigation }) => {
                 ]
             );
         } else {
-            console.warn('Không thể xóa: Thiếu userId, type hoặc itemId', item);
+            
             Alert.alert('Lỗi', 'Thông tin không hợp lệ.');
+        }
+    };
+
+    const handleNavigateToDetail = (item) => {
+        const detailScreens = {
+            Sanh: 'HallWeddings',
+            catering: 'FoodDetail',
+            decorate: 'DecorDetail',
+            present: 'GiftDetail',
+        };
+
+        const idParams = {
+            Sanh: 'productIdHall',
+            catering: 'Id',
+            decorate: 'decorId',
+            present: 'GitflId',
+        };
+
+        const screen = detailScreens[item.type] || 'ItemDetail';
+        const idToPass = item.itemId || item._id;
+        const idParamName = idParams[item.type] || 'itemId';
+
+        console.log(`Điều hướng đến: ${screen}, ${idParamName}: ${idToPass}, type: ${item.type}`);
+        console.log('Dữ liệu item đầy đủ:', JSON.stringify(item, null, 2));
+
+        if (!idToPass) {
+            console.warn('Không có itemId hoặc _id để điều hướng:', item);
+            Alert.alert('Lỗi', 'Không thể điều hướng do thiếu ID.');
+            return;
+        }
+
+        try {
+            // Gửi cả item để kiểm tra, thay vì chỉ ID
+            const params = {
+                [idParamName]: idToPass,
+                type: item.type,
+                item: item, // Thêm toàn bộ item
+            };
+
+            navigation.navigate(screen, params);
+        } catch (err) {
+            console.error('Lỗi điều hướng:', err);
+            Alert.alert('Lỗi', 'Không thể điều hướng đến trang chi tiết.');
         }
     };
 
@@ -96,7 +132,7 @@ const Favorites = ({ navigation }) => {
             <View style={styles.itemCard}>
                 <TouchableOpacity
                     style={styles.itemContainer}
-                    onPress={() => navigation.navigate('ItemDetail', { itemId: item._id, type: item.type })}
+                    onPress={() => handleNavigateToDetail(item)}
                 >
                     <Image
                         source={{ uri: item.image || item.imageUrl || 'https://via.placeholder.com/90' }}
@@ -183,9 +219,8 @@ const Favorites = ({ navigation }) => {
         );
     }
 
-    // Định nghĩa các section dựa trên type
     const sections = [
-        { title: 'Sảnh', items: groupedData['lobby'] || [], type: 'lobby' },
+        { title: 'Sảnh', items: groupedData['Sanh'] || [], type: 'Sanh' },
         { title: 'Món ăn', items: groupedData['catering'] || [], type: 'catering' },
         { title: 'Trang trí', items: groupedData['decorate'] || [], type: 'decorate' },
         { title: 'Quà tặng', items: groupedData['present'] || [], type: 'present' },
@@ -216,9 +251,7 @@ const Favorites = ({ navigation }) => {
     );
 };
 
-export default Favorites;
-
-// Styles giữ nguyên
+// Styles giữ nguyên như trong code của bạn
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -344,20 +377,6 @@ const styles = StyleSheet.create({
         fontSize: 40,
         color: '#CCCCCC',
     },
-    errorIconContainer: {
-        width: 70,
-        height: 70,
-        borderRadius: 35,
-        backgroundColor: 'rgba(255, 111, 97, 0.2)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 20,
-    },
-    errorIcon: {
-        fontSize: 40,
-        color: '#FF6F61',
-        fontWeight: 'bold',
-    },
     emptyTitle: {
         fontSize: 20,
         fontFamily: 'Playfair_me',
@@ -389,6 +408,20 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         padding: 20,
+    },
+    errorIconContainer: {
+        width: 70,
+        height: 70,
+        borderRadius: 35,
+        backgroundColor: 'rgba(255, 111, 97, 0.2)',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginBottom: 20,
+    },
+    errorIcon: {
+        fontSize: 40,
+        color: '#FF6F61',
+        fontWeight: 'bold',
     },
     errorText: {
         color: '#FF6F61',
@@ -423,3 +456,4 @@ const styles = StyleSheet.create({
     },
 });
 
+export default Favorites;

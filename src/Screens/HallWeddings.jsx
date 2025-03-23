@@ -1,202 +1,466 @@
 import {
     StyleSheet, Text, View, Image,
-    TouchableOpacity, Dimensions, Pressable
+    TouchableOpacity, Dimensions, ScrollView, StatusBar, ActivityIndicator, Animated
 } from 'react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { HallTheoWedding } from '../redux/HallTheoWeddingHallsSlice';
-import Lottie from 'lottie-react-native';
+import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice';
 import { useNavigation } from '@react-navigation/native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { ToastAndroid } from 'react-native';
+import { AppContext } from '../AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width } = Dimensions.get('window');
 
 const HallWeddings = ({ route }) => {
-    const { productIdHall } = route?.params;
+    const { productIdHall, item } = route?.params || {};
     const dispatch = useDispatch();
     const { HallTheoWeddingFlowersData, HallTheoWeddingFlowersStatus } = useSelector(state => state.halltheowedding);
+    const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset);
+    const { user } = useContext(AppContext);
+    const userId = user?._id;
     const navigation = useNavigation();
-    
-    // Trạng thái để theo dõi việc tải hình ảnh
+
     const [loadingImage, setLoadingImage] = useState(true);
+    const [isFavorite, setIsFavorite] = useState(false);
+    const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+
+    const nameAnim = useRef(new Animated.Value(0)).current;
+    const descAnim = useRef(new Animated.Value(0)).current;
+    const priceAnim = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
-        if (productIdHall) {
+        if (userId && productIdHall) {
+            dispatch(fetchUserFavorites(userId));
+        }
+        if (!item && productIdHall) {
             dispatch(HallTheoWedding(productIdHall));
         }
-    }, [productIdHall, dispatch]);
+    }, [productIdHall, dispatch, item, userId]);
+
+    useEffect(() => {
+        if (favorites && productIdHall) {
+            const isFav = favorites.some((fav) => fav.itemId === productIdHall && fav.type === 'Sanh');
+            setIsFavorite(isFav);
+        }
+    }, [favorites, productIdHall]);
+
+    useEffect(() => {
+        if ((HallTheoWeddingFlowersStatus === 'succeeded' && HallTheoWeddingFlowersData) || item) {
+            Animated.stagger(300, [
+                Animated.timing(nameAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+                Animated.timing(descAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+                Animated.timing(priceAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
+            ]).start();
+        }
+    }, [HallTheoWeddingFlowersStatus, HallTheoWeddingFlowersData, item]);
 
     const formatPrice = (price) => {
+        if (price === undefined || price === null || isNaN(price)) {
+            return "Liên hệ";
+        }
         return price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
     };
 
-    const renderLoading = () => (
-        <View style={styles.loadingContainer}>
-            <Lottie
-                source={require('../Assets/Animations/blackloading.json')}
-                autoPlay
-                loop
-                style={styles.loadingAnimation}
-            />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-        </View>
-    );
+    const handleImageLoad = () => setLoadingImage(false);
 
-    const handleImageLoad = () => {
-        setLoadingImage(false);
+    const handleToggleFavorite = () => {
+        if (!productIdHall || !user || !user._id) {
+            ToastAndroid.show('Vui lòng đăng nhập để sử dụng tính năng này', ToastAndroid.SHORT);
+            navigation.navigate('LoginScreen');
+            return;
+        }
+
+        const payload = { userId: user._id, type: 'Sanh', itemId: productIdHall };
+        console.log('Payload gửi đi:', payload); // Ghi log để kiểm tra
+
+        setIsFavoriteLoading(true);
+        if (isFavorite) {
+            dispatch(removeFavoriteItem(payload))
+                .unwrap()
+                .then(() => {
+                    setIsFavorite(false);
+                    ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
+                })
+                .catch((err) => {
+                    const errorMessage = err.message || 'Lỗi không xác định';
+                    ToastAndroid.show(`Không thể xóa: ${errorMessage}`, ToastAndroid.SHORT);
+                })
+                .finally(() => setIsFavoriteLoading(false));
+        } else {
+            dispatch(addFavoriteItem(payload))
+                .unwrap()
+                .then(() => {
+                    setIsFavorite(true);
+                    ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+                })
+                .catch((err) => {
+                    const errorMessage = err.message || 'Lỗi không xác định';
+                    ToastAndroid.show(`Không thể thêm: ${errorMessage}`, ToastAndroid.SHORT);
+                })
+                .finally(() => setIsFavoriteLoading(false));
+        }
     };
 
-    const handleImagePress = () => {
-        navigation.navigate('PanoramaView');
-    };
+    const displayData = item || HallTheoWeddingFlowersData;
+    if (!productIdHall) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Text style={styles.errorText}>ID không hợp lệ</Text>
+            </SafeAreaView>
+        );
+    }
+
+    if (!item && HallTheoWeddingFlowersStatus === 'loading') {
+        return (
+            <SafeAreaView style={styles.container}>
+                <ActivityIndicator size="large" color="#A67C52" />
+            </SafeAreaView>
+        );
+    }
+
+    if (!displayData) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Text style={styles.errorText}>Không có dữ liệu chi tiết</Text>
+            </SafeAreaView>
+        );
+    }
 
     return (
-        <View style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
-                </TouchableOpacity>
-                <Text style={styles.title}>Chi Tiết Sảnh</Text>
-                <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
-                    <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-                </TouchableOpacity>
-            </View>
-
-            {HallTheoWeddingFlowersStatus === 'loading' && renderLoading()}
-
-            {HallTheoWeddingFlowersStatus === 'succeeded' && HallTheoWeddingFlowersData && (
-                <Pressable style={styles.cardContainer}>
-                    <TouchableOpacity onPress={handleImagePress}>
-                        <Image
-                            source={{ uri: HallTheoWeddingFlowersData.imageUrl }}
-                            style={styles.imghall}
-                            onLoad={handleImageLoad}
-                        />
+        <SafeAreaView style={styles.container}>
+            <StatusBar barStyle="light-content" />
+            <View style={styles.imageContainer}>
+                <Image
+                    source={{ uri: displayData.image || displayData.imageUrl || 'https://via.placeholder.com/300' }}
+                    style={styles.hallImage}
+                    onLoad={handleImageLoad}
+                    resizeMode="cover"
+                />
+                <View style={styles.imageOverlay} />
+                <View style={styles.headerButtons}>
+                    <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+                        <Icon name="chevron-left" size={28} color="#fff" />
                     </TouchableOpacity>
-                    <View style={styles.cardContent}>
-                        <Text style={styles.namehall} numberOfLines={1}>{HallTheoWeddingFlowersData.name}</Text>
-                        <View style={styles.bottomhall}>
-                            <View style={styles.infoRow}>
-                                <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
-                                <Text style={styles.infoText}>{HallTheoWeddingFlowersData.SoLuongKhach} Khách</Text>
-                            </View>
-                            <View style={styles.infoRow}>
-                                <Image source={require('../Assets/Images/price.png')} style={styles.iconSmall} />
-                                <Text style={styles.priceText}>{formatPrice(HallTheoWeddingFlowersData.price)}</Text>
-                            </View>
+                    <TouchableOpacity
+                        style={styles.favoriteButton}
+                        onPress={handleToggleFavorite}
+                        disabled={isFavoriteLoading}
+                    >
+                        {isFavoriteLoading ? (
+                            <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                            <Icon
+                                name={isFavorite ? "heart" : "heart-outline"}
+                                size={24}
+                                color={isFavorite ? "#FF6B6B" : "#fff"}
+                            />
+                        )}
+                    </TouchableOpacity>
+                </View>
+            </View>
+            <View style={styles.contentCard}>
+                <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+                    <View style={styles.titleContainer}>
+                        <Animated.Text
+                            style={[styles.hallName, { opacity: nameAnim, transform: [{ translateY: nameAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}
+                        >
+                            {displayData.name || 'Không có tên'}
+                        </Animated.Text>
+                        <View style={styles.ratingTag}>
+                            <Icon name="star" size={16} color="#A67C52" />
+                            <Text style={styles.ratingText}>4.9</Text>
                         </View>
                     </View>
-                </Pressable>
-            )}
-
-            {loadingImage && renderLoading()} 
-
-            {/* {HallTheoWeddingFlowersStatus === 'failed' && (
-                <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
-            )} */}
-        </View>
+                    <View style={styles.tagsContainer}>
+                        <View style={styles.tagItem}><Text style={styles.tagText}>Sảnh cưới</Text></View>
+                        <View style={styles.tagItem}><Text style={styles.tagText}>Sang trọng</Text></View>
+                        <View style={styles.tagItem}><Text style={styles.tagText}>Cao cấp</Text></View>
+                    </View>
+                    <Animated.View style={{ opacity: descAnim, transform: [{ translateY: descAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
+                        <Text style={styles.sectionTitle}>Mô tả</Text>
+                        <Text style={styles.descriptionText}>{displayData.description || 'Không có mô tả'}</Text>
+                    </Animated.View>
+                    <View style={styles.divider} />
+                    <View style={styles.featuresSection}>
+                        <Text style={styles.sectionTitle}>Đặc điểm</Text>
+                        <View style={styles.featureItem}>
+                            <Icon name="account-group" size={20} color="#A67C52" />
+                            <Text style={styles.featureText}>Sức chứa: {displayData.SoLuongKhach || 'N/A'} khách</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Icon name="check-circle" size={20} color="#A67C52" />
+                            <Text style={styles.featureText}>Dịch vụ trọn gói</Text>
+                        </View>
+                        <View style={styles.featureItem}>
+                            <Icon name="star" size={20} color="#A67C52" />
+                            <Text style={styles.featureText}>Thiết kế cao cấp</Text>
+                        </View>
+                    </View>
+                    <View style={styles.divider} />
+                    <Animated.View style={[styles.priceContainer, { opacity: priceAnim, transform: [{ translateY: priceAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+                        <Text style={styles.priceLabel}>Giá:</Text>
+                        <Text style={styles.priceValue}>{formatPrice(displayData.price)}</Text>
+                    </Animated.View>
+                    <View style={styles.noteContainer}>
+                        <Icon name="information-outline" size={22} color="#A67C52" />
+                        <Text style={styles.noteText}>Giá có thể thay đổi tùy theo thời điểm</Text>
+                    </View>
+                </ScrollView>
+                <View style={styles.actionButtons}>
+                    <TouchableOpacity style={styles.contactButton}>
+                        <Icon name="phone" size={20} color="#A67C52" />
+                        <Text style={styles.contactButtonText}>Liên hệ</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.addToCartButton}>
+                        <Icon name="cart-plus" size={20} color="#FFFFFF" />
+                        <Text style={styles.addToCartText}>Thêm vào kế hoạch</Text>
+                    </TouchableOpacity>
+                </View>
+            </View>
+        </SafeAreaView>
     );
 };
-
-export default HallWeddings;
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#fff',
+        backgroundColor: '#FDF8F3',
     },
-    header: {
+    imageContainer: {
+        height: 300,
+        width: '100%',
+        position: 'relative',
+    },
+    hallImage: {
+        width: '100%',
+        height: '100%',
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+    },
+    imageOverlay: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        backgroundColor: 'rgba(0,0,0,0.2)',
+        borderBottomLeftRadius: 30,
+        borderBottomRightRadius: 30,
+    },
+    headerButtons: {
+        position: 'absolute',
+        top: 20,
+        left: 0,
+        right: 0,
         flexDirection: 'row',
         justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 15,
-        paddingVertical: 15,
-        backgroundColor: '#fff',
-        marginTop: 20,
+        paddingHorizontal: 20,
+        zIndex: 10,
     },
-    icon: {
-        width: 24,
-        height: 24,
-    },
-    icon_1: {
-        width: 20,
-        height: 15,
-    },
-    title: {
-        fontSize: 22,
-        fontFamily: 'Playfair_me',
-        color: '#333',
-    },
-    cardContainer: {
-        backgroundColor: '#fff',
-        borderRadius: 15,
-        marginHorizontal: 15,
-        marginTop: 20,
-        overflow: 'hidden',
-        elevation: 4,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.2,
-        shadowRadius: 5,
-    },
-    imghall: {
-        width: '100%',
-        height: width * 0.5,
-        borderTopLeftRadius: 15,
-        borderTopRightRadius: 15,
-    },
-    cardContent: {
-        padding: 15,
-    },
-    namehall: {
-        fontSize: 20,
-        fontFamily: 'Playfair_me',
-        color: '#333',
-        marginBottom: 8,
-    },
-    bottomhall: {
-        flexDirection: "row",
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginTop: 10,
-    },
-    infoRow: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    iconSmall: {
-        width: 18,
-        height: 18,
-        marginRight: 5,
-    },
-    infoText: {
-        fontSize: 16,
-        color: '#555',
-        fontFamily: 'Playfair-re',
-    },
-    priceText: {
-        fontSize: 18,
-        fontFamily: 'Playfair-re',
-        color: '#E53935',
-    },
-    loadingContainer: {
-        flex: 1,
+    backButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,0,0,0.3)',
         justifyContent: 'center',
         alignItems: 'center',
     },
-    loadingAnimation: {
-        width: 120,
-        height: 120,
+    favoriteButton: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        backgroundColor: 'rgba(0,0,0,0.3)',
+        justifyContent: 'center',
+        alignItems: 'center',
     },
-    loadingText: {
+    contentCard: {
+        flex: 1,
+        backgroundColor: '#FFFFFF',
+        marginTop: -30,
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
+        paddingHorizontal: 20,
+        paddingTop: 25,
+    },
+    titleContainer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+    },
+    hallName: {
+        fontSize: 24,
+        fontWeight: 'bold',
+        color: '#1A1A1A',
+        flex: 1,
+        fontFamily: 'serif',
+    },
+    ratingTag: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF9E9',
+        paddingHorizontal: 10,
+        paddingVertical: 5,
+        borderRadius: 15,
+    },
+    ratingText: {
+        marginLeft: 5,
+        color: '#A67C52',
+        fontWeight: 'bold',
+        fontFamily: 'serif',
+    },
+    tagsContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 20,
+    },
+    tagItem: {
+        backgroundColor: '#F7E9D7',
+        paddingHorizontal: 12,
+        paddingVertical: 6,
+        borderRadius: 15,
+        marginRight: 10,
+        marginBottom: 10,
+    },
+    tagText: {
+        color: '#A67C52',
+        fontSize: 12,
+        fontWeight: '500',
+        fontFamily: 'serif',
+    },
+    sectionTitle: {
         fontSize: 20,
-        color: '#666',
-        fontFamily: 'Playfair-re',
+        fontWeight: '600',
+        color: '#1A1A1A',
+        marginBottom: 14,
+        fontFamily: 'serif',
+    },
+    descriptionText: {
+        fontSize: 15,
+        color: '#555555',
+        lineHeight: 22,
+        marginBottom: 10,
+        fontFamily: 'serif',
+    },
+    divider: {
+        height: 1,
+        backgroundColor: '#F1E4D8',
+        marginVertical: 20,
+    },
+    featuresSection: {
+        marginBottom: 20,
+    },
+    featureItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+    },
+    featureText: {
+        marginLeft: 10,
+        fontSize: 14,
+        color: '#444444',
+        fontFamily: 'serif',
+    },
+    priceContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#220000',
+        padding: 15,
+        borderRadius: 15,
+        marginVertical: 20,
+        shadowColor: '#B78D51',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+        elevation: 3,
+    },
+    priceLabel: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        marginRight: 10,
+        fontFamily: 'serif',
+    },
+    priceValue: {
+        fontSize: 22,
+        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontFamily: 'serif',
+        letterSpacing: 1,
+    },
+    noteContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#FFF8E8',
+        padding: 14,
+        borderRadius: 10,
+        marginBottom: 20,
+    },
+    noteText: {
+        fontSize: 15,
+        color: '#A67C52',
+        marginLeft: 10,
+        fontFamily: 'serif',
+    },
+    actionButtons: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        paddingHorizontal: 20,
+        paddingVertical: 15,
+        borderTopWidth: 1,
+        borderTopColor: '#F1E4D8',
+    },
+    contactButton: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: 12,
+        borderWidth: 1,
+        borderColor: '#A67C52',
+        borderRadius: 10,
+        marginRight: 10,
+    },
+    contactButtonText: {
+        marginLeft: 8,
+        color: '#A67C52',
+        fontWeight: '600',
+        fontFamily: 'serif',
+    },
+    addToCartButton: {
+        flex: 2,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: '#220000',
+        paddingVertical: 12,
+        borderRadius: 10,
+        shadowColor: '#B78D51',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 6,
+        elevation: 6,
+    },
+    addToCartText: {
+        marginLeft: 8,
+        color: '#FFFFFF',
+        fontWeight: '600',
+        fontFamily: 'serif',
     },
     errorText: {
-        textAlign: 'center',
         fontSize: 16,
-        color: '#E53935',
+        fontFamily: 'serif',
+        color: '#FF3B30',
+        textAlign: 'center',
         marginTop: 20,
     },
 });
+
+export default HallWeddings;

@@ -24,7 +24,7 @@ const EditPlan = ({ navigation, route }) => {
   const { user } = useContext(AppContext);
   const userId = user?._id;
 
-  console.log('Initial planData:', JSON.stringify(planData, null, 2)); // Log dữ liệu ban đầu với định dạng rõ ràng
+  console.log('Initial planData:', JSON.stringify(planData, null, 2));
   console.log('User ID:', userId);
 
   const { caterings, cateringStatus, error: cateringError } = useSelector((state) => state.getallcatering);
@@ -33,7 +33,6 @@ const EditPlan = ({ navigation, route }) => {
   const { presents, presentStatus, error: presentError } = useSelector((state) => state.getallpresent);
   const { data: favorites, status: favoriteStatus, error: favoriteError } = useSelector((state) => state.favoriteset);
 
-  // Khởi tạo state với kiểm tra dữ liệu đầu vào
   const [name, setName] = useState(planData?.name || '');
   const [plandateevent, setPlandateevent] = useState(
     planData?.plandateevent && !isNaN(new Date(planData.plandateevent).getTime())
@@ -61,6 +60,7 @@ const EditPlan = ({ navigation, route }) => {
   const [replaceIndex, setReplaceIndex] = useState(null);
   const [sanhModalVisible, setSanhModalVisible] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
+  const [showSanhFavorites, setShowSanhFavorites] = useState(false);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -69,7 +69,6 @@ const EditPlan = ({ navigation, route }) => {
     if (userId) dispatch(fetchUserFavorites(userId));
   }, [dispatch, userId]);
 
-  // Tính toán totalPrice
   useEffect(() => {
     const calculateTotalPrice = () => {
       let total = 0;
@@ -94,22 +93,44 @@ const EditPlan = ({ navigation, route }) => {
     else if (type === 'presents') dispatch(fetchPresents());
   };
 
-  useEffect(() => {
-    if (showFavorites && favoriteStatus === 'succeeded') {
-      const typeMap = { caterings: 'catering', decorates: 'decorate', presents: 'present' };
-      const filteredFavorites = favorites.filter(item => item.type === typeMap[currentType]);
-      console.log('Filtered Favorites:', filteredFavorites);
-      setAvailableItems(filteredFavorites);
-    } else if (currentType === 'caterings' && cateringStatus === 'succeeded') {
-      setAvailableItems(caterings);
-    } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
-      setAvailableItems(decorates);
-    } else if (currentType === 'presents' && presentStatus === 'succeeded') {
-      setAvailableItems(presents);
-    }
-  }, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, favorites, favoriteStatus, currentType, showFavorites]);
+  const handleChangeSanh = () => {
+    setSanhModalVisible(true);
+    setShowSanhFavorites(false);
+    dispatch(Hall());
+    if (userId) dispatch(fetchUserFavorites(userId));
+  };
 
-  // Hiển thị lỗi
+  useEffect(() => {
+    if (modalVisible) {
+      if (showFavorites && favoriteStatus === 'succeeded') {
+        const typeMap = { caterings: 'catering', decorates: 'decorate', presents: 'present' };
+        const filteredFavorites = favorites.filter(item => item.type === typeMap[currentType]);
+        console.log('Filtered Favorites:', filteredFavorites);
+        setAvailableItems(filteredFavorites);
+      } else if (currentType === 'caterings' && cateringStatus === 'succeeded') {
+        setAvailableItems(caterings);
+      } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
+        setAvailableItems(decorates);
+      } else if (currentType === 'presents' && presentStatus === 'succeeded') {
+        setAvailableItems(presents);
+      }
+    }
+
+    if (sanhModalVisible) {
+      if (showSanhFavorites && favoriteStatus === 'succeeded') {
+        const filteredSanhFavorites = favorites.filter(item => item.type === 'Sanh');
+        console.log('Filtered Sanh Favorites:', filteredSanhFavorites);
+        setAvailableItems(filteredSanhFavorites);
+      } else if (HallStatus === 'succeeded') {
+        setAvailableItems(HallData);
+      }
+    }
+  }, [
+    caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus,
+    favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData,
+    sanhModalVisible, showSanhFavorites
+  ]);
+
   useEffect(() => {
     const errors = [
       { status: cateringStatus, error: cateringError, type: 'caterings', label: 'món ăn' },
@@ -119,11 +140,15 @@ const EditPlan = ({ navigation, route }) => {
       { status: favoriteStatus, error: favoriteError, type: 'favorites', label: 'yêu thích' },
     ];
     errors.forEach(({ status, error, type, label }) => {
-      if (status === 'failed' && error && (currentType === type || (type === 'hall' && sanhModalVisible) || (type === 'favorites' && showFavorites))) {
+      if (status === 'failed' && error && (
+        currentType === type || 
+        (type === 'hall' && sanhModalVisible) || 
+        (type === 'favorites' && (showFavorites || showSanhFavorites))
+      )) {
         ToastAndroid.show(`Lỗi khi lấy danh sách ${label}: ${error}`, ToastAndroid.SHORT);
       }
     });
-  }, [cateringStatus, cateringError, decorateStatus, decorateError, presentStatus, presentError, HallStatus, hallError, favoriteStatus, favoriteError, currentType, showFavorites, sanhModalVisible]);
+  }, [cateringStatus, cateringError, decorateStatus, decorateError, presentStatus, presentError, HallStatus, hallError, favoriteStatus, favoriteError, currentType, showFavorites, sanhModalVisible, showSanhFavorites]);
 
   useEffect(() => {
     return () => {
@@ -142,7 +167,7 @@ const EditPlan = ({ navigation, route }) => {
     }
 
     const normalizedItem = {
-      _id: item.itemId || item._id, // Ưu tiên itemId từ favorites
+      _id: item.itemId || item._id,
       name: item.name || 'Không có tên',
       price: item.price || 0,
       imageUrl: item.imageUrl || item.image || null,
@@ -181,14 +206,18 @@ const EditPlan = ({ navigation, route }) => {
     else if (type === 'presents') updateList(presentsList, setPresentsList);
   };
 
-  const handleChangeSanh = () => {
-    setSanhModalVisible(true);
-    dispatch(Hall());
-  };
-
-  const handleSelectSanh = (sanh) => {
-    setSanhId(sanh._id);
-    setSelectedSanh(sanh);
+  const handleSelectSanh = (item) => {
+    console.log('Selected sanh item:', JSON.stringify(item, null, 2));
+    const normalizedSanh = {
+      _id: item.itemId || item._id,
+      name: item.name || 'Không có tên',
+      price: item.price || 0,
+      imageUrl: item.imageUrl || item.image || null,
+      SoLuongKhach: item.SoLuongKhach || 0,
+    };
+    console.log('Normalized sanh:', JSON.stringify(normalizedSanh, null, 2));
+    setSanhId(normalizedSanh._id);
+    setSelectedSanh(normalizedSanh);
     setSanhModalVisible(false);
   };
 
@@ -212,18 +241,14 @@ const EditPlan = ({ navigation, route }) => {
       presents: presentsList.map(item => item._id).filter(Boolean),
     };
 
-    console.log('cateringsList before save:', cateringsList);
-    console.log('decoratesList before save:', decoratesList);
-    console.log('presentsList before save:', presentsList);
-    console.log('Data sent to server:', updateData);
+    console.log('Data sent to server:', JSON.stringify(updateData, null, 2));
 
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
-        console.log('API Response (update):', updatedPlan);
+        console.log('API Response (update):', JSON.stringify(updatedPlan, null, 2));
         ToastAndroid.show('Cập nhật kế hoạch thành công!', ToastAndroid.SHORT);
 
-        // Kết hợp dữ liệu từ client nếu server không trả lại đầy đủ
         const combinedPlanData = {
           ...updatedPlan,
           UserId: updatedPlan.UserId || userId,
@@ -238,11 +263,11 @@ const EditPlan = ({ navigation, route }) => {
           name: updateData.name || updatedPlan.name || 'Kế hoạch không tên',
         };
 
-        console.log('Combined Plan Data:', combinedPlanData);
+        console.log('Combined Plan Data:', JSON.stringify(combinedPlanData, null, 2));
         navigation.navigate('DetailPlan', { planId, planData: combinedPlanData });
       })
       .catch((err) => {
-        console.error('Update error:', err);
+        console.error('Update error:', JSON.stringify(err, null, 2));
         ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || 'Không xác định'}`, ToastAndroid.SHORT);
       });
   };
@@ -300,14 +325,20 @@ const EditPlan = ({ navigation, route }) => {
   );
 
   const renderSanhItem = ({ item }) => (
-    <TouchableOpacity style={styles.modalItem} onPress={() => handleSelectSanh(item)}>
-      {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.modalItemImage} />}
-      <View style={styles.modalItemContent}>
-        <Text style={styles.modalItemText}>{item.name}</Text>
-        <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN')} VNĐ</Text>
-        <Text style={styles.modalItemPrice}>{item.SoLuongKhach}/người</Text>
-      </View>
-    </TouchableOpacity>
+    item ? (
+      <TouchableOpacity style={styles.modalItem} onPress={() => handleSelectSanh(item)}>
+        {(item.imageUrl || item.image) && (
+          <Image source={{ uri: item.imageUrl || item.image }} style={styles.modalItemImage} />
+        )}
+        <View style={styles.modalItemContent}>
+          <Text style={styles.modalItemText}>{item.name || 'Không có tên'}</Text>
+          <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+          {item.SoLuongKhach && (
+            <Text style={styles.modalItemPrice}>{item.SoLuongKhach}/người</Text>
+          )}
+        </View>
+      </TouchableOpacity>
+    ) : null
   );
 
   return (
@@ -480,20 +511,36 @@ const EditPlan = ({ navigation, route }) => {
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Chọn sảnh</Text>
-            {HallStatus === 'loading' ? (
+            <View style={styles.toggleContainer}>
+              <TouchableOpacity
+                style={[styles.toggleButton, !showSanhFavorites && styles.activeToggle]}
+                onPress={() => setShowSanhFavorites(false)}
+              >
+                <Text style={styles.toggleText}>Tất cả</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.toggleButton, showSanhFavorites && styles.activeToggle]}
+                onPress={() => setShowSanhFavorites(true)}
+              >
+                <Text style={styles.toggleText}>Yêu thích</Text>
+              </TouchableOpacity>
+            </View>
+            {(HallStatus === 'loading' || (showSanhFavorites && favoriteStatus === 'loading')) ? (
               <View style={styles.loadingContainer}>
                 <ActivityIndicator size="large" color="#FF6F61" />
                 <Text style={styles.loadingText}>Đang tải danh sách sảnh...</Text>
               </View>
-            ) : HallData.length > 0 ? (
+            ) : availableItems.length > 0 ? (
               <FlatList
-                data={HallData}
+                data={availableItems}
                 renderItem={renderSanhItem}
-                keyExtractor={(item) => item._id}
+                keyExtractor={(item) => item._id || item.itemId || Math.random().toString()}
                 style={styles.modalList}
               />
             ) : (
-              <Text style={styles.noDataText}>Không có sảnh nào để hiển thị</Text>
+              <Text style={styles.noDataText}>
+                {showSanhFavorites ? 'Không có sảnh yêu thích nào' : 'Không có sảnh nào để hiển thị'}
+              </Text>
             )}
             <TouchableOpacity style={styles.closeButton} onPress={() => setSanhModalVisible(false)}>
               <Text style={styles.closeButtonText}>Đóng</Text>
