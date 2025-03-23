@@ -14,12 +14,11 @@ export const fetchUserFavorites = createAsyncThunk(
 
             if (!response.ok) {
                 const text = await response.text();
-               
                 throw new Error(`Phản hồi không hợp lệ: ${response.status} - ${text}`);
             }
 
             const data = await response.json();
-            
+            console.log('Dữ liệu từ API:', data);
 
             if (!data.status) {
                 return rejectWithValue(data.message || 'Lỗi không xác định');
@@ -27,15 +26,14 @@ export const fetchUserFavorites = createAsyncThunk(
 
             const favorites = [];
             const categories = {
-                Catering: data.data.Catering || [],
-                Decorate: data.data.Decorate || [],
-                Lobby: data.data.Lobby || [],
-                Present: data.data.Present || [],
+                catering: data.data.Catering || [],
+                decorate: data.data.Decorate || [],
+                lobby: data.data.Lobby || [],
+                present: data.data.Present || [],
             };
 
             for (const [type, orders] of Object.entries(categories)) {
                 if (!Array.isArray(orders)) {
-                    
                     continue;
                 }
 
@@ -44,12 +42,11 @@ export const fetchUserFavorites = createAsyncThunk(
                     const item = order[itemKey];
 
                     if (!item || !order._id) {
-                        
                         return;
                     }
 
                     favorites.push({
-                        type: type,
+                        type: type.toLowerCase(), // Chuẩn hóa type thành chữ thường
                         itemId: order._id.toString(),
                         _id: order._id.toString(),
                         image: item.imageUrl || item.image || 'https://via.placeholder.com/80',
@@ -59,10 +56,8 @@ export const fetchUserFavorites = createAsyncThunk(
                 });
             }
 
-            
             return favorites.length > 0 ? favorites : [];
         } catch (error) {
-            
             return rejectWithValue(error.message);
         }
     }
@@ -105,10 +100,10 @@ export const addFavoriteItem = createAsyncThunk(
             const updatedData = await responseFavorites.json();
             const favorites = [];
             const categories = {
-                Catering: updatedData.data.Catering || [],
-                Decorate: updatedData.data.Decorate || [],
-                Lobby: updatedData.data.Lobby || [],
-                Present: updatedData.data.Present || [],
+                catering: updatedData.data.Catering || [],
+                decorate: updatedData.data.Decorate || [],
+                lobby: updatedData.data.Lobby || [],
+                present: updatedData.data.Present || [],
             };
 
             for (const [type, orders] of Object.entries(categories)) {
@@ -118,7 +113,7 @@ export const addFavoriteItem = createAsyncThunk(
                     const item = order[itemKey];
                     if (!item || !order._id) return;
                     favorites.push({
-                        type: type,
+                        type: type.toLowerCase(),
                         itemId: order._id.toString(),
                         _id: order._id.toString(),
                         image: item.imageUrl || item.image || 'https://via.placeholder.com/80',
@@ -136,9 +131,10 @@ export const addFavoriteItem = createAsyncThunk(
     }
 );
 
+// Xóa mục yêu thích
 export const removeFavoriteItem = createAsyncThunk(
     'favorite/removeFavoriteItem',
-    async ({ userId, type, itemId }, { rejectWithValue }) => {
+    async ({ userId, type, itemId }, { rejectWithValue, dispatch }) => {
         try {
             if (!userId || !type || !itemId) {
                 return rejectWithValue("Thiếu userId, type hoặc itemId.");
@@ -166,7 +162,9 @@ export const removeFavoriteItem = createAsyncThunk(
                 return rejectWithValue(data.message);
             }
 
-            return { type, itemId };
+            // Gọi lại fetchUserFavorites để lấy danh sách mới
+            const updatedFavorites = await dispatch(fetchUserFavorites(userId)).unwrap();
+            return updatedFavorites;
         } catch (error) {
             console.error("Lỗi removeFavoriteItem:", error.message);
             return rejectWithValue(error.message);
@@ -220,7 +218,7 @@ const FavoriteDeanAddSlice = createSlice({
             })
             .addCase(removeFavoriteItem.fulfilled, (state, action) => {
                 state.status = 'succeeded';
-                state.data = action.payload; // Cập nhật toàn bộ danh sách
+                state.data = action.payload; // Cập nhật toàn bộ danh sách từ fetchUserFavorites
             })
             .addCase(removeFavoriteItem.rejected, (state, action) => {
                 state.status = 'failed';

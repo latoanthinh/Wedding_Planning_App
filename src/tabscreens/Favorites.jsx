@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator, Alert } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator, Alert, ScrollView } from 'react-native';
 import React, { useEffect, useContext } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -11,19 +11,38 @@ const Favorites = ({ navigation }) => {
     const { user } = useContext(AppContext);
     const userId = user?._id;
 
+    console.log('userId:', userId);
+    console.log('Data from Redux:', data);
+    console.log('Status:', status);
+    console.log('Error:', error);
+
     useEffect(() => {
-        if (userId) {
+        if (!userId) {
+            console.warn('userId không tồn tại, điều hướng đến màn hình đăng nhập');
+            navigation.navigate('LoginScreen');
+        } else {
             dispatch(resetFavorites());
             dispatch(fetchUserFavorites(userId));
-        } else {
-            console.warn('userId không tồn tại, không thể tải danh sách yêu thích');
         }
-    }, [dispatch, userId]);
+    }, [dispatch, userId, navigation]);
 
+    // Flatten và loại bỏ trùng lặp dữ liệu
     const flattenData = Array.isArray(data) ? data.flat() : [];
     const validatedData = Array.from(
         new Map(flattenData.map(item => [item._id, item])).values()
     );
+
+    // Phân loại dữ liệu theo type
+    const groupedData = validatedData.reduce((acc, item) => {
+        const type = item.type || 'unknown';
+        if (!acc[type]) {
+            acc[type] = [];
+        }
+        acc[type].push(item);
+        return acc;
+    }, {});
+
+    console.log('Grouped Data:', groupedData);
 
     const formatPrice = (price) => {
         return price ? price.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' VNĐ' : '0 VNĐ';
@@ -50,9 +69,6 @@ const Favorites = ({ navigation }) => {
                         onPress: () => {
                             console.log(`Xóa mục yêu thích: userId=${userId}, type=${item.type}, itemId=${item.itemId}`);
                             dispatch(removeFavoriteItem({ userId, type: item.type, itemId: item.itemId }))
-                                .then(() => {
-                                    dispatch(fetchUserFavorites(userId));
-                                })
                                 .catch((error) => {
                                     console.error('Lỗi khi xóa mục yêu thích:', error);
                                     Alert.alert('Lỗi', 'Không thể xóa mục yêu thích, vui lòng thử lại.');
@@ -74,6 +90,8 @@ const Favorites = ({ navigation }) => {
             return null;
         }
 
+        console.log('Rendering item:', item);
+
         return (
             <View style={styles.itemCard}>
                 <TouchableOpacity
@@ -81,7 +99,7 @@ const Favorites = ({ navigation }) => {
                     onPress={() => navigation.navigate('ItemDetail', { itemId: item._id, type: item.type })}
                 >
                     <Image
-                        source={{ uri: item.image || 'https://via.placeholder.com/90' }}
+                        source={{ uri: item.image || item.imageUrl || 'https://via.placeholder.com/90' }}
                         style={styles.itemImage}
                         resizeMode="cover"
                     />
@@ -103,6 +121,25 @@ const Favorites = ({ navigation }) => {
                 >
                     <Text style={styles.deleteButtonText}>✕</Text>
                 </TouchableOpacity>
+            </View>
+        );
+    };
+
+    const renderSection = (title, items) => {
+        if (!items || items.length === 0) return null;
+
+        console.log(`Rendering section: ${title}, items:`, items);
+
+        return (
+            <View style={styles.sectionContainer}>
+                <Text style={styles.sectionTitle}>{title}</Text>
+                <FlatList
+                    data={items}
+                    renderItem={renderItem}
+                    keyExtractor={(item, index) => item?._id?.toString() || `fallback-${index}`}
+                    showsVerticalScrollIndicator={false}
+                    scrollEnabled={false}
+                />
             </View>
         );
     };
@@ -146,6 +183,14 @@ const Favorites = ({ navigation }) => {
         );
     }
 
+    // Định nghĩa các section dựa trên type
+    const sections = [
+        { title: 'Sảnh', items: groupedData['lobby'] || [], type: 'lobby' },
+        { title: 'Món ăn', items: groupedData['catering'] || [], type: 'catering' },
+        { title: 'Trang trí', items: groupedData['decorate'] || [], type: 'decorate' },
+        { title: 'Quà tặng', items: groupedData['present'] || [], type: 'present' },
+    ];
+
     return (
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
@@ -153,23 +198,27 @@ const Favorites = ({ navigation }) => {
                 <Text style={styles.itemCount}>{validatedData.length} sản phẩm</Text>
             </View>
 
-            <FlatList
-                data={validatedData}
-                renderItem={renderItem}
-                keyExtractor={(item, index) => item?._id?.toString() || `fallback-${index}`}
-                ListEmptyComponent={renderEmpty}
-                contentContainerStyle={[
-                    styles.listContent,
-                    validatedData.length === 0 && styles.emptyListContent
-                ]}
-                showsVerticalScrollIndicator={false}
-            />
+            {validatedData.length === 0 ? (
+                renderEmpty()
+            ) : (
+                <ScrollView
+                    contentContainerStyle={styles.scrollContent}
+                    showsVerticalScrollIndicator={false}
+                >
+                    {sections.map((section, index) => (
+                        <View key={section.type || index}>
+                            {renderSection(section.title, section.items)}
+                        </View>
+                    ))}
+                </ScrollView>
+            )}
         </SafeAreaView>
     );
 };
 
 export default Favorites;
 
+// Styles giữ nguyên
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -194,12 +243,20 @@ const styles = StyleSheet.create({
         color: '#666',
         marginTop: 4,
     },
-    listContent: {
+    scrollContent: {
         paddingBottom: 20,
         paddingTop: 10,
     },
-    emptyListContent: {
-        flexGrow: 1,
+    sectionContainer: {
+        marginBottom: 20,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontFamily: 'Playfair_me',
+        color: '#000',
+        fontWeight: '700',
+        marginHorizontal: 12,
+        marginBottom: 10,
     },
     itemCard: {
         flexDirection: 'row',
@@ -365,3 +422,4 @@ const styles = StyleSheet.create({
         color: '#000',
     },
 });
+

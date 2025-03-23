@@ -37,7 +37,7 @@ const GenPlan = ({ navigation, route }) => {
       onPress={() => navigation.navigate("PlanDetail", { planData: item })} 
     >
       <View style={styles.planContent}>
-        <Text style={styles.planName}>{item.SanhId?.name || "Sảnh không xác định"}</Text>
+        <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
         <Text style={styles.planPrice}>{formatPrice(item.totalPrice)}</Text>
         <Text style={styles.planText}>
           Số lượng khách: {item.SanhId?.SoLuongKhach || "Không xác định"}
