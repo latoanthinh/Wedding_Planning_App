@@ -16,25 +16,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 const { height, width } = Dimensions.get("window");
 const scale = width / 375;
 
-const normalize = (size) => {
-  return Math.round(scale * size);
-};
+const normalize = (size) => Math.round(scale * size);
 
 const GenPlan = ({ navigation, route }) => {
-  const { params } = route; // Dữ liệu khảo sát từ Thongtincoban
-  const { plans } = useSelector((state) => state.khaosat); // Danh sách kế hoạch từ Redux
-  console.log("Params in GenPlan:", params); // Kiểm tra params
-  console.log("Plans in GenPlan:", plans); // Kiểm tra plans từ Redux
-  // Hàm định dạng giá
-  const formatPrice = (num) => {
-    return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
-  };
+  const { params } = route;
+  const { plans } = useSelector((state) => state.khaosat);
 
-  // Render từng kế hoạch từ Redux
+  console.log("Params in GenPlan:", params);
+  console.log("Plans in GenPlan:", plans);
+
+  const formatPrice = (num) =>
+    num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
+
   const renderPlan = ({ item }) => (
     <Pressable
       style={styles.planCard}
-      onPress={() => navigation.navigate("PlanDetail", { planData: item })} 
+      onPress={() => navigation.navigate("PlanDetail", { planData: item })}
     >
       <View style={styles.planContent}>
         <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
@@ -42,24 +39,23 @@ const GenPlan = ({ navigation, route }) => {
         <Text style={styles.planText}>
           Số lượng khách: {item.SanhId?.SoLuongKhach || "Không xác định"}
         </Text>
-        {/* Hiển thị thêm dịch vụ nếu cần */}
         <View style={styles.planServices}>
           <Text style={styles.planServiceText}>
-            Dịch vụ: {item.caterings?.length > 0 ? item.caterings.map(c => c.name).join(", ") : "Không có"}
+            Dịch vụ: {item.caterings?.length > 0 ? item.caterings.map((c) => c.name).join(", ") : "Không có"}
           </Text>
         </View>
-        <TouchableOpacity style={styles.detailButtonContainer} onPress={()=> navigation.navigate("DetailPlan" , {planId : item._id})}>
+        <TouchableOpacity
+          style={styles.detailButtonContainer}
+          onPress={() => navigation.navigate("DetailPlan", { planId: item._id })}
+        >
           <Text style={styles.detailButton}>Xem chi tiết</Text>
         </TouchableOpacity>
       </View>
     </Pressable>
   );
 
-  
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
           <Image source={require("../Assets/Images/back.png")} style={styles.backIcon} />
@@ -73,28 +69,36 @@ const GenPlan = ({ navigation, route }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Survey Info */}
       <View style={styles.surveyInfo}>
         <Text style={styles.surveyText}>
           Ngày tổ chức: {params?.eventDate ? new Date(params.eventDate).toLocaleDateString("vi-VN") : "Chưa chọn"}
         </Text>
         <Text style={styles.surveyText}>Số lượng khách: {params?.guestCount || "Chưa nhập"}</Text>
-        <Text style={styles.surveyText}>Ngân sách: {formatPrice(params?.budget)}</Text>
+        <Text style={styles.surveyText}>
+          Ngân sách: {params?.budget ? formatPrice(params.budget) : "Chưa nhập"}
+        </Text>
       </View>
 
-      {/* Plans from Redux */}
       <ScrollView style={styles.scrollContainer}>
-      <Text style={styles.sectionTitle}>Danh sách Combo gợi ý</Text>
+        <Text style={styles.sectionTitle}>Danh sách Combo gợi ý</Text>
         {plans.length > 0 ? (
           <FlatList
             data={plans}
             renderItem={renderPlan}
             keyExtractor={(item) => item._id.toString()}
             style={styles.planList}
-            scrollEnabled={false} // Tắt scroll của FlatList để ScrollView chính quản lý
+            scrollEnabled={false}
           />
         ) : (
-          <Text style={styles.noPlansText}>Không có kế hoạch phù hợp với yêu cầu của bạn</Text>
+          <View style={styles.noPlansContainer}>
+            <Text style={styles.noPlansText}>Không có kế hoạch phù hợp với yêu cầu của bạn</Text>
+            <TouchableOpacity
+              style={styles.retryButton}
+              onPress={() => navigation.navigate("Thongtincoban")}
+            >
+              <Text style={styles.retryButtonText}>Thử lại</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </ScrollView>
     </SafeAreaView>
@@ -117,7 +121,6 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     backgroundColor: "#fff",
     paddingHorizontal: 16,
-   
   },
   headerTitle: {
     fontSize: normalize(20),
@@ -197,63 +200,26 @@ const styles = StyleSheet.create({
     fontSize: normalize(15),
     color: "#666",
   },
+  noPlansContainer: {
+    alignItems: "center",
+    padding: 20,
+  },
   noPlansText: {
     fontSize: normalize(16),
     color: "#666",
     textAlign: "center",
-    padding: 20,
+    marginBottom: 10,
   },
-  comboList: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 20,
+  retryButton: {
+    backgroundColor: "#E53935",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 10,
   },
-  comboCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 15,
-    marginBottom: 20,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
-    overflow: "hidden",
-  },
-  comboImage: {
-    width: "100%",
-    height: normalize(200),
-  },
-  comboContent: {
-    padding: 16,
-  },
-  comboName: {
-    fontSize: normalize(20),
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
-  },
-  comboPrice: {
-    fontSize: normalize(18),
-    color: "#E53935",
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  comboDescriptionContainer: {
-    marginBottom: 16,
-  },
-  descriptionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  descriptionDot: {
-    color: "#E53935",
-    marginRight: 8,
+  retryButtonText: {
+    color: "#FFFFFF",
     fontSize: normalize(16),
-  },
-  descriptionText: {
-    fontSize: normalize(15),
-    color: "#666",
+    fontWeight: "600",
   },
   detailButtonContainer: {
     alignSelf: "flex-start",
@@ -268,4 +234,3 @@ const styles = StyleSheet.create({
     fontWeight: "600",
   },
 });
-
