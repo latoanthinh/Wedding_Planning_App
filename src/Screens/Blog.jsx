@@ -260,7 +260,7 @@ const Blog = () => {
           <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('TabNavigation')}>
             <AntDesign name="arrowleft" size={22} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Blog Đám Cưới</Text>
+          <Text style={styles.headerTitle}>Wedding Stories</Text>
           <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('TabNavigation')}>
             <AntDesign name="home" size={22} color="#333" />
           </TouchableOpacity>
@@ -295,8 +295,8 @@ const Blog = () => {
           <RefreshControl
             refreshing={refreshing}
             onRefresh={onRefresh}
-            colors={['#FF6B6B']}
-            tintColor="#FF6B6B"
+            colors={['#C8815F']}
+            tintColor="#C8815F"
           />
         }
         ListEmptyComponent={
@@ -323,7 +323,7 @@ const Blog = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#FBF9F6',
   },
   animatedContainer: {
     width: '100%',
@@ -342,22 +342,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: Platform.OS === 'ios' ? 10 : 16,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 16,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: '600',
     color: '#333',
     fontFamily: 'Playfair_me',
     letterSpacing: 0.5,
   },
   headerButton: {
-    width: 40,
-    height: 40,
+    width: 42,
+    height: 42,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 20,
+    borderRadius: 21,
     backgroundColor: '#F6F6F6',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
   },
   searchContainer: {
     flexDirection: 'row',
@@ -366,20 +371,22 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginVertical: 16,
     paddingHorizontal: 16,
-    borderRadius: 12,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
-    height: 50,
+    height: 54,
+    borderWidth: 1,
+    borderColor: '#F0EAE3',
   },
   searchIcon: {
     marginRight: 10,
   },
   searchInput: {
     flex: 1,
-    height: 50,
+    height: 54,
     fontSize: 16,
     color: '#333',
     fontFamily: 'Playfair_me',
@@ -394,37 +401,39 @@ const styles = StyleSheet.create({
   },
   blogItem: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
+    borderRadius: 20,
     overflow: 'hidden',
     marginBottom: 24,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 6,
+    shadowRadius: 8,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: '#F0EAE3',
   },
   blogItemEven: {
     // Even items styling
   },
   blogItemOdd: {
-    // Odd items styling - could use a slightly different style
+    // Odd items styling
   },
   imageWrapper: {
     position: 'relative',
   },
   coverImage: {
     width: '100%',
-    height: 200,
+    height: 220,
     backgroundColor: '#E1E4E8',
   },
   categoryBadge: {
     position: 'absolute',
     top: 16,
     right: 16,
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#C8815F',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 6,
+    borderRadius: 30,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
@@ -438,7 +447,7 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
   },
   contentContainer: {
-    padding: 20,
+    padding: 24,
   },
   title: {
     fontSize: 20,
@@ -446,13 +455,13 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 10,
     fontFamily: 'Playfair_me',
-    lineHeight: 26,
+    lineHeight: 28,
   },
   summary: {
     fontSize: 15,
     color: '#666',
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: 20,
     fontFamily: 'Playfair_me',
   },
   metaContainer: {
@@ -461,6 +470,9 @@ const styles = StyleSheet.create({
     marginTop: 4,
     alignItems: 'center',
     justifyContent: 'space-between',
+    borderTopWidth: 1,
+    borderTopColor: '#F0EAE3',
+    paddingTop: 14,
   },
   metaItem: {
     flexDirection: 'row',
@@ -477,10 +489,14 @@ const styles = StyleSheet.create({
   readMoreContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: '#F8F2EA',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
   },
   readMoreText: {
     fontSize: 13,
-    color: '#FF6B6B',
+    color: '#C8815F',
     fontFamily: 'Playfair_me',
     fontWeight: 'bold',
     marginRight: 5,
@@ -489,7 +505,7 @@ const styles = StyleSheet.create({
   // Loading state styles
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FBF9F6',
   },
   loadingContent: {
     flex: 1,
@@ -507,7 +523,7 @@ const styles = StyleSheet.create({
   // Error state styles
   errorContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FBF9F6',
   },
   errorContent: {
     flex: 1,
@@ -538,10 +554,10 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   retryButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#C8815F',
     paddingVertical: 14,
     paddingHorizontal: 24,
-    borderRadius: 10,
+    borderRadius: 30,
     marginHorizontal: 8,
     marginBottom: 12,
     shadowColor: '#000',
@@ -557,13 +573,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
   },
   checkButton: {
-    backgroundColor: '#5C6BC0',
+    backgroundColor: '#5D5F82',
   },
   
   // Empty state styles
   emptyContainer: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#FBF9F6',
   },
   emptyContent: {
     flex: 1,
@@ -605,13 +621,13 @@ const styles = StyleSheet.create({
     maxWidth: width * 0.8,
   },
   clearSearchButton: {
-    backgroundColor: '#F2F2F2',
+    backgroundColor: '#F8F2EA',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 8,
+    borderRadius: 30,
   },
   clearSearchButtonText: {
-    color: '#666',
+    color: '#C8815F',
     fontWeight: '500',
     fontSize: 15,
     fontFamily: 'Playfair_me',

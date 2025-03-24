@@ -9,6 +9,7 @@ import {
   Dimensions,
   Pressable,
   FlatList,
+  StatusBar,
 } from "react-native";
 import { useSelector } from "react-redux";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -29,13 +30,12 @@ const GenPlan = ({ navigation, route }) => {
     num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
 
   const renderPlan = ({ item }) => (
-    <Pressable
-      style={styles.planCard}
-      onPress={() => navigation.navigate("PlanDetail", { planData: item })}
-    >
+    <View style={styles.planCard}>
       <View style={styles.planContent}>
         <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
-        <Text style={styles.planPrice}>{formatPrice(item.totalPrice)}</Text>
+        <View style={styles.priceContainer}>
+          <Text style={styles.planPrice}>{formatPrice(item.totalPrice)}</Text>
+        </View>
         <Text style={styles.planText}>
           Số lượng khách: {item.SanhId?.SoLuongKhach || "Không xác định"}
         </Text>
@@ -46,61 +46,78 @@ const GenPlan = ({ navigation, route }) => {
         </View>
         <TouchableOpacity
           style={styles.detailButtonContainer}
-          onPress={() => navigation.navigate("DetailPlan", { planId: item._id })}
+          onPress={() => navigation.navigate("DetailPlan", { planData: item })}
         >
           <Text style={styles.detailButton}>Xem chi tiết</Text>
         </TouchableOpacity>
       </View>
-    </Pressable>
+    </View>
   );
 
   return (
     <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.iconButton}>
-          <Image source={require("../Assets/Images/back.png")} style={styles.backIcon} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Gen Plan</Text>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("TabNavigation")}
-          style={styles.iconButton}
-        >
-          <Image source={require("../Assets/Images/home48.png")} style={styles.homeIcon} />
-        </TouchableOpacity>
-      </View>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <View style={styles.mainContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")} style={styles.iconButton}>
+            <Image source={require("../Assets/Images/back.png")} style={styles.backIcon} />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Gợi ý kế hoạch</Text>
+          <TouchableOpacity
+            onPress={() => navigation.navigate("TabNavigation")}
+            style={styles.iconButton}
+          >
+            <Image source={require("../Assets/Images/home48.png")} style={styles.homeIcon} />
+          </TouchableOpacity>
+        </View>
 
-      <View style={styles.surveyInfo}>
-        <Text style={styles.surveyText}>
-          Ngày tổ chức: {params?.eventDate ? new Date(params.eventDate).toLocaleDateString("vi-VN") : "Chưa chọn"}
-        </Text>
-        <Text style={styles.surveyText}>Số lượng khách: {params?.guestCount || "Chưa nhập"}</Text>
-        <Text style={styles.surveyText}>
-          Ngân sách: {params?.budget ? formatPrice(params.budget) : "Chưa nhập"}
-        </Text>
-      </View>
-
-      <ScrollView style={styles.scrollContainer}>
-        <Text style={styles.sectionTitle}>Danh sách Combo gợi ý</Text>
-        {plans.length > 0 ? (
-          <FlatList
-            data={plans}
-            renderItem={renderPlan}
-            keyExtractor={(item) => item._id.toString()}
-            style={styles.planList}
-            scrollEnabled={false}
-          />
-        ) : (
-          <View style={styles.noPlansContainer}>
-            <Text style={styles.noPlansText}>Không có kế hoạch phù hợp với yêu cầu của bạn</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={() => navigation.navigate("Thongtincoban")}
-            >
-              <Text style={styles.retryButtonText}>Thử lại</Text>
-            </TouchableOpacity>
+        <View style={styles.surveyInfo}>
+          <View style={styles.surveyInfoItem}>
+            <Image source={require('../Assets/Images/calendar.png')} style={styles.infoIcon} />
+            <Text style={styles.surveyText}>
+              Ngày tổ chức: {params?.eventDate ? new Date(params.eventDate).toLocaleDateString("vi-VN") : "Chưa chọn"}
+            </Text>
           </View>
-        )}
-      </ScrollView>
+          <View style={styles.surveyInfoItem}>
+            <Image source={require('../Assets/Images/Users.png')} style={styles.infoIcon} />
+            <Text style={styles.surveyText}>Số lượng khách: {params?.guestCount || "Chưa nhập"}</Text>
+          </View>
+          <View style={styles.surveyInfoItem}>
+            <Image source={require('../Assets/Images/wallet.png')} style={styles.infoIcon} />
+            <Text style={styles.surveyText}>
+              Ngân sách: {params?.budget ? formatPrice(params.budget) : "Chưa nhập"}
+            </Text>
+          </View>
+        </View>
+
+        <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.sectionTitleContainer}>
+            <Image source={require('../Assets/Images/list.png')} style={styles.sectionIcon} />
+            <Text style={styles.sectionTitle}>Danh sách Combo gợi ý</Text>
+          </View>
+          
+          {plans.length > 0 ? (
+            <FlatList
+              data={plans}
+              renderItem={renderPlan}
+              keyExtractor={(item) => item._id.toString()}
+              style={styles.planList}
+              scrollEnabled={false}
+            />
+          ) : (
+            <View style={styles.noPlansContainer}>
+              <Image source={require('../Assets/Images/error.png')} style={styles.emptyIcon} />
+              <Text style={styles.noPlansText}>Không có kế hoạch phù hợp với yêu cầu của bạn</Text>
+              <TouchableOpacity
+                style={styles.retryButton}
+                onPress={() => navigation.navigate("Thongtincoban")}
+              >
+                <Text style={styles.retryButtonText}>Thử lại</Text>
+              </TouchableOpacity>
+            </View>
+          )}
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
 };
@@ -112,6 +129,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#FFFFFF",
   },
+  mainContainer: {
+    flex: 1,
+    backgroundColor: "#FFFFFF",
+  },
   scrollContainer: {
     flex: 1,
   },
@@ -119,13 +140,17 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    backgroundColor: "#fff",
+    backgroundColor: "#FFFFFF",
     paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: "rgba(0,0,0,0.05)",
+    elevation: 3,
   },
   headerTitle: {
-    fontSize: normalize(20),
+    fontSize: normalize(22),
     fontFamily: "Playfair_me",
-    color: "#000",
+    color: "#333",
     flex: 1,
     textAlign: "center",
   },
@@ -135,102 +160,167 @@ const styles = StyleSheet.create({
   backIcon: {
     width: 22,
     height: 22,
+    tintColor: "#000",
   },
   homeIcon: {
     width: 22,
     height: 22,
+    tintColor: "#000",
   },
   surveyInfo: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: "#F9F9F9",
-    borderBottomWidth: 1,
-    borderBottomColor: "#eee",
+    paddingVertical: 15,
+    backgroundColor: "#F8F8F8",
+    borderRadius: 15,
+    margin: 16,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+
+  },
+  surveyInfoItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  infoIcon: {
+    width: 20,
+    height: 20,
+    marginRight: 10,
+    tintColor: "#333",
   },
   surveyText: {
     fontSize: normalize(16),
     color: "#333",
-    marginBottom: 5,
+    fontWeight: "500",
+    fontFamily: "Playfair_me",
+  },
+  sectionTitleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    marginVertical: 16,
+  },
+  sectionIcon: {
+    width: 24,
+    height: 24,
+    marginRight: 8,
+    tintColor: "#000",
   },
   sectionTitle: {
-    fontSize: normalize(18),
-    fontWeight: "bold",
+    fontSize: normalize(20),
     color: "#333",
-    paddingHorizontal: 16,
-    marginVertical: 10,
+    fontFamily: "Playfair_me",
   },
   planList: {
     paddingHorizontal: 16,
   },
   planCard: {
-    backgroundColor: "#FFFFFF",
-    borderRadius: 15,
+    borderRadius: 20,
     marginBottom: 20,
     shadowColor: "#000",
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 8,
     overflow: "hidden",
+    backgroundColor: "#FFFFFF",
+    borderWidth: 1,
+    borderColor: "rgba(0,0,0,0.05)",
   },
   planContent: {
-    padding: 16,
+    padding: 20,
   },
   planName: {
-    fontSize: normalize(20),
-    fontWeight: "bold",
+    fontSize: normalize(22),
     color: "#333",
-    marginBottom: 8,
+    marginBottom: 10,
+    fontFamily: "Playfair_me",
+  },
+  priceContainer: {
+    backgroundColor: "#F8F8F8",
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 14,
+    borderLeftWidth: 4,
+    borderLeftColor: "#E53935",
   },
   planPrice: {
-    fontSize: normalize(18),
+    fontSize: normalize(22),
     color: "#E53935",
-    fontWeight: "600",
-    marginBottom: 12,
+    fontWeight: "700",
+    fontFamily: "Playfair_me",
   },
   planText: {
     fontSize: normalize(16),
-    color: "#666",
-    marginBottom: 8,
+    color: "#555",
+    marginBottom: 10,
+    fontWeight: "500",
+    fontFamily: "Playfair_me",
   },
   planServices: {
-    marginBottom: 16,
+    marginBottom: 20,
+    backgroundColor: "#F8F8F8",
+    padding: 12,
+    borderRadius: 10,
   },
   planServiceText: {
-    fontSize: normalize(15),
-    color: "#666",
+    fontSize: normalize(16),
+    color: "#555",
+    lineHeight: 22,
+    fontFamily: "Playfair_me",
+  },
+  detailButtonContainer: {
+    alignSelf: "flex-end",
+    backgroundColor: "#000",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  detailButton: {
+    color: "#FFFFFF",
+    fontSize: normalize(16),
+    textAlign: "center",
+    fontFamily: "Playfair_me",
   },
   noPlansContainer: {
     alignItems: "center",
-    padding: 20,
+    justifyContent: "center",
+    padding: 30,
+    backgroundColor: "#F8F8F8",
+    borderRadius: 20,
+    margin: 16,
+    elevation: 4,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  },
+  emptyIcon: {
+    width: 80,
+    height: 80,
+    marginBottom: 20,
+    tintColor: "#333",
   },
   noPlansText: {
-    fontSize: normalize(16),
-    color: "#666",
+    fontSize: normalize(18),
+    color: "#555",
     textAlign: "center",
-    marginBottom: 10,
+    marginBottom: 20,
+    fontFamily: "Playfair_me",
   },
   retryButton: {
+    borderRadius: 25,
     backgroundColor: "#E53935",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
   },
   retryButtonText: {
     color: "#FFFFFF",
     fontSize: normalize(16),
-    fontWeight: "600",
-  },
-  detailButtonContainer: {
-    alignSelf: "flex-start",
-    backgroundColor: "#E53935",
-    paddingVertical: 8,
-    paddingHorizontal: 16,
-    borderRadius: 20,
-  },
-  detailButton: {
-    color: "#FFFFFF",
-    fontSize: normalize(14),
-    fontWeight: "600",
+    textAlign: "center",
+    fontFamily: "Playfair_me",
   },
 });

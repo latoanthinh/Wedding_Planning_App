@@ -371,6 +371,14 @@ const BlogDetail = ({route}) => {
                       );
                     })}
                 </View>
+
+                {/* Quote Box - Example decorative element */}
+                <View style={styles.quoteBox}>
+                  <Text style={styles.quoteText}>
+                    "Một cuộc hôn nhân thành công đòi hỏi nhiều lần yêu nhau, nhiều lần tha thứ, và luôn ghi nhớ lý do bạn đã kết hôn."
+                  </Text>
+                  <Text style={styles.quoteAuthor}>- Trích Ngôn Tình Cưới</Text>
+                </View>
               </View>
             ) : (
               <Text style={styles.noContentText}>
@@ -417,7 +425,7 @@ const BlogDetail = ({route}) => {
             {relatedStatus === 'loading' ? (
               <ActivityIndicator
                 size="small"
-                color="#FF6B6B"
+                color="#C8815F"
                 style={styles.relatedLoading}
               />
             ) : relatedBlogs && relatedBlogs.length > 0 ? (
@@ -466,6 +474,13 @@ const BlogDetail = ({route}) => {
               </Text>
             )}
           </Animated.View>
+
+          {/* Decorative Element - Example divider */}
+          <View style={styles.decorativeDivider}>
+            <View style={styles.dividerLine} />
+            <View style={styles.dividerDot} />
+            <View style={styles.dividerLine} />
+          </View>
         </Animated.View>
       </ScrollView>
     </View>
@@ -475,7 +490,7 @@ const BlogDetail = ({route}) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FBF9F6',
   },
   scrollView: {
     flex: 1,
@@ -484,7 +499,7 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   heroSection: {
-    height: height * 0.6,
+    height: height * 0.65,
     position: 'relative',
   },
   imageContainer: {
@@ -497,9 +512,8 @@ const styles = StyleSheet.create({
   },
   imageDarkOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: 'rgba(0,0,0,0.45)',
   },
-
   gradientOverlayTop: {
     position: 'absolute',
     top: 0,
@@ -514,18 +528,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '30%',
-    backgroundColor: 'rgba(0,0,0,0.6)',
+    height: '40%',
+    backgroundColor: 'rgba(0,0,0,0.7)',
     opacity: 0.8,
   },
   categoryBadge: {
     position: 'absolute',
     top: Platform.OS === 'ios' ? 55 : 45,
     right: 16,
-    backgroundColor: '#FF6B6B',
-    paddingHorizontal: 12,
+    backgroundColor: '#C8815F',
+    paddingHorizontal: 14,
     paddingVertical: 6,
-    borderRadius: 4,
+    borderRadius: 20,
   },
   categoryText: {
     color: '#FFF',
@@ -540,10 +554,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
   },
   iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 10,
@@ -558,16 +572,16 @@ const styles = StyleSheet.create({
   },
   titleOnImage: {
     position: 'absolute',
-    bottom: 30,
+    bottom: 40,
     left: 0,
     right: 0,
     paddingHorizontal: 20,
   },
   heroTitle: {
-    fontSize: 28,
+    fontSize: 30,
     fontWeight: 'bold',
     color: '#FFF',
-    marginBottom: 12,
+    marginBottom: 16,
     textShadowColor: 'rgba(0, 0, 0, 0.7)',
     textShadowOffset: {width: 0, height: 1},
     textShadowRadius: 5,
@@ -581,6 +595,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginRight: 16,
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 15,
   },
   heroMetaText: {
     color: '#FFF',
@@ -589,13 +607,13 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
   },
   contentContainer: {
-    backgroundColor: '#FFF',
+    backgroundColor: '#FBF9F6',
     paddingHorizontal: 20,
-    paddingTop: 24,
+    paddingTop: 30,
     paddingBottom: 20,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    marginTop: -20,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    marginTop: -30,
     shadowColor: '#000',
     shadowOffset: {
       width: 0,
@@ -608,19 +626,19 @@ const styles = StyleSheet.create({
   authorSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
-    paddingBottom: 24,
+    marginBottom: 26,
+    paddingBottom: 26,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
+    borderBottomColor: '#F0EAE3',
   },
   authorImageContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     overflow: 'hidden',
-    marginRight: 14,
+    marginRight: 16,
     borderWidth: 2,
-    borderColor: '#FFE0E0',
+    borderColor: '#F0EAE3',
   },
   authorImage: {
     width: '100%',
@@ -630,14 +648,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   authorName: {
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#333',
-    marginBottom: 3,
+    marginBottom: 4,
     fontFamily: 'Playfair_me',
   },
   authorRole: {
-    fontSize: 13,
+    fontSize: 14,
     color: '#888',
     fontFamily: 'Playfair_me',
   },
@@ -649,6 +667,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     marginLeft: 12,
+    backgroundColor: '#F8F2EA',
+    paddingVertical: 4,
+    paddingHorizontal: 10,
+    borderRadius: 15,
   },
   statsText: {
     fontSize: 13,
@@ -657,36 +679,68 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
   },
   articleContent: {
-    marginBottom: 30,
+    marginBottom: 34,
   },
   introText: {
-    fontSize: 17,
+    fontSize: 18,
     color: '#555',
-    lineHeight: 26,
-    marginBottom: 20,
+    lineHeight: 28,
+    marginBottom: 24,
     fontStyle: 'italic',
     fontFamily: 'Playfair_me',
     borderLeftWidth: 3,
-    borderLeftColor: '#FF6B6B',
-    paddingLeft: 12,
+    borderLeftColor: '#C8815F',
+    paddingLeft: 16,
+    paddingVertical: 6,
+    backgroundColor: '#F8F2EA',
+    borderRadius: 4,
   },
   mainContent: {
-    marginBottom: 20,
+    marginBottom: 24,
   },
   subheading: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 24,
-    marginBottom: 16,
+    marginTop: 26,
+    marginBottom: 18,
     fontFamily: 'Playfair_me',
+    letterSpacing: 0.5,
   },
   paragraph: {
     fontSize: 16,
     color: '#333',
     lineHeight: 26,
-    marginBottom: 16,
+    marginBottom: 18,
     textAlign: 'justify',
+    fontFamily: 'Playfair_me',
+  },
+  quoteBox: {
+    borderWidth: 1,
+    borderColor: '#E8DFD5',
+    backgroundColor: '#FFFAF5',
+    padding: 20,
+    borderRadius: 16,
+    marginVertical: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  quoteText: {
+    fontSize: 17,
+    fontStyle: 'italic',
+    color: '#8A6E63',
+    lineHeight: 26,
+    marginBottom: 8,
+    fontFamily: 'Playfair_me',
+    textAlign: 'center',
+  },
+  quoteAuthor: {
+    fontSize: 14,
+    color: '#A89080',
+    textAlign: 'right',
     fontFamily: 'Playfair_me',
   },
   noContentText: {
@@ -701,14 +755,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    marginBottom: 30,
+    marginBottom: 34,
     paddingTop: 10,
     paddingBottom: 24,
     borderBottomWidth: 1,
-    borderBottomColor: '#EFEFEF',
+    borderBottomColor: '#F0EAE3',
   },
   socialLabel: {
-    fontSize: 15,
+    fontSize: 16,
     color: '#555',
     fontFamily: 'Playfair_me',
   },
@@ -717,10 +771,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   socialButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#FF6B6B',
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: '#C8815F',
     marginLeft: 10,
     justifyContent: 'center',
     alignItems: 'center',
@@ -735,22 +789,23 @@ const styles = StyleSheet.create({
   },
   relatedSection: {
     marginTop: 10,
+    marginBottom: 20,
   },
   sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
+    marginBottom: 20,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
     fontFamily: 'Playfair_me',
   },
   viewAllText: {
     fontSize: 14,
-    color: '#FF6B6B',
+    color: '#C8815F',
     fontFamily: 'Playfair_me',
   },
   relatedLoading: {
@@ -760,10 +815,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   relatedItem: {
-    height: 180,
-    borderRadius: 12,
+    height: 190,
+    borderRadius: 16,
     overflow: 'hidden',
-    marginBottom: 16,
+    marginBottom: 20,
     position: 'relative',
     shadowColor: '#000',
     shadowOffset: {
@@ -773,6 +828,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 5,
+    borderWidth: 1,
+    borderColor: '#F0EAE3',
   },
   relatedImage: {
     width: '100%',
@@ -787,19 +844,27 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    padding: 16,
+    padding: 18,
   },
   relatedTitle: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: 'bold',
     color: '#FFF',
-    marginBottom: 6,
+    marginBottom: 8,
     fontFamily: 'Playfair_me',
+    textShadowColor: 'rgba(0, 0, 0, 0.7)',
+    textShadowOffset: {width: 0, height: 1},
+    textShadowRadius: 3,
   },
   relatedDate: {
-    fontSize: 12,
+    fontSize: 13,
     color: 'rgba(255,255,255,0.9)',
     fontFamily: 'Playfair_me',
+    backgroundColor: 'rgba(0,0,0,0.3)',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    alignSelf: 'flex-start',
   },
   noRelatedText: {
     fontSize: 14,
@@ -809,11 +874,28 @@ const styles = StyleSheet.create({
     paddingVertical: 16,
     fontFamily: 'Playfair_me',
   },
-
+  decorativeDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginVertical: 20,
+  },
+  dividerLine: {
+    height: 1,
+    backgroundColor: '#D9CBBE',
+    flex: 1,
+  },
+  dividerDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#C8815F',
+    marginHorizontal: 10,
+  },
   // Loading state styles
   loadingContainer: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FBF9F6',
   },
   loadingContent: {
     flex: 1,
@@ -831,7 +913,7 @@ const styles = StyleSheet.create({
   // Error state styles
   errorContainer: {
     flex: 1,
-    backgroundColor: '#FFF',
+    backgroundColor: '#FBF9F6',
   },
   errorContent: {
     flex: 1,
@@ -856,10 +938,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
   },
   retryButton: {
-    backgroundColor: '#FF6B6B',
+    backgroundColor: '#C8815F',
     paddingVertical: 12,
     paddingHorizontal: 24,
-    borderRadius: 8,
+    borderRadius: 30,
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 1},
     shadowOpacity: 0.1,
