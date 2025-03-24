@@ -70,8 +70,8 @@ const AllPlan = ({ navigation }) => {
   const getStatusColor = (status) => {
     if (!status) return '#9E9E9E';
     switch (status.toLowerCase()) {
-      case 'hoàn thành': return '#4CAF50';
-      case 'đang xử lý': return '#2196F3';
+      case 'active': return '#4CAF50';
+      case 'inactive': return '#2196F3';
       case 'chờ xác nhận': return '#FF9800';
       case 'đã hủy': return '#F44336';
       default: return '#9E9E9E';
