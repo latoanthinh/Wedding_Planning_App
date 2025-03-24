@@ -21,15 +21,18 @@ import { AppContext } from '../AppContext';
 const { width } = Dimensions.get('window');
 
 const DetailPlan = ({ navigation, route }) => {
-  const { planId, planData: routePlanData } = route?.params || {};
+  const { planId : routePlanId, planData: routePlanData } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietPlanData, ChitietPlanStatus, error } = useSelector((state) => state.chitietplan);
   const { user } = useContext(AppContext);
   const userId = user._id;
 
+  const planId = routePlanId || (ChitietPlanData?._id || routePlanData?._id);
+
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    
     if (routePlanData) {
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     } else if (planId) {
@@ -184,7 +187,13 @@ const DetailPlan = ({ navigation, route }) => {
   };
 
   const handleDeposit = () => {
-    navigation.navigate('DepositPlan', { planId: planId, totalPrice: planData.totalPrice });
+    if (!planId) {
+    
+      ToastAndroid.show('Không thể đặt cọc: Thiếu planId', ToastAndroid.SHORT);
+      return;
+    }
+   
+    navigation.navigate('Payos', { planId: planId, totalPrice: planData.totalPrice });
   };
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
