@@ -58,7 +58,22 @@ const SignIn = (props) => {
 
     useEffect(() => {
         if (loginStatus == "succeeded") {
-            setUser(loginData.user);
+            console.log('Login successful, user data:', JSON.stringify({
+                ...loginData.user,
+                avatar: loginData.user.avatar ? 'AVATAR_DATA_PRESENT' : null
+            }));
+            
+            // Ensure avatar has proper format
+            const userData = {...loginData.user};
+            
+            if (userData.avatar && typeof userData.avatar === 'string' && 
+                !userData.avatar.startsWith('data:') && 
+                !userData.avatar.startsWith('http')) {
+                console.log('Fixing avatar format during login');
+                userData.avatar = `data:image/jpeg;base64,${userData.avatar}`;
+            }
+            
+            setUser(userData);
             ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
         }
         else if (loginStatus === 'failed') {

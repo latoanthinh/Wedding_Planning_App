@@ -7,6 +7,14 @@ const Settings = (props) => {
   const { navigation } = props;
   const { user } = useContext(AppContext);
 
+  // Add console logs to debug avatar data
+  console.log('User object in Settings:', user ? {
+    hasAvatar: !!user.avatar,
+    avatarType: user.avatar ? typeof user.avatar : 'none',
+    avatarLength: user.avatar ? user.avatar.length : 0,
+    avatarPreview: user.avatar ? user.avatar.substring(0, 50) + '...' : 'no avatar'
+  } : 'no user');
+
   const handle = (screenName) => {
     navigation.navigate(screenName);
   };
@@ -25,10 +33,22 @@ const Settings = (props) => {
       <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
         {/* Profile Info */}
         <View style={styles.profileContainer}>
+          {/* Add console log to debug the avatar rendering condition */}
+          {console.log('Avatar rendering condition:', !!user, !!user?.avatar)}
           {user && user.avatar ? (
-            <Image source={{ uri: user.avatar }} style={styles.profileImage} />
+            <>
+              {console.log('Trying to render avatar with URI:', user.avatar.substring(0, 50) + '...')}
+              <Image 
+                source={{ uri: user.avatar }} 
+                style={styles.profileImage} 
+                onError={(error) => console.error('Image loading error:', error.nativeEvent.error)}
+              />
+            </>
           ) : (
-            <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
+            <>
+              {console.log('Rendering default avatar image')}
+              <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
+            </>
           )}
           <View style={styles.profileTextContainer}>
             <Text style={styles.profileName} numberOfLines={1}>{user.name}</Text>

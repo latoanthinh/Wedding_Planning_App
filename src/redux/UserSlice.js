@@ -14,6 +14,16 @@ export const updateUser = createAsyncThunk(
         return rejectWithValue('ID người dùng không hợp lệ');
       }
       
+      // Normalize the ID (in case it's an object with _id property)
+      const userId = typeof id === 'object' ? (id._id || id.userId) : id;
+      
+      if (!userId) {
+        console.error('Could not extract valid user ID from:', id);
+        return rejectWithValue('ID người dùng không hợp lệ hoặc không đúng định dạng');
+      }
+      
+      console.log('Normalized user ID for API call:', userId);
+      
       // Kiểm tra kết nối API trước
       try {
         const pingResponse = await fetch('https://apidatn.onrender.com/ping', { 
@@ -25,8 +35,8 @@ export const updateUser = createAsyncThunk(
         console.warn('API ping failed, may be offline:', pingError);
       }
       
-      console.log('Sending PATCH request to:', `https://apidatn.onrender.com/users/update/${id}`);
-      const response = await fetch(`https://apidatn.onrender.com/users/update/${id}`, {
+      console.log('Sending PATCH request to:', `https://apidatn.onrender.com/users/update/${userId}`);
+      const response = await fetch(`https://apidatn.onrender.com/users/update/${userId}`, {
         method: 'PATCH',
         headers: { 
           'Content-Type': 'application/json',
@@ -154,6 +164,17 @@ export const UserSlice = createSlice({
         // Kiểm tra xem avatar có được cập nhật không
         if (action.payload.user && action.payload.user.avatar) {
           console.log('Avatar successfully updated in user data');
+          console.log('Avatar data type:', typeof action.payload.user.avatar);
+          console.log('Avatar data length:', action.payload.user.avatar.length);
+          
+          // Ensure avatar has proper format if it's a string
+          if (typeof action.payload.user.avatar === 'string' && 
+              !action.payload.user.avatar.startsWith('data:') && 
+              !action.payload.user.avatar.startsWith('http')) {
+            // Add proper prefix if missing
+            console.log('Fixing avatar format by adding data:image prefix');
+            action.payload.user.avatar = `data:image/jpeg;base64,${action.payload.user.avatar}`;
+          }
         } else {
           console.warn('Avatar not present in updated user data');
         }

@@ -109,13 +109,46 @@ const EditProfile = (props) => {
   // Load user data when component mounts
   useEffect(() => {
     if (user) {
-      console.log('Loading user data:', JSON.stringify(user));
+      console.log('Loading user data:', JSON.stringify({
+        ...user,
+        avatar: user.avatar ? 'AVATAR_DATA_PRESENT' : null
+      }));
       setName(user.name || '');
       setEmail(user.email || '');
-      setAvatar(user.avatar || null);
       
-      // Debug info - chỉ log ra console, không hiển thị trên UI
-      console.log(`Debug Info - User ID: ${user._id || 'undefined'}, Email: ${user.email || 'undefined'}, API Status: ${apiStatus}`);
+      // Fix avatar format if needed
+      if (user.avatar) {
+        // Make sure avatar has proper data: prefix
+        if (typeof user.avatar === 'string' && 
+            !user.avatar.startsWith('data:') && 
+            !user.avatar.startsWith('http')) {
+          console.log('Fixing avatar format in initial load');
+          setAvatar(`data:image/jpeg;base64,${user.avatar}`);
+        } else {
+          setAvatar(user.avatar);
+        }
+      } else {
+        setAvatar(null);
+      }
+      
+      // Debug detailed user object information
+      console.log(`Debug Info - User object details:`, {
+        hasId: user._id ? true : false,
+        hasUserId: user.userId ? true : false,
+        id: user._id || 'undefined',
+        userId: user.userId || 'undefined',
+        email: user.email || 'undefined',
+        name: user.name || 'undefined',
+        avatar: user.avatar ? 'AVATAR_PRESENT' : 'NO_AVATAR',
+        apiStatus: apiStatus
+      });
+      
+      // Check if user has valid ID
+      if (!user._id && !user.userId) {
+        console.warn('⚠️ WARNING: User object missing both _id and userId fields. This may cause issues when updating profile.');
+      } else {
+        console.log('User has valid ID:', user._id || user.userId);
+      }
     } else {
       console.warn('User data is null or undefined');
     }
@@ -132,8 +165,20 @@ const EditProfile = (props) => {
       
       // Update local context with the new user data
       if (serverResponse && serverResponse.user) {
-        setUser(serverResponse.user);
-        console.log('Updated user in context:', JSON.stringify(serverResponse.user));
+        // Make sure we preserve the existing user ID when updating the context
+        const updatedUser = {
+          ...serverResponse.user,
+          // Preserve the ID in both formats to ensure compatibility
+          _id: serverResponse.user._id || user?._id,
+          userId: serverResponse.user.userId || user?.userId
+        };
+        
+        console.log('Updating user in context with:', JSON.stringify({
+          ...updatedUser,
+          avatar: updatedUser.avatar ? 'AVATAR_DATA_PRESENT' : null
+        }));
+        
+        setUser(updatedUser);
       } else {
         console.warn('Server response missing user data:', JSON.stringify(serverResponse));
       }
@@ -150,7 +195,7 @@ const EditProfile = (props) => {
         [{ text: 'OK', onPress: () => dispatch(resetUpdateStatus()) }]
       );
     }
-  }, [updateStatus, updateError, serverResponse, dispatch, navigation]);
+  }, [updateStatus, updateError, serverResponse, dispatch, navigation, user]);
 
   // Mở cài đặt ứng dụng
   const openAppSettings = () => {
@@ -344,12 +389,23 @@ const EditProfile = (props) => {
   // Function to save profile changes
   const saveChanges = () => {
     try {
-      // Check if user exists
-      if (!user || !user._id) {
-        console.error('User or user ID is missing:', user);
+      // Check if user exists and has an ID (either _id or userId)
+      if (!user) {
+        console.error('User is missing:', user);
         Alert.alert('Lỗi', 'Không thể xác định người dùng. Vui lòng đăng nhập lại.');
         return;
       }
+
+      // Use either _id or userId, whichever is available
+      const userId = user._id || user.userId;
+      
+      if (!userId) {
+        console.error('User ID is missing:', user);
+        Alert.alert('Lỗi', 'Không thể xác định ID người dùng. Vui lòng đăng nhập lại.');
+        return;
+      }
+      
+      console.log('Using user ID for update:', userId);
       
       // Check if any changes have been made
       const isNameChanged = name !== user?.name && name !== '';
@@ -386,7 +442,17 @@ const EditProfile = (props) => {
         console.log('Avatar data length:', avatar ? avatar.length : 0);
         if (avatar) {
           console.log('Avatar data starts with:', avatar.substring(0, 30) + '...');
-          userData.avatar = avatar;
+          
+          // Process the avatar based on its format
+          if (avatar.startsWith('data:image')) {
+            // Extract the base64 part for API
+            const base64Data = avatar.split(',')[1];
+            userData.avatar = base64Data;
+            console.log('Extracted base64 data from data:image format for API');
+          } else {
+            // Directly use the avatar data
+            userData.avatar = avatar;
+          }
         } else {
           console.log('Avatar is null, not including in update');
         }
@@ -396,10 +462,10 @@ const EditProfile = (props) => {
         ...userData, 
         avatar: userData.avatar ? 'BASE64_IMAGE_DATA_PRESENT' : undefined
       });
-      console.log('User ID for update:', user._id);
+      console.log('User ID for update:', userId);
       
-      // Dispatch update action
-      dispatch(updateUser({ id: user._id, userData }));
+      // Dispatch update action using the appropriate ID
+      dispatch(updateUser({ id: userId, userData }));
     } catch (error) {
       console.error('Error in saveChanges function:', error);
       Alert.alert('Lỗi', 'Đã xảy ra lỗi khi lưu thông tin: ' + error.message);
