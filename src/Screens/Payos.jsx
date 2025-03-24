@@ -5,6 +5,7 @@ import WebView from 'react-native-webview';
 import CryptoJS from 'crypto-js';
 import { AppContext } from '../AppContext';
 
+
 const Payos = ({ route, navigation }) => { // Thêm route và navigation vào tham số
   const { planId } = route.params || {}; // Lấy planId từ route.params
   const clientID = 'd851a1c7-f29f-43fd-a51f-cabc526edab2';

@@ -21,7 +21,7 @@ import { AppContext } from '../AppContext';
 const { width } = Dimensions.get('window');
 
 const DetailPlan = ({ navigation, route }) => {
-  const { planId : routePlanId, planData: routePlanData } = route?.params || {};
+  const { planId: routePlanId, planData: routePlanData } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietPlanData, ChitietPlanStatus, error } = useSelector((state) => state.chitietplan);
   const { user } = useContext(AppContext);
@@ -32,7 +32,6 @@ const DetailPlan = ({ navigation, route }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
-    
     if (routePlanData) {
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     } else if (planId) {
@@ -188,15 +187,16 @@ const DetailPlan = ({ navigation, route }) => {
 
   const handleDeposit = () => {
     if (!planId) {
-    
       ToastAndroid.show('Không thể đặt cọc: Thiếu planId', ToastAndroid.SHORT);
       return;
     }
-   
     navigation.navigate('Payos', { planId: planId, totalPrice: planData.totalPrice });
   };
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
+
+  // Kiểm tra trạng thái của Plan để vô hiệu hóa nút "Đặt cọc"
+  const isDepositDisabled = planData.status === 'active';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -267,7 +267,11 @@ const DetailPlan = ({ navigation, route }) => {
                 <Icon name="pencil" size={20} color="#FFF" style={styles.buttonIcon} />
                 <Text style={styles.buttonText}>Chỉnh sửa</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={styles.depositButton} onPress={handleDeposit}>
+              <TouchableOpacity
+                style={[styles.depositButton, isDepositDisabled && styles.disabledButton]} // Áp dụng style làm mờ khi disabled
+                onPress={handleDeposit}
+                disabled={isDepositDisabled} // Vô hiệu hóa nút khi status là active
+              >
                 <Icon name="cash-plus" size={20} color="#FFF" style={styles.buttonIcon} />
                 <Text style={styles.buttonText}>Đặt cọc</Text>
               </TouchableOpacity>
@@ -283,10 +287,11 @@ const DetailPlan = ({ navigation, route }) => {
   );
 };
 
+// Cập nhật styles để thêm style cho nút bị vô hiệu hóa
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F9FC', // Màu nền nhẹ nhàng hơn
+    backgroundColor: '#F7F9FC',
   },
   scrollView: {
     flex: 1,
@@ -317,7 +322,7 @@ const styles = StyleSheet.create({
     fontSize: 26,
     fontWeight: '700',
     color: '#FFF',
-    fontFamily: 'sans-serif-medium', // Font chữ đẹp hơn (nếu có)
+    fontFamily: 'sans-serif-medium',
   },
   homeIcon: {
     width: 24,
@@ -502,6 +507,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
+  },
+  disabledButton: {
+    opacity: 0.5, // Làm mờ nút khi bị vô hiệu hóa
   },
   buttonIcon: {
     marginRight: 10,
