@@ -22,7 +22,7 @@ const EditPlan = ({ navigation, route }) => {
 
   const dispatch = useDispatch();
   const { user } = useContext(AppContext);
-  const userId = user?._id;
+  const userId = user._id;
 
   console.log('Initial planData:', JSON.stringify(planData, null, 2));
   console.log('User ID:', userId);

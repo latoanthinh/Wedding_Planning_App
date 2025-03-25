@@ -25,7 +25,7 @@ const DetailPlan = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { ChitietPlanData, ChitietPlanStatus, error } = useSelector((state) => state.chitietplan);
   const { user } = useContext(AppContext);
-  const userId = user._id;
+  const userId = user?._id; // Sửa user._id thành user.userId
 
   const planId = routePlanId || (ChitietPlanData?._id || routePlanData?._id);
 
@@ -35,6 +35,7 @@ const DetailPlan = ({ navigation, route }) => {
     if (routePlanData) {
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     } else if (planId) {
+      dispatch(resetChitietPlan()); // Reset trước khi gọi API
       dispatch(ChitietPlan(planId))
         .unwrap()
         .catch((err) => {
@@ -43,9 +44,6 @@ const DetailPlan = ({ navigation, route }) => {
     } else {
       ToastAndroid.show('Không có ID kế hoạch để tải chi tiết!', ToastAndroid.SHORT);
     }
-    return () => {
-      dispatch(resetChitietPlan());
-    };
   }, [dispatch, planId, routePlanData]);
 
   useEffect(() => {
@@ -60,10 +58,26 @@ const DetailPlan = ({ navigation, route }) => {
     }
   }, [error]);
 
-  const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || {};
+  const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || null;
+
+  // Kiểm tra nếu không có dữ liệu kế hoạch
+  if (!planData && ChitietPlanStatus !== 'loading' && ChitietPlanStatus !== 'idle') {
+    return (
+      <SafeAreaView style={styles.errorContainer}>
+        <Icon name="alert-circle" size={60} color="#FF4444" />
+        <Text style={styles.errorText}>Không có dữ liệu kế hoạch để hiển thị</Text>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => dispatch(ChitietPlan(planId))}
+        >
+          <Text style={styles.retryButtonText}>Thử lại</Text>
+        </TouchableOpacity>
+      </SafeAreaView>
+    );
+  }
 
   const GUESTS_PER_TABLE = 10;
-  const numberOfTables = planData.plansoluongkhach
+  const numberOfTables = planData?.plansoluongkhach
     ? Math.ceil(planData.plansoluongkhach / GUESTS_PER_TABLE)
     : 0;
 
@@ -124,6 +138,15 @@ const DetailPlan = ({ navigation, route }) => {
     );
   };
 
+  if (ChitietPlanStatus === 'idle' && !routePlanData) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#FF6F61" />
+        <Text style={styles.loadingText}>Đang chuẩn bị...</Text>
+      </SafeAreaView>
+    );
+  }
+
   if (ChitietPlanStatus === 'loading' && !routePlanData) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -163,6 +186,7 @@ const DetailPlan = ({ navigation, route }) => {
       dispatch(duplicatePlan({ planId: planId, userId }))
         .unwrap()
         .then((newPlan) => {
+          console.log('Dữ liệu newPlan:', newPlan);
           const combinedPlanData = {
             ...planData,
             _id: newPlan._id,
@@ -174,13 +198,18 @@ const DetailPlan = ({ navigation, route }) => {
             caterings: planData.caterings || newPlan.caterings || [],
             decorates: planData.decorates || newPlan.decorates || [],
             presents: planData.presents || newPlan.presents || [],
+            totalPrice: planData.totalPrice || newPlan.totalPrice || 0,
+            SanhId: planData.SanhId || newPlan.SanhId || null,
+            plansoluongkhach: planData.plansoluongkhach || newPlan.plansoluongkhach || 0,
+            planprice: planData.planprice || newPlan.planprice || 0,
           };
+          console.log('Dữ liệu combinedPlanData:', combinedPlanData);
           navigation.navigate('EditPlan', { planId: newPlan._id, planData: combinedPlanData });
           ToastAndroid.show('Đã tạo bản sao kế hoạch để chỉnh sửa!', ToastAndroid.SHORT);
         })
         .catch((err) => {
           console.log('Lỗi khi tạo bản sao:', err);
-          ToastAndroid.show(`Lỗi khi tạo mới plan: ${err}`, ToastAndroid.SHORT);
+          ToastAndroid.show(`Lỗi khi tạo mới plan: ${err.message || err}`, ToastAndroid.SHORT);
         });
     }
   };
@@ -195,7 +224,6 @@ const DetailPlan = ({ navigation, route }) => {
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
 
-  // Kiểm tra trạng thái của Plan để vô hiệu hóa nút "Đặt cọc"
   const isDepositDisabled = planData.status === 'active';
 
   return (
@@ -268,9 +296,9 @@ const DetailPlan = ({ navigation, route }) => {
                 <Text style={styles.buttonText}>Chỉnh sửa</Text>
               </TouchableOpacity>
               <TouchableOpacity
-                style={[styles.depositButton, isDepositDisabled && styles.disabledButton]} // Áp dụng style làm mờ khi disabled
+                style={[styles.depositButton, isDepositDisabled && styles.disabledButton]}
                 onPress={handleDeposit}
-                disabled={isDepositDisabled} // Vô hiệu hóa nút khi status là active
+                disabled={isDepositDisabled}
               >
                 <Icon name="cash-plus" size={20} color="#FFF" style={styles.buttonIcon} />
                 <Text style={styles.buttonText}>Đặt cọc</Text>
@@ -287,7 +315,6 @@ const DetailPlan = ({ navigation, route }) => {
   );
 };
 
-// Cập nhật styles để thêm style cho nút bị vô hiệu hóa
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -474,7 +501,6 @@ const styles = StyleSheet.create({
     textAlign: 'right',
     backgroundColor: '#F0F9F0',
     paddingVertical: 6,
-    paddingHorizontal: 12,
     borderRadius: 8,
   },
   buttonContainer: {
@@ -509,7 +535,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   disabledButton: {
-    opacity: 0.5, // Làm mờ nút khi bị vô hiệu hóa
+    opacity: 0.5,
   },
   buttonIcon: {
     marginRight: 10,
