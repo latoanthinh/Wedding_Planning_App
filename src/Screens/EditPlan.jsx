@@ -35,16 +35,26 @@ const EditPlan = ({ navigation, route }) => {
 
   const [name, setName] = useState(planData?.name || '');
   const [plandateevent, setPlandateevent] = useState(
-    planData?.plandateevent && !isNaN(new Date(planData.plandateevent).getTime())
-      ? new Date(planData.plandateevent)
-      : new Date()
+    planData?.eventDate && !isNaN(new Date(planData.eventDate).getTime())
+      ? new Date(planData.eventDate) // Sử dụng eventDate từ Thongtincoban
+      : (planData?.plandateevent && !isNaN(new Date(planData.plandateevent).getTime())
+        ? new Date(planData.plandateevent)
+        : new Date())
   );
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [plansoluongkhach, setPlansoluongkhach] = useState(
-    planData?.plansoluongkhach ? String(planData.plansoluongkhach) : ''
+    planData?.guestCount // Sử dụng guestCount từ Thongtincoban
+      ? String(planData.guestCount)
+      : (planData?.plansoluongkhach
+        ? String(planData.plansoluongkhach)
+        : '')
   );
   const [planprice, setPlanprice] = useState(
-    planData?.planprice ? String(planData.planprice) : ''
+    planData?.budget // Sử dụng budget từ Thongtincoban
+      ? String(planData.budget)
+      : (planData?.planprice
+        ? String(planData.planprice)
+        : '')
   );
   const [totalPrice, setTotalPrice] = useState('0');
   const [sanhId, setSanhId] = useState(planData?.SanhId?._id || '');
@@ -62,6 +72,8 @@ const EditPlan = ({ navigation, route }) => {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSanhFavorites, setShowSanhFavorites] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null); // State để lưu chi tiết item được chọn
+  const [priceDifference, setPriceDifference] = useState(0);
+
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
@@ -78,9 +90,14 @@ const EditPlan = ({ navigation, route }) => {
       total += decoratesList.reduce((sum, item) => sum + (item?.price ? parseFloat(item.price) : 0), 0);
       total += presentsList.reduce((sum, item) => sum + (item?.price ? parseFloat(item.price) : 0), 0);
       setTotalPrice(total.toString());
+
+      // Tính toán chênh lệch
+      const budget = parseFloat(planprice) || 0;
+      const difference = budget - total;
+      setPriceDifference(difference);
     };
     calculateTotalPrice();
-  }, [cateringsList, decoratesList, presentsList, selectedSanh]);
+  }, [cateringsList, decoratesList, presentsList, selectedSanh, planprice]);
 
   const openChangeModal = (type, action = 'add', index = null) => {
     setCurrentType(type);
@@ -144,8 +161,8 @@ const EditPlan = ({ navigation, route }) => {
     ];
     errors.forEach(({ status, error, type, label }) => {
       if (status === 'failed' && error && (
-        currentType === type || 
-        (type === 'hall' && sanhModalVisible) || 
+        currentType === type ||
+        (type === 'hall' && sanhModalVisible) ||
         (type === 'favorites' && (showFavorites || showSanhFavorites))
       )) {
         ToastAndroid.show(`Lỗi khi lấy danh sách ${label}: ${error}`, ToastAndroid.SHORT);
@@ -230,7 +247,15 @@ const EditPlan = ({ navigation, route }) => {
     if (!name.trim()) return ToastAndroid.show('Tên kế hoạch không được để trống!', ToastAndroid.SHORT);
     if (plansoluongkhach && isNaN(parseInt(plansoluongkhach, 10))) return ToastAndroid.show('Số lượng khách không hợp lệ!', ToastAndroid.SHORT);
     if (planprice && isNaN(parseFloat(planprice))) return ToastAndroid.show('Ngân sách không hợp lệ!', ToastAndroid.SHORT);
-
+  
+    // Kiểm tra nếu vượt ngân sách
+    if (priceDifference < 0) {
+      ToastAndroid.show(
+        `Tổng giá vượt ngân sách ${Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ. Bạn có chắc chắn muốn lưu?`,
+        ToastAndroid.LONG
+      );
+    }
+  
     const updateData = {
       UserId: userId,
       name,
@@ -243,15 +268,15 @@ const EditPlan = ({ navigation, route }) => {
       decorates: decoratesList.map(item => item._id).filter(Boolean),
       presents: presentsList.map(item => item._id).filter(Boolean),
     };
-
+  
     console.log('Data sent to server:', JSON.stringify(updateData, null, 2));
-
+  
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
         console.log('API Response (update):', JSON.stringify(updatedPlan, null, 2));
         ToastAndroid.show('Cập nhật kế hoạch thành công!', ToastAndroid.SHORT);
-
+  
         const combinedPlanData = {
           ...updatedPlan,
           UserId: updatedPlan.UserId || userId,
@@ -264,8 +289,11 @@ const EditPlan = ({ navigation, route }) => {
           totalPrice: updateData.totalPrice || updatedPlan.totalPrice || 0,
           plandateevent: updateData.plandateevent || updatedPlan.plandateevent,
           name: updateData.name || updatedPlan.name || 'Kế hoạch không tên',
+          eventDate: planData.eventDate,
+          guestCount: planData.guestCount,
+          budget: planData.budget,
         };
-
+  
         console.log('Combined Plan Data:', JSON.stringify(combinedPlanData, null, 2));
         navigation.navigate('DetailPlan', { planId, planData: combinedPlanData });
       })
@@ -297,7 +325,7 @@ const EditPlan = ({ navigation, route }) => {
               <View style={styles.itemContent}>
                 <Text style={styles.itemText}>{item.name}</Text>
                 <Text style={styles.itemPrice}>{item.price.toLocaleString('vi-VN')} VNĐ</Text>
-                
+
               </View>
               <View style={styles.itemActions}>
                 <TouchableOpacity style={styles.replaceButton} onPress={() => openChangeModal(type, 'replace', index)}>
@@ -456,6 +484,21 @@ const EditPlan = ({ navigation, route }) => {
                 editable={false}
               />
             </View>
+            <View style={styles.inputRow}>
+              <Text style={styles.label}>Chênh lệch:</Text>
+              <Text
+                style={[
+                  styles.input,
+                  {
+                    color:
+                      priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#666',
+                    fontWeight: 'bold',
+                  },
+                ]}
+              >
+                {priceDifference.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </View>
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Sảnh:</Text>
@@ -523,9 +566,9 @@ const EditPlan = ({ navigation, route }) => {
             ) : (
               <>
                 {(currentType === 'caterings' && cateringStatus === 'loading') ||
-                (currentType === 'decorates' && decorateStatus === 'loading') ||
-                (currentType === 'presents' && presentStatus === 'loading') ||
-                (showFavorites && favoriteStatus === 'loading') ? (
+                  (currentType === 'decorates' && decorateStatus === 'loading') ||
+                  (currentType === 'presents' && presentStatus === 'loading') ||
+                  (showFavorites && favoriteStatus === 'loading') ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#FF6F61" />
                     <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
@@ -678,29 +721,29 @@ const styles = StyleSheet.create({
   modalContent: { width: width * 0.9, backgroundColor: '#FFF', borderRadius: 15, padding: 20, maxHeight: '80%' },
   modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 15, textAlign: 'center' },
   modalList: { flexGrow: 0 },
-  modalItem: { 
-    flexDirection: 'row', 
-    padding: 10, 
-    borderBottomWidth: 1, 
-    borderBottomColor: '#EEE', 
-    alignItems: 'center', 
-    justifyContent: 'space-between' 
+  modalItem: {
+    flexDirection: 'row',
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEE',
+    alignItems: 'center',
+    justifyContent: 'space-between'
   },
-  modalItemSelect: { 
-    flexDirection: 'row', 
-    flex: 1, 
-    alignItems: 'center' 
+  modalItemSelect: {
+    flexDirection: 'row',
+    flex: 1,
+    alignItems: 'center'
   },
   modalItemImage: { width: 50, height: 50, borderRadius: 8, marginRight: 10 },
   modalItemContent: { flex: 1 },
   modalItemText: { fontSize: 16, color: '#444', fontWeight: '500' },
   modalItemPrice: { fontSize: 14, color: '#FF6F61', marginTop: 5 },
-  viewButton: { 
-    backgroundColor: '#2196F3', 
-    paddingVertical: 5, 
-    paddingHorizontal: 10, 
-    borderRadius: 15, 
-    marginLeft: 10 
+  viewButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 15,
+    marginLeft: 10
   },
   closeButton: { backgroundColor: '#FF6F61', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, alignSelf: 'center', marginTop: 15 },
   closeButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
@@ -712,12 +755,12 @@ const styles = StyleSheet.create({
   detailPrice: { fontSize: 18, color: '#FF6F61', marginBottom: 10, textAlign: 'center' },
   detailDescription: { fontSize: 16, color: '#666', marginBottom: 10, textAlign: 'center' },
   detailCapacity: { fontSize: 16, color: '#666', marginBottom: 10, textAlign: 'center' },
-  backButtonDetail: { 
-    backgroundColor: '#FFB300', 
-    paddingVertical: 10, 
-    paddingHorizontal: 20, 
-    borderRadius: 25, 
-    alignSelf: 'center' 
+  backButtonDetail: {
+    backgroundColor: '#FFB300',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    alignSelf: 'center'
   },
 });
 

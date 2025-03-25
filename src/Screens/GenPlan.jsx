@@ -29,30 +29,40 @@ const GenPlan = ({ navigation, route }) => {
   const formatPrice = (num) =>
     num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
 
-  const renderPlan = ({ item }) => (
-    <View style={styles.planCard}>
-      <View style={styles.planContent}>
-        <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
-        <View style={styles.priceContainer}>
-          <Text style={styles.planPrice}>{formatPrice(item.totalPrice)}</Text>
-        </View>
-        <Text style={styles.planText}>
-          Số lượng khách: {item.SanhId?.SoLuongKhach || "Không xác định"}
-        </Text>
-        <View style={styles.planServices}>
-          <Text style={styles.planServiceText}>
-            Dịch vụ: {item.caterings?.length > 0 ? item.caterings.map((c) => c.name).join(", ") : "Không có"}
+  const renderPlan = ({ item }) => {
+    // Kết hợp planData với dữ liệu từ params
+    const planDataWithParams = {
+      ...item,
+      eventDate: params?.eventDate, // Thêm eventDate
+      guestCount: params?.guestCount, // Thêm guestCount
+      budget: params?.budget, // Thêm budget
+    };
+
+    return (
+      <View style={styles.planCard}>
+        <View style={styles.planContent}>
+          <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
+          <View style={styles.priceContainer}>
+            <Text style={styles.planPrice}>{formatPrice(item.totalPrice)}</Text>
+          </View>
+          <Text style={styles.planText}>
+            Số lượng khách: {item.SanhId?.SoLuongKhach || "Không xác định"}
           </Text>
+          <View style={styles.planServices}>
+            <Text style={styles.planServiceText}>
+              Dịch vụ: {item.caterings?.length > 0 ? item.caterings.map((c) => c.name).join(", ") : "Không có"}
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={styles.detailButtonContainer}
+            onPress={() => navigation.navigate("DetailPlan", { planData: planDataWithParams })}
+          >
+            <Text style={styles.detailButton}>Xem chi tiết</Text>
+          </TouchableOpacity>
         </View>
-        <TouchableOpacity
-          style={styles.detailButtonContainer}
-          onPress={() => navigation.navigate("DetailPlan", { planData: item })}
-        >
-          <Text style={styles.detailButton}>Xem chi tiết</Text>
-        </TouchableOpacity>
       </View>
-    </View>
-  );
+    );
+  };
 
   return (
     <SafeAreaView style={styles.container}>

@@ -26,16 +26,26 @@ const DetailPlan = ({ navigation, route }) => {
   const { ChitietPlanData, ChitietPlanStatus, error } = useSelector((state) => state.chitietplan);
   const { user } = useContext(AppContext);
   const userId = user?._id; // Sửa user._id thành user.userId
+  const [priceDifference, setPriceDifference] = useState(0);
 
   const planId = routePlanId || (ChitietPlanData?._id || routePlanData?._id);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
+    if (planData) {
+      const budget = parseFloat(planData.planprice) || 0;
+      const total = parseFloat(planData.totalPrice) || 0;
+      const difference = budget - total;
+      setPriceDifference(difference);
+    }
+  }, [planData]);
+
+  useEffect(() => {
     if (routePlanData) {
       Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
     } else if (planId) {
-      dispatch(resetChitietPlan()); // Reset trước khi gọi API
+      dispatch(resetChitietPlan());
       dispatch(ChitietPlan(planId))
         .unwrap()
         .catch((err) => {
@@ -181,7 +191,16 @@ const DetailPlan = ({ navigation, route }) => {
     const isOwner = userIdFromPlan && userIdFromPlan.toString() === userId.toString();
 
     if (isOwner) {
-      navigation.navigate('EditPlan', { planId: planId, planData });
+      // Truyền thêm eventDate, guestCount, budget vào EditPlan
+      navigation.navigate('EditPlan', {
+        planId: planId,
+        planData: {
+          ...planData,
+          eventDate: planData.eventDate, // Từ GenPlan
+          guestCount: planData.guestCount, // Từ GenPlan
+          budget: planData.budget, // Từ GenPlan
+        },
+      });
     } else {
       dispatch(duplicatePlan({ planId: planId, userId }))
         .unwrap()
@@ -202,6 +221,9 @@ const DetailPlan = ({ navigation, route }) => {
             SanhId: planData.SanhId || newPlan.SanhId || null,
             plansoluongkhach: planData.plansoluongkhach || newPlan.plansoluongkhach || 0,
             planprice: planData.planprice || newPlan.planprice || 0,
+            eventDate: planData.eventDate, // Truyền thêm eventDate
+            guestCount: planData.guestCount, // Truyền thêm guestCount
+            budget: planData.budget, // Truyền thêm budget
           };
           console.log('Dữ liệu combinedPlanData:', combinedPlanData);
           navigation.navigate('EditPlan', { planId: newPlan._id, planData: combinedPlanData });
@@ -287,6 +309,21 @@ const DetailPlan = ({ navigation, route }) => {
               <Icon name="cash" size={24} color="#FF6F61" style={styles.infoIcon} />
               <Text style={styles.planDetail}>
                 Ngân sách: {(planData.planprice || 0).toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </View>
+            <View style={styles.infoRow}>
+              <Icon name="scale-balance" size={24} color="#FF6F61" style={styles.infoIcon} />
+              <Text
+                style={[
+                  styles.planDetail,
+                  {
+                    color:
+                      priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#777',
+                    fontWeight: '600',
+                  },
+                ]}
+              >
+                Chênh lệch: {priceDifference.toLocaleString('vi-VN')} VNĐ
               </Text>
             </View>
 
