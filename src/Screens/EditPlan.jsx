@@ -24,8 +24,7 @@ const EditPlan = ({ navigation, route }) => {
   const { user } = useContext(AppContext);
   const userId = user._id;
 
-  console.log('Initial planData:', JSON.stringify(planData, null, 2));
-  console.log('User ID:', userId);
+ 
 
   const { caterings, cateringStatus, error: cateringError } = useSelector((state) => state.getallcatering);
   const { decorates, decorateStatus, error: decorateError } = useSelector((state) => state.getalldecorates);
@@ -36,27 +35,27 @@ const EditPlan = ({ navigation, route }) => {
   const [name, setName] = useState(planData?.name || '');
   const [plandateevent, setPlandateevent] = useState(
     planData?.eventDate && !isNaN(new Date(planData.eventDate).getTime())
-      ? new Date(planData.eventDate) // Sử dụng eventDate từ Thongtincoban
+      ? new Date(planData.eventDate)
       : (planData?.plandateevent && !isNaN(new Date(planData.plandateevent).getTime())
         ? new Date(planData.plandateevent)
         : new Date())
   );
   const [openDatePicker, setOpenDatePicker] = useState(false);
   const [plansoluongkhach, setPlansoluongkhach] = useState(
-    planData?.guestCount // Sử dụng guestCount từ Thongtincoban
+    planData?.guestCount
       ? String(planData.guestCount)
       : (planData?.plansoluongkhach
         ? String(planData.plansoluongkhach)
         : '')
   );
   const [planprice, setPlanprice] = useState(
-    planData?.budget // Sử dụng budget từ Thongtincoban
+    planData?.budget
       ? String(planData.budget)
       : (planData?.planprice
         ? String(planData.planprice)
         : '')
   );
-  const [totalPrice, setTotalPrice] = useState('0');
+  const [totalPrice, setTotalPrice] = useState(0); // Thay đổi thành number thay vì string
   const [sanhId, setSanhId] = useState(planData?.SanhId?._id || '');
   const [selectedSanh, setSelectedSanh] = useState(planData?.SanhId || null);
   const [cateringsList, setCateringsList] = useState(planData?.caterings?.filter(item => item && item._id) || []);
@@ -71,10 +70,8 @@ const EditPlan = ({ navigation, route }) => {
   const [sanhModalVisible, setSanhModalVisible] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
   const [showSanhFavorites, setShowSanhFavorites] = useState(false);
-  const [selectedItemDetail, setSelectedItemDetail] = useState(null); // State để lưu chi tiết item được chọn
+  const [selectedItemDetail, setSelectedItemDetail] = useState(null);
   const [priceDifference, setPriceDifference] = useState(0);
-
-
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -82,22 +79,49 @@ const EditPlan = ({ navigation, route }) => {
     if (userId) dispatch(fetchUserFavorites(userId));
   }, [dispatch, userId]);
 
+  // Logic tính toán totalPrice và priceDifference
   useEffect(() => {
     const calculateTotalPrice = () => {
       let total = 0;
-      total += selectedSanh?.price ? parseFloat(selectedSanh.price) : 0;
-      total += cateringsList.reduce((sum, item) => sum + (item?.price ? parseFloat(item.price) : 0), 0);
-      total += decoratesList.reduce((sum, item) => sum + (item?.price ? parseFloat(item.price) : 0), 0);
-      total += presentsList.reduce((sum, item) => sum + (item?.price ? parseFloat(item.price) : 0), 0);
-      setTotalPrice(total.toString());
 
-      // Tính toán chênh lệch
+      // Giá sảnh
+      const sanhPrice = selectedSanh?.price ? parseFloat(selectedSanh.price) : 0;
+      total += sanhPrice;
+
+      // Giá dịch vụ ăn uống (caterings): Giá từng món * (số lượng khách / 10)
+      const guestCount = parseInt(plansoluongkhach, 10) || 0; // Số lượng khách
+      const cateringTotal = cateringsList.reduce((sum, item) => {
+        const price = item?.price ? parseFloat(item.price) : 0;
+        return sum + (price * (guestCount / 10));
+      }, 0);
+      total += cateringTotal;
+
+      // Giá trang trí (decorates)
+      const decorateTotal = decoratesList.reduce((sum, item) => {
+        const price = item?.price ? parseFloat(item.price) : 0;
+        return sum + price;
+      }, 0);
+      total += decorateTotal;
+
+      // Giá quà tặng (presents) - Nhân với số lượng
+      const presentTotal = presentsList.reduce((sum, item) => {
+        const price = item?.price ? parseFloat(item.price) : 0;
+        const quantity = item?.quantity ? parseInt(item.quantity, 10) : 1;
+        return sum + price * quantity;
+      }, 0);
+      total += presentTotal;
+
+      // Cập nhật tổng giá
+      setTotalPrice(total);
+
+      // Tính toán chênh lệch với ngân sách
       const budget = parseFloat(planprice) || 0;
       const difference = budget - total;
       setPriceDifference(difference);
     };
+
     calculateTotalPrice();
-  }, [cateringsList, decoratesList, presentsList, selectedSanh, planprice]);
+  }, [cateringsList, decoratesList, presentsList, selectedSanh, plansoluongkhach, planprice]);
 
   const openChangeModal = (type, action = 'add', index = null) => {
     setCurrentType(type);
@@ -105,7 +129,7 @@ const EditPlan = ({ navigation, route }) => {
     setReplaceIndex(index);
     setModalVisible(true);
     setShowFavorites(false);
-    setSelectedItemDetail(null); // Reset chi tiết khi mở modal
+    setSelectedItemDetail(null);
 
     if (type === 'caterings') dispatch(fetchCaterings());
     else if (type === 'decorates') dispatch(fetchDecorates());
@@ -115,41 +139,40 @@ const EditPlan = ({ navigation, route }) => {
   const handleChangeSanh = () => {
     setSanhModalVisible(true);
     setShowSanhFavorites(false);
-    setSelectedItemDetail(null); // Reset chi tiết khi mở modal
+    setSelectedItemDetail(null);
     dispatch(Hall());
     if (userId) dispatch(fetchUserFavorites(userId));
   };
 
   useEffect(() => {
     if (modalVisible) {
+      let items = [];
       if (showFavorites && favoriteStatus === 'succeeded') {
         const typeMap = { caterings: 'catering', decorates: 'decorate', presents: 'present' };
-        const filteredFavorites = favorites.filter(item => item.type === typeMap[currentType]);
-        console.log('Filtered Favorites:', filteredFavorites);
-        setAvailableItems(filteredFavorites);
+        items = Array.from(
+          new Map(
+            favorites.filter(item => item.type === typeMap[currentType]).map(item => [item._id, item])
+          ).values()
+        );
       } else if (currentType === 'caterings' && cateringStatus === 'succeeded') {
-        setAvailableItems(caterings);
+        items = Array.from(new Map(caterings.map(item => [item._id, item])).values());
       } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
-        setAvailableItems(decorates);
+        items = Array.from(new Map(decorates.map(item => [item._id, item])).values());
       } else if (currentType === 'presents' && presentStatus === 'succeeded') {
-        setAvailableItems(presents);
+        items = Array.from(new Map(presents.map(item => [item._id, item])).values());
       }
+      setAvailableItems(items);
+      
     }
-
-    if (sanhModalVisible) {
-      if (showSanhFavorites && favoriteStatus === 'succeeded') {
-        const filteredSanhFavorites = favorites.filter(item => item.type === 'Sanh');
-        console.log('Filtered Sanh Favorites:', filteredSanhFavorites);
-        setAvailableItems(filteredSanhFavorites);
-      } else if (HallStatus === 'succeeded') {
-        setAvailableItems(HallData);
-      }
+  
+    if (sanhModalVisible && HallStatus === 'succeeded') {
+      const sanhItems = showSanhFavorites && favoriteStatus === 'succeeded'
+        ? Array.from(new Map(favorites.filter(item => item.type === 'Sanh').map(item => [item._id, item])).values())
+        : Array.from(new Map(HallData.map(item => [item._id, item])).values());
+      setAvailableItems(sanhItems);
+     
     }
-  }, [
-    caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus,
-    favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData,
-    sanhModalVisible, showSanhFavorites
-  ]);
+  }, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData, sanhModalVisible, showSanhFavorites]);
 
   useEffect(() => {
     const errors = [
@@ -182,7 +205,7 @@ const EditPlan = ({ navigation, route }) => {
 
   const handleSelectItem = (item) => {
     if (!item) {
-      console.warn('Item không hợp lệ:', item);
+      
       return;
     }
 
@@ -192,21 +215,31 @@ const EditPlan = ({ navigation, route }) => {
       price: item.price || 0,
       imageUrl: item.imageUrl || item.image || null,
       description: item.description || '',
+      ...(currentType === 'presents' && { quantity: parseInt(presentQuantity) || 1 }), // Thêm số lượng cho quà tặng
     };
 
-    console.log('Selected item from modal:', item);
-    console.log('Normalized item:', normalizedItem);
-
     const updateList = (list, setList) => {
+      // Kiểm tra xem item đã tồn tại trong danh sách chưa
+      const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
+
       if (actionType === 'add') {
-        const newList = [...list, normalizedItem];
-        setList(newList);
-        console.log(`Updated ${currentType}List:`, newList);
+        if (existingIndex !== -1) {
+          // Nếu đã tồn tại, hiển thị thông báo và không đóng Modal
+          ToastAndroid.show(
+            `Món "${normalizedItem.name}" đã có trong danh sách. Vui lòng chọn món khác!`,
+            ToastAndroid.SHORT
+          );
+          return; // Dừng hàm, giữ Modal mở để người dùng chọn lại
+        }
+        // Nếu chưa tồn tại, thêm mới
+        setList([...list, normalizedItem]);
+        setModalVisible(false); // Đóng Modal sau khi thêm thành công
       } else if (actionType === 'replace' && replaceIndex !== null) {
+        // Khi thay thế, cho phép chọn lại cùng món (nếu cần)
         const newList = [...list];
         newList[replaceIndex] = normalizedItem;
         setList(newList);
-        console.log(`Updated ${currentType}List after replace:`, newList);
+        setModalVisible(false); // Đóng Modal sau khi thay thế
       }
     };
 
@@ -214,7 +247,6 @@ const EditPlan = ({ navigation, route }) => {
     else if (currentType === 'decorates') updateList(decoratesList, setDecoratesList);
     else if (currentType === 'presents') updateList(presentsList, setPresentsList);
 
-    setModalVisible(false);
     setReplaceIndex(null);
     setActionType('add');
   };
@@ -227,7 +259,7 @@ const EditPlan = ({ navigation, route }) => {
   };
 
   const handleSelectSanh = (item) => {
-    console.log('Selected sanh item:', JSON.stringify(item, null, 2));
+    
     const normalizedSanh = {
       _id: item.itemId || item._id,
       name: item.name || 'Không có tên',
@@ -235,7 +267,7 @@ const EditPlan = ({ navigation, route }) => {
       imageUrl: item.imageUrl || item.image || null,
       SoLuongKhach: item.SoLuongKhach || 0,
     };
-    console.log('Normalized sanh:', JSON.stringify(normalizedSanh, null, 2));
+   
     setSanhId(normalizedSanh._id);
     setSelectedSanh(normalizedSanh);
     setSanhModalVisible(false);
@@ -247,36 +279,33 @@ const EditPlan = ({ navigation, route }) => {
     if (!name.trim()) return ToastAndroid.show('Tên kế hoạch không được để trống!', ToastAndroid.SHORT);
     if (plansoluongkhach && isNaN(parseInt(plansoluongkhach, 10))) return ToastAndroid.show('Số lượng khách không hợp lệ!', ToastAndroid.SHORT);
     if (planprice && isNaN(parseFloat(planprice))) return ToastAndroid.show('Ngân sách không hợp lệ!', ToastAndroid.SHORT);
-  
-    // Kiểm tra nếu vượt ngân sách
+
     if (priceDifference < 0) {
       ToastAndroid.show(
         `Tổng giá vượt ngân sách ${Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ. Bạn có chắc chắn muốn lưu?`,
         ToastAndroid.LONG
       );
     }
-  
+
     const updateData = {
       UserId: userId,
       name,
       plandateevent: plandateevent.toISOString(),
       plansoluongkhach: parseInt(plansoluongkhach, 10) || undefined,
       planprice: parseFloat(planprice) || undefined,
-      totalPrice: parseFloat(totalPrice) || 0,
+      totalPrice: totalPrice, // Gửi totalPrice đã tính toán
       SanhId: sanhId || undefined,
       caterings: cateringsList.map(item => item._id).filter(Boolean),
       decorates: decoratesList.map(item => item._id).filter(Boolean),
       presents: presentsList.map(item => item._id).filter(Boolean),
     };
-  
-    console.log('Data sent to server:', JSON.stringify(updateData, null, 2));
-  
+
+    
+
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
-        console.log('API Response (update):', JSON.stringify(updatedPlan, null, 2));
         ToastAndroid.show('Cập nhật kế hoạch thành công!', ToastAndroid.SHORT);
-  
         const combinedPlanData = {
           ...updatedPlan,
           UserId: updatedPlan.UserId || userId,
@@ -286,19 +315,18 @@ const EditPlan = ({ navigation, route }) => {
           presents: presentsList.length > 0 ? presentsList : updatedPlan.presents || [],
           plansoluongkhach: updateData.plansoluongkhach || updatedPlan.plansoluongkhach || 0,
           planprice: updateData.planprice || updatedPlan.planprice || 0,
-          totalPrice: updateData.totalPrice || updatedPlan.totalPrice || 0,
+          totalPrice: totalPrice, // Sử dụng totalPrice đã tính toán
           plandateevent: updateData.plandateevent || updatedPlan.plandateevent,
           name: updateData.name || updatedPlan.name || 'Kế hoạch không tên',
           eventDate: planData.eventDate,
           guestCount: planData.guestCount,
           budget: planData.budget,
+          priceDifference: updatedPlan.priceDifference || priceDifference, // Lấy từ server hoặc frontend
         };
-  
-        console.log('Combined Plan Data:', JSON.stringify(combinedPlanData, null, 2));
         navigation.navigate('DetailPlan', { planId, planData: combinedPlanData });
       })
       .catch((err) => {
-        console.error('Update error:', JSON.stringify(err, null, 2));
+        
         ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || 'Không xác định'}`, ToastAndroid.SHORT);
       });
   };
@@ -318,14 +346,26 @@ const EditPlan = ({ navigation, route }) => {
   const renderItemList = (items, type) => (
     <View>
       {items.length > 0 ? (
-        items.map((item, index) => (
-          item && item._id ? (
-            <View key={item._id || index} style={styles.itemCard}>
+        items.map((item, index) => {
+          const uniqueKey = `${type}-${item._id}-${index}`;
+         
+          return item && item._id ? (
+            <View key={uniqueKey} style={styles.itemCard}>
               {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />}
               <View style={styles.itemContent}>
                 <Text style={styles.itemText}>{item.name}</Text>
-                <Text style={styles.itemPrice}>{item.price.toLocaleString('vi-VN')} VNĐ</Text>
-
+                <Text style={styles.itemPrice}>
+                  {item.price.toLocaleString('vi-VN')} VNĐ {type === 'presents' ? `x ${item.quantity || 1}` : ''}
+                </Text>
+                {type === 'presents' && (
+                  <TextInput
+                    style={styles.quantityInput}
+                    value={String(item.quantity || 1)}
+                    onChangeText={(text) => handleUpdateQuantity(index, text)}
+                    keyboardType="numeric"
+                    placeholder="Số lượng"
+                  />
+                )}
               </View>
               <View style={styles.itemActions}>
                 <TouchableOpacity style={styles.replaceButton} onPress={() => openChangeModal(type, 'replace', index)}>
@@ -337,12 +377,12 @@ const EditPlan = ({ navigation, route }) => {
               </View>
             </View>
           ) : (
-            <Text key={index} style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
-          )
-        ))
+            <Text key={`${type}-invalid-${index}`} style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
+          );
+        })
       ) : (
         <Text style={styles.noDataText}>
-          Chưa có {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
+          Chưa đại {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
         </Text>
       )}
       <TouchableOpacity style={styles.changeButton} onPress={() => openChangeModal(type, 'add')}>
@@ -480,7 +520,7 @@ const EditPlan = ({ navigation, route }) => {
               <Text style={styles.label}>Tổng giá:</Text>
               <TextInput
                 style={styles.input}
-                value={totalPrice ? parseFloat(totalPrice).toLocaleString('vi-VN') + ' VNĐ' : '0 VNĐ'}
+                value={totalPrice.toLocaleString('vi-VN') + ' VNĐ'}
                 editable={false}
               />
             </View>
@@ -490,8 +530,7 @@ const EditPlan = ({ navigation, route }) => {
                 style={[
                   styles.input,
                   {
-                    color:
-                      priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#666',
+                    color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#666',
                     fontWeight: 'bold',
                   },
                 ]}
@@ -577,7 +616,11 @@ const EditPlan = ({ navigation, route }) => {
                   <FlatList
                     data={availableItems}
                     renderItem={renderModalItem}
-                    keyExtractor={(item) => item._id || item.itemId || Math.random().toString()}
+                    keyExtractor={(item, index) => {
+                      const key = `${currentType}-${item._id || item.itemId || 'item'}-${index}`;
+                      
+                      return key;
+                    }}
                     style={styles.modalList}
                   />
                 ) : (
@@ -625,7 +668,11 @@ const EditPlan = ({ navigation, route }) => {
                   <FlatList
                     data={availableItems}
                     renderItem={renderSanhItem}
-                    keyExtractor={(item) => item._id || item.itemId || Math.random().toString()}
+                    keyExtractor={(item, index) => {
+                      const key = `sanh-${item._id || item.itemId || 'sanh'}-${index}`;
+                      
+                      return key;
+                    }}
                     style={styles.modalList}
                   />
                 ) : (
