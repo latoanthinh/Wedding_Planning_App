@@ -20,12 +20,10 @@ const AllPlan = ({ navigation }) => {
   }, [dispatch, userId]);
 
   const PlanCard = useCallback(({ item }) => {
-   
     return (
       <TouchableOpacity
         onPress={() => {
           if (!item._id) {
-           
             return;
           }
           navigation.navigate("DetailPlan", { planId: item._id });
@@ -78,6 +76,12 @@ const AllPlan = ({ navigation }) => {
     }
   };
 
+  const handleRefresh = () => {
+    if (userId) {
+      dispatch(Plan(userId));
+    }
+  };
+
   const renderContent = useCallback(() => {
     switch (AllPlanStatus) {
       case 'idle':
@@ -85,6 +89,9 @@ const AllPlan = ({ navigation }) => {
           <View style={styles.statusContainer}>
             <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
             <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
+            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+              <Text style={styles.refreshButtonText}>Làm mới</Text>
+            </TouchableOpacity>
           </View>
         );
       case 'loading':
@@ -102,22 +109,25 @@ const AllPlan = ({ navigation }) => {
             renderItem={PlanCard}
             showsVerticalScrollIndicator={false}
             contentContainerStyle={styles.flatListContent}
+            ListFooterComponent={
+              <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+                <Text style={styles.refreshButtonText}>Làm mới</Text>
+              </TouchableOpacity>
+            }
           />
         ) : (
           <View style={styles.statusContainer}>
             <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
-            <Text style={styles.statusMessage}>Không có kế hoạch nào để hiển thị!</Text>
+            <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
+            
           </View>
         );
       case 'failed':
         return (
           <View style={styles.statusContainer}>
             <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
-            <Text style={styles.errorText}>Không thể tải dữ liệu! {error}</Text>
-            <TouchableOpacity
-              style={styles.retryButton}
-              onPress={() => userId && dispatch(Plan(userId))}
-            >
+            <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé </Text>
+            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
               <Text style={styles.retryButtonText}>Thử lại</Text>
             </TouchableOpacity>
           </View>
@@ -132,7 +142,7 @@ const AllPlan = ({ navigation }) => {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.headerButton}
-          onPress={() => navigation.navigate('TabNavigation',{screen:'Setting'})}
+          onPress={() => navigation.navigate('TabNavigation', { screen: 'Setting' })}
         >
           <Image source={require('../Assets/Images/back.png')} style={styles.icon} />
         </TouchableOpacity>
@@ -151,187 +161,198 @@ const AllPlan = ({ navigation }) => {
   );
 };
 
-export default AllPlan;
-
-// Styles giữ nguyên như cũ
-
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#ffffff',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingBottom: 16,
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: 'rgba(0,0,0,0.05)',
-    },
-    headerButton: {
-        width: 40,
-        height: 40,
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 20,
-    },
-    icon: {
-        width: 20,
-        height: 15,
-    },
-    homeIcon: {
-        width: 20,
-        height: 20,
-    },
-    arrowIcon: {
-        width: 16,
-        height: 16,
-        tintColor: '#FFFFFF',
-        transform: [{ rotate: '180deg' }]
-    },
-    title: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: '#212121',
-        letterSpacing: 0.5,
-    },
-    listContainer: {
-        flex: 1,
-        paddingHorizontal: 16,
-        paddingTop: 16,
-    },
-    flatListContent: {
-        paddingBottom: 20,
-    },
-    cardContainer: {
-        marginBottom: 16,
-        borderRadius: 16,
-        backgroundColor: '#FFFFFF',
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 6 },
-        shadowOpacity: 0.15,
-        shadowRadius: 8,
-        elevation: 5,
-        overflow: 'hidden',
-        borderWidth: 1,
-        borderColor: 'rgba(0,0,0,0.03)',
-    },
-    card: {
-        padding: 18,
-    },
-    cardHeader: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        marginBottom: 14,
-    },
-    productName: {
-        fontSize: 18,
-        fontWeight: '700',
-        color: '#212121',
-        flex: 1,
-        letterSpacing: 0.3,
-    },
-    statusBadge: {
-        paddingHorizontal: 12,
-        paddingVertical: 5,
-        borderRadius: 20,
-        marginLeft: 8,
-        shadowColor: '#000000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    statusText: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: '#FFFFFF',
-    },
-    cardDivider: {
-        height: 1.5,
-        backgroundColor: 'rgba(0,0,0,0.06)',
-        marginVertical: 14,
-    },
-    cardFooter: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-    priceContainer: {
-        flexDirection: 'column',
-    },
-    priceLabel: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#757575',
-        marginBottom: 4,
-    },
-    productPrice: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#F44336',
-    },
-    detailButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#200000',
-        paddingVertical: 10,
-        paddingHorizontal: 16,
-        borderRadius: 24,
-        shadowColor: '#222222',
-        shadowOffset: { width: 0, height: 3 },
-        shadowOpacity: 0.3,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    detailButtonText: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: '#FFFFFF',
-        marginRight: 6,
-    },
-    statusContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: 20,
-    },
-    statusIcon: {
-        width: 60,
-        height: 60,
-        marginBottom: 16,
-    },
-    statusMessage: {
-        fontSize: 16,
-        color: '#757575',
-        textAlign: 'center',
-    },
-    loadingText: {
-        fontSize: 16,
-        color: '#2196F3',
-        marginTop: 16,
-    },
-    errorText: {
-        fontSize: 16,
-        color: '#F44336',
-        textAlign: 'center',
-        marginVertical: 12,
-    },
-    retryButton: {
-        backgroundColor: '#2196F3',
-        paddingVertical: 12,
-        paddingHorizontal: 24,
-        borderRadius: 24,
-        marginTop: 16,
-        elevation: 2,
-    },
-    retryButtonText: {
-        color: '#FFFFFF',
-        fontSize: 16,
-        fontWeight: '600',
-    },
+  container: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0,0,0,0.05)',
+  },
+  headerButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 20,
+  },
+  icon: {
+    width: 20,
+    height: 15,
+  },
+  homeIcon: {
+    width: 20,
+    height: 20,
+  },
+  arrowIcon: {
+    width: 16,
+    height: 16,
+    tintColor: '#FFFFFF',
+    transform: [{ rotate: '180deg' }],
+  },
+  title: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#212121',
+    letterSpacing: 0.5,
+  },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  flatListContent: {
+    paddingBottom: 20,
+  },
+  cardContainer: {
+    marginBottom: 16,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.03)',
+  },
+  card: {
+    padding: 18,
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  productName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#212121',
+    flex: 1,
+    letterSpacing: 0.3,
+  },
+  statusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 20,
+    marginLeft: 8,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  statusText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+  cardDivider: {
+    height: 1.5,
+    backgroundColor: 'rgba(0,0,0,0.06)',
+    marginVertical: 14,
+  },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  priceContainer: {
+    flexDirection: 'column',
+  },
+  priceLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#757575',
+    marginBottom: 4,
+  },
+  productPrice: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#F44336',
+  },
+  detailButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#200000',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    shadowColor: '#222222',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  detailButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+    marginRight: 6,
+  },
+  statusContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  statusIcon: {
+    width: 60,
+    height: 60,
+    marginBottom: 16,
+  },
+  statusMessage: {
+    fontSize: 16,
+    color: '#757575',
+    textAlign: 'center',
+    marginBottom: 20, // Thêm khoảng cách cho nút
+  },
+  loadingText: {
+    fontSize: 16,
+    color: '#2196F3',
+    marginTop: 16,
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#F44336',
+    textAlign: 'center',
+    marginVertical: 12,
+  },
+  retryButton: {
+    backgroundColor: '#2196F3',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    marginTop: 16,
+    elevation: 2,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  refreshButton: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 24,
+    marginVertical: 16,
+    elevation: 2,
+  },
+  refreshButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
 });
 
+export default AllPlan;
