@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
-  SafeAreaView,
+  
   Alert,
 } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
@@ -17,6 +17,7 @@ import Ionicons from 'react-native-vector-icons/Ionicons';
 import { fetchChatHistory, sendMessage, resetSendStatus } from '../redux/ChatSlice';
 import socketService from '../utils/socketService';
 import { AppContext } from '../AppContext';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const Chat = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -30,12 +31,12 @@ const Chat = ({ navigation }) => {
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(state => state.chat);
   
   // Debug info
-  console.log('Chat component rendering, context user:', {
-    contextUser: user ? `Found (ID: ${user._id})` : 'Not found',
-    chatStatus,
-    sendStatus,
-    hasMessages: chatHistory && chatHistory.length > 0
-  });
+  // console.log('Chat component rendering, context user:', {
+  //   contextUser: user ? `Found (ID: ${user._id})` : 'Not found',
+  //   chatStatus,
+  //   sendStatus,
+  //   hasMessages: chatHistory && chatHistory.length > 0
+  // });
   
   // Nếu không tìm thấy user, hiển thị thông báo đăng nhập
   if (!user) {
@@ -66,24 +67,24 @@ const Chat = ({ navigation }) => {
   
   // Initialize socket and fetch chat history
   useEffect(() => {
-    console.log('Chat component mounted, context user:', user);
+    // console.log('Chat component mounted, context user:', user);
     
     try {
       if (user && user._id) {
         // Initialize socket service if not already initialized
         if (!socketService.socket || !socketService.isConnected()) {
-          console.log('Initializing socket with user:', user._id);
+          // console.log('Initializing socket with user:', user._id);
           socketService.init(user);
         }
         
         // Fetch chat history
-        console.log('Fetching chat history for user:', user._id);
+        // console.log('Fetching chat history for user:', user._id);
         dispatch(fetchChatHistory(user._id));
       } else {
-        console.error('Invalid user data, cannot initialize chat');
+        // console.error('Invalid user data, cannot initialize chat');
       }
     } catch (err) {
-      console.error('Error initializing chat:', err);
+      // console.error('Error initializing chat:', err);
     }
     
     // Clean up
@@ -128,16 +129,16 @@ const Chat = ({ navigation }) => {
 
   // Handle sending messages
   const handleSendMessage = useCallback(() => {
-    console.log('handleSendMessage called, messageText:', messageText);
-    console.log('Current context user:', user);
+    // console.log('handleSendMessage called, messageText:', messageText);
+    // console.log('Current context user:', user);
     
     if (!messageText.trim()) {
-      console.log('Cannot send empty message');
+      // console.log('Cannot send empty message');
       return;
     }
     
     if (!user || !user._id) {
-      console.error('User not found or invalid user ID');
+      // console.error('User not found or invalid user ID');
       Alert.alert(
         'Lỗi gửi tin nhắn',
         'Bạn cần đăng nhập để gửi tin nhắn.',
@@ -146,7 +147,7 @@ const Chat = ({ navigation }) => {
       return;
     }
     
-    console.log('Attempting to send message with user:', user._id);
+    // console.log('Attempting to send message with user:', user._id);
     
     try {
       // Tạo một tempId độc đáo cho tin nhắn tạm thời
@@ -206,7 +207,7 @@ const Chat = ({ navigation }) => {
         console.error('API send message exception:', error);
       });
     } catch (err) {
-      console.error('Error in handleSendMessage:', err);
+      // console.error('Error in handleSendMessage:', err);
       Alert.alert(
         'Lỗi gửi tin nhắn',
         'Không thể gửi tin nhắn. Vui lòng thử lại sau.',
