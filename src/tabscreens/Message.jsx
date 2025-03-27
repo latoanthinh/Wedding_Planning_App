@@ -2,133 +2,243 @@ import {
   StyleSheet,
   Text,
   View,
-  FlatList,
-  TextInput,
   TouchableOpacity,
-  KeyboardAvoidingView,
-  Platform,
+  ActivityIndicator,
+  Image,
   TouchableWithoutFeedback,
-  Keyboard,
-  PanResponder,
+  RefreshControl,
+  ScrollView,
 } from 'react-native';
-import React, { useState, useRef, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { useSelector, useDispatch } from 'react-redux';
+import Icon from 'react-native-vector-icons/Ionicons';
+import { fetchChatHistory, setUnreadCount } from '../redux/ChatSlice';
+import socketService from '../utils/socketService';
+import { AppContext } from '../AppContext';
 
 const Message = () => {
-  const [messages, setMessages] = useState([
-    { id: '1', text: 'Xin chào! Hôm nay bạn cần tư vấn gì nào?', fromUser: false, time: new Date().toLocaleTimeString() },
-  ]);
-  const [newMessage, setNewMessage] = useState('');
-  const [isTyping, setIsTyping] = useState(false);
-  const [dots, setDots] = useState('');
-  const [swipedMessageId, setSwipedMessageId] = useState(null);
-  const flatListRef = useRef(null);
+  const navigation = useNavigation();
+  const dispatch = useDispatch();
+  const [refreshing, setRefreshing] = useState(false);
+  const { user } = useContext(AppContext);
+  
+  // Redux
+  const {
+    chatHistory,
+    chatStatus,
+    error,
+    sendStatus,
+    unreadCount,
+    sendError,
+  } = useSelector((state) => state.chat);
+  
+  // Log debug info
+  console.log('Message screen - Context user:', {
+    chatStatus,
+    contextUser: user ? `Found (ID: ${user._id})` : 'Not found'
+  });
 
-  const handleSend = useCallback(() => {
-    if (newMessage.trim()) {
-      const newMessageItem = {
-        id: Date.now().toString(),
-        text: newMessage,
-        fromUser: true,
-        time: new Date().toLocaleTimeString(),
-      };
-      setMessages(prev => [...prev, newMessageItem]);
-      setNewMessage('');
-      autoReply();
+  // Initialize socket when component mounts
+  useEffect(() => {
+    if (user && user._id) {
+      // Initialize socket with user ID
+      socketService.init(user._id);
+      
+      // Fetch chat history
+      dispatch(fetchChatHistory(user._id));
+    } else {
+      console.log('Cannot initialize socket in Message screen: No valid user available');
     }
-  }, [newMessage]);
+    
+    // Don't disconnect the socket when leaving the screen
+    // We want to keep receiving messages in background
+  }, [user, dispatch]);
 
-  const autoReply = () => {
-    setIsTyping(true);
-    setDots('');
+  // Xử lý kéo xuống để làm mới
+  const onRefresh = useCallback(() => {
+    if (user && user._id) {
+      setRefreshing(true);
+      dispatch(fetchChatHistory(user._id))
+        .finally(() => {
+          setTimeout(() => setRefreshing(false), 1000);
+        });
+    }
+  }, [user, dispatch]);
 
-    const interval = setInterval(() => {
-      setDots(prevDots => (prevDots.length < 3 ? prevDots + '.' : ''));
-    }, 100);
+  // Navigate to chat screen
+  const navigateToChat = useCallback(() => {
+    // Reset unread counter when entering chat
+    dispatch(setUnreadCount(0));
+    navigation.navigate('Chat');
+  }, [navigation, dispatch]);
 
-    setTimeout(() => {
-      clearInterval(interval);
-      const replyMessageItem = {
-        id: Date.now().toString(),
-        text: 'Cảm ơn bạn đã gửi tin nhắn! Hệ thống sẽ phản hồi sớm.',
-        fromUser: false,
-        time: new Date().toLocaleTimeString(),
-      };
-      setMessages(prev => [...prev, replyMessageItem]);
-      setIsTyping(false);
-      flatListRef.current?.scrollToEnd({ animated: true });
-    }, 5000);
+  // Format date for displaying last message time
+  const formatLastMessageTime = (timestamp) => {
+    if (!timestamp) return '';
+    
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) {
+      // Today: show time only
+      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+    } else if (diffDays === 1) {
+      // Yesterday
+      return 'Hôm qua';
+    } else if (diffDays < 7) {
+      // Within the last week
+      const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+      return days[date.getDay()];
+    } else {
+      // Older messages
+      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+    }
   };
 
-  const handleSwipe = (id) => {
-    setSwipedMessageId(id);
+  // Get the last message
+  const getLastMessage = () => {
+    if (!chatHistory || chatHistory.length === 0) return null;
+    return chatHistory[chatHistory.length - 1];
   };
 
-  const renderMessage = ({ item }) => {
-    const isSwiped = swipedMessageId === item.id;
+  // Truncate message text if too long
+  const truncateMessage = (text, maxLength = 40) => {
+    if (!text) return '';
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  };
 
-    const panResponder = PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 30,
-      onPanResponderRelease: () => handleSwipe(item.id),
+  // Get last message preview
+  const lastMessage = getLastMessage();
+  const lastMessageText = lastMessage ? truncateMessage(lastMessage.content) : 'Chưa có tin nhắn';
+  const lastMessageTime = lastMessage ? formatLastMessageTime(lastMessage.timestamp) : '';
+  const isLastMessageFromAdmin = lastMessage && lastMessage.sender === 'admin';
+
+  // Log thông tin người dùng để debug
+  useEffect(() => {
+    console.log('Message component - Context user info:', {
+      hasUser: !!user,
+      userId: user?._id,
+      chatHistoryLength: chatHistory?.length || 0,
+      chatStatus,
+      socketConnected: socketService.isConnected()
     });
+  }, [user, chatHistory, chatStatus]);
 
+  // Nếu không tìm thấy user, hiển thị thông báo đăng nhập
+  if (!user) {
     return (
-      <View {...panResponder.panHandlers} style={[styles.messageContainer, item.fromUser ? styles.userMessage : styles.systemMessage]}>
-        <Text style={[styles.messageText, item.fromUser ? styles.userText : styles.systemText]}>
-          {item.text}
-        </Text>
-        {isSwiped && (
-          <Text style={styles.timeText}>
-            {item.time}
-          </Text>
-        )}
-      </View>
+      <SafeAreaView style={styles.safeContainer}>
+        <ScrollView style={styles.container}>
+          <Text style={styles.title}>Tin nhắn</Text>
+          
+          <View style={styles.centerContent}>
+            <Icon name="alert-circle-outline" size={50} color="#FF5858" />
+            <Text style={styles.errorText}>Vui lòng đăng nhập để sử dụng tính năng chat</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => navigation.navigate('Login')}
+            >
+              <Text style={styles.retryText}>Đăng nhập</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </SafeAreaView>
     );
-  };
+  }
 
   return (
     <SafeAreaView style={styles.safeContainer}>
-      <KeyboardAvoidingView
+      <ScrollView 
         style={styles.container}
-        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#7A60FF']}
+            tintColor="#7A60FF"
+          />
+        }
       >
-        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-          <View style={styles.inner}>
-            <Text style={styles.title}>Tin nhắn</Text>
-            <FlatList
-              ref={flatListRef}
-              data={messages}
-              renderItem={renderMessage}
-              keyExtractor={item => item.id}
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={styles.messageList}
-            />
-            {isTyping && (
-              <View style={styles.typingContainer}>
-                <Text style={styles.typingText}>Hệ thống đang phản hồi{dots}</Text>
-              </View>
-            )}
-            <View style={styles.inputContainer}>
-              <TextInput
-                style={styles.input}
-                placeholder="Nhập tin nhắn..."
-                value={newMessage}
-                onChangeText={setNewMessage}
-                maxLength={200}
+        <Text style={styles.title}>Tin nhắn</Text>
+        
+        {chatStatus === 'loading' && !refreshing ? (
+          <View style={styles.centerContent}>
+            <ActivityIndicator size="large" color="#7A60FF" />
+            <Text style={styles.loadingText}>Đang tải...</Text>
+          </View>
+        ) : chatStatus === 'failed' ? (
+          <View style={styles.centerContent}>
+            <Icon name="alert-circle-outline" size={50} color="#FF5858" />
+            <Text style={styles.errorText}>{error || 'Không thể tải tin nhắn'}</Text>
+            <TouchableOpacity 
+              style={styles.retryButton}
+              onPress={() => user && dispatch(fetchChatHistory(user._id))}
+            >
+              <Text style={styles.retryText}>Thử lại</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <>
+            <View style={styles.chatListContainer}>
+              <TouchableWithoutFeedback onPress={navigateToChat}>
+                <View style={styles.chatItem}>
+                  <View style={styles.avatarContainer}>
+                    <Icon name="person" size={24} color="#fff" style={styles.avatarIcon} />
+                    <View style={[styles.statusIndicator, socketService.isConnected() ? styles.connected : styles.disconnected]} />
+                  </View>
+                  
+                  <View style={styles.chatInfo}>
+                    <View style={styles.chatHeader}>
+                      <Text style={styles.chatName}>Hỗ trợ khách hàng</Text>
+                      <Text style={styles.timeText}>{lastMessageTime}</Text>
+                    </View>
+                    
+                    <View style={styles.messagePreview}>
+                      {isLastMessageFromAdmin && <Text style={styles.adminLabel}>Admin: </Text>}
+                      <Text numberOfLines={1} style={styles.previewText}>
+                        {lastMessageText}
+                      </Text>
+                      
+                      {unreadCount > 0 && (
+                        <View style={styles.unreadBadge}>
+                          <Text style={styles.unreadText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                        </View>
+                      )}
+                    </View>
+                  </View>
+                </View>
+              </TouchableWithoutFeedback>
+            </View>
+            
+            <View style={styles.emptyListContent}>
+              <Image 
+                source={require('../Assets/Images/comment.png')} 
+                style={styles.emptyImage}
+                resizeMode="contain"
               />
-              <TouchableOpacity style={styles.sendButton} onPress={handleSend}>
-                <Text style={styles.buttonText}>Gửi</Text>
+              <Text style={styles.emptyTitle}>Đây là tính năng chat hỗ trợ</Text>
+              <Text style={styles.emptyDescription}>
+                Bạn có thể liên hệ với đội ngũ hỗ trợ để được giải đáp mọi thắc mắc về dịch vụ cưới hỏi.
+              </Text>
+              
+              <TouchableOpacity 
+                style={styles.contactButton}
+                onPress={navigateToChat}
+              >
+                <Text style={styles.contactButtonText}>Chat ngay</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </TouchableWithoutFeedback>
-      </KeyboardAvoidingView>
+          </>
+        )}
+      </ScrollView>
     </SafeAreaView>
   );
 };
 
 export default Message;
-
 
 const styles = StyleSheet.create({
   safeContainer: {
@@ -138,97 +248,177 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  inner: {
-    flex: 1,
-    padding: 10,
-  },
   title: {
     fontSize: 24,
     color: '#000',
-    marginBottom: 20,
+    marginVertical: 20,
     alignSelf: 'center',
     fontFamily: 'Playfair_me',
   },
-  messageList: {
-    flexGrow: 1,
-    marginBottom: 10,
-  },
-  messageContainer: {
-    padding: 10,
-    borderRadius: 20,
-    marginBottom: 10,
-    maxWidth: '75%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
-  },
-  userMessage: {
-    backgroundColor: '#000',
-    alignSelf: 'flex-end',
-  },
-  systemMessage: {
-    backgroundColor: '#EAEAEA',
-    alignSelf: 'flex-start',
-  },
-  messageText: {
-    fontSize: 16,
-    fontFamily: 'Playfair_me',
-  },
-  userText: {
-    color: '#fff',
-  },
-  systemText: {
-    color: '#333',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    borderTopWidth: 1,
-    borderTopColor: '#ddd',
-    paddingVertical: 10,
-    backgroundColor: '#fff',
-  },
-  input: {
+  centerContent: {
     flex: 1,
-    borderRadius: 10,
-    padding: 12,
-    marginRight: 10,
-    backgroundColor: '#fff',
-    fontSize: 16,
-    elevation: 3,
-    borderWidth: 0.5,
-    borderColor: 'grey',
-  },
-  sendButton: {
-    backgroundColor: '#000',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 10,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+    minHeight: 300,
   },
-  buttonText: {
-    color: '#fff',
-    fontWeight: 'bold',
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#666',
     fontFamily: 'Playfair_me',
   },
-  typingContainer: {
+  errorText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#FF5858',
+    textAlign: 'center',
+    fontFamily: 'Playfair_me',
+  },
+  retryButton: {
+    marginTop: 16,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    backgroundColor: '#000',
+    borderRadius: 20,
+  },
+  retryText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: 'Playfair_me',
+  },
+  chatListContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+    marginHorizontal: 16,
+    marginBottom: 24,
+  },
+  chatItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 5,
+    padding: 16,
   },
-  typingText: {
-    color: '#999',
-    marginRight: 5,
+  avatarContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  avatarIcon: {
+    marginRight: 0,
+  },
+  statusIndicator: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    borderWidth: 2,
+    borderColor: '#fff',
+  },
+  connected: {
+    backgroundColor: '#1FD23C',
+  },
+  disconnected: {
+    backgroundColor: '#FF5858',
+  },
+  chatInfo: {
+    flex: 1,
+  },
+  chatHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  chatName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
     fontFamily: 'Playfair_me',
+
   },
   timeText: {
     fontSize: 12,
-    color: '#999',
-    marginTop: 5,
-    alignSelf: 'flex-end',
+    color: '#888',
+    fontFamily: 'Playfair_me',
+  },
+  messagePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  adminLabel: {
+    fontSize: 14,
+    color: '#7A60FF',
+    fontFamily: 'Playfair_me',
+  },
+  previewText: {
+    fontSize: 14,
+    color: '#666',
+    flex: 1,
+    fontFamily: 'Playfair_me',
+  },
+  unreadBadge: {
+    minWidth: 20,
+    height: 20,
+    borderRadius: 10,
+    backgroundColor: '#FF3B30',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4,
+    marginLeft: 8,
+  },
+  unreadText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: 'bold',
+    fontFamily: 'Playfair_me',
+  },
+  emptyListContent: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+    minHeight: 300,
+  },
+  emptyImage: {
+    width: 100,
+    height: 100,
+    marginBottom: 20,
+    tintColor: '#000',
+  },
+  emptyTitle: {
+    fontSize: 18,
+    color: '#333',
+    marginBottom: 8,
+    fontFamily: 'Playfair_me',
+  },
+  emptyDescription: {
+    fontSize: 14,
+    color: '#666',
+    textAlign: 'center',
+    fontFamily: 'Playfair_me',
+    marginBottom: 20,
+  },
+  contactButton: {
+    backgroundColor: '#000',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+  },
+  contactButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold',
     fontFamily: 'Playfair_me',
   },
 });
