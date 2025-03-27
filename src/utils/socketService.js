@@ -98,6 +98,9 @@ class SocketService {
   initMockSocket() {
     console.log('Khởi tạo mock socket do không thể kết nối đến server thật');
     
+    // Danh sách các tin nhắn đã được xử lý
+    const processedMessages = new Set();
+    
     // Giả lập socket được kết nối để UI hoạt động tốt
     this.socket = {
       connected: true,
@@ -112,14 +115,28 @@ class SocketService {
       },
       emit: (event, data, callback) => {
         console.log(`Mock socket emit [${event}]:`, data);
+        
         // Giả lập callback từ server nếu có
         if (callback && typeof callback === 'function') {
           setTimeout(() => {
             callback({ success: true, message: 'Mock acknowledgement' });
           }, 500);
         }
+        
         // Giả lập nhận tin nhắn từ admin sau 2 giây nếu gửi tin nhắn
         if (event === 'sendMessage' && !this.isAdmin) {
+          // Tạo unique key để theo dõi tin nhắn đã xử lý
+          const messageKey = `${data.senderId}-${data.message}-${data.tempId || Date.now()}`;
+          
+          // Kiểm tra xem tin nhắn này đã được xử lý chưa
+          if (processedMessages.has(messageKey)) {
+            console.log('Tin nhắn này đã được xử lý trước đó, bỏ qua:', messageKey);
+            return true;
+          }
+          
+          // Đánh dấu tin nhắn này đã được xử lý
+          processedMessages.add(messageKey);
+          
           setTimeout(() => {
             const serverReply = {
               _id: `mock-reply-${Date.now()}`,
@@ -221,13 +238,39 @@ class SocketService {
         
         console.log('Formatted message for app:', formattedMessage);
         
-        // Add the message to Redux state
-        store.dispatch(addSocketMessage(formattedMessage));
+        // Kiểm tra xem tin nhắn đã tồn tại trong Redux store chưa
+        const state = store.getState();
+        const existingMessage = state.chat.chatHistory.find(msg => 
+          // Kiểm tra theo ID
+          msg._id === formattedMessage._id ||
+          // Kiểm tra theo tempId
+          (formattedMessage.tempId && msg.tempId === formattedMessage.tempId) ||
+          // Kiểm tra trùng lặp nội dung và thời gian
+          (msg.content === formattedMessage.content && 
+           msg.sender === formattedMessage.sender &&
+           Math.abs(new Date(msg.timestamp) - new Date(formattedMessage.timestamp)) < 3000)
+        );
         
-        // Increment unread count if the message is to the user and not from them
-        if (!this.isAdmin && formattedMessage.sender === 'admin') {
-          const currentCount = store.getState().chat.unreadCount;
-          store.dispatch(setUnreadCount(currentCount + 1));
+        if (existingMessage) {
+          console.log('Tin nhắn từ newMessage đã tồn tại, bỏ qua:', {
+            id: formattedMessage._id,
+            existingId: existingMessage._id,
+            content: formattedMessage.content?.substring(0, 20)
+          });
+          // Tin nhắn đã tồn tại, không thêm mới
+        } else {
+          console.log('Thêm tin nhắn mới từ server vào store:', {
+            id: formattedMessage._id,
+            content: formattedMessage.content?.substring(0, 20)
+          });
+          // Add the message to Redux state
+          store.dispatch(addSocketMessage(formattedMessage));
+          
+          // Increment unread count if the message is to the user and not from them
+          if (!this.isAdmin && formattedMessage.sender === 'admin') {
+            const currentCount = store.getState().chat.unreadCount;
+            store.dispatch(setUnreadCount(currentCount + 1));
+          }
         }
       }
     });
@@ -253,8 +296,51 @@ class SocketService {
         
         console.log('Formatted confirmation message for app:', formattedMessage);
         
-        // Add the message to Redux state if not already there
-        store.dispatch(addSocketMessage(formattedMessage));
+        // Kiểm tra xem tin nhắn này có tempId không
+        // Nếu có, chúng ta sẽ kiểm tra xem nó đã tồn tại trong store chưa
+        const state = store.getState();
+        let shouldAddMessage = true;
+        
+        if (formattedMessage.tempId) {
+          // Kiểm tra xem có tin nhắn nào có cùng tempId không
+          const existingMessage = state.chat.chatHistory.find(msg => 
+            msg.tempId === formattedMessage.tempId || 
+            msg._id === formattedMessage.tempId
+          );
+          
+          if (existingMessage) {
+            console.log('Đã tìm thấy tin nhắn tạm thời tương ứng, chỉ cần cập nhật:', 
+              {existingId: existingMessage._id, tempId: formattedMessage.tempId}
+            );
+            shouldAddMessage = false;
+          }
+        }
+        
+        // Kiểm tra trùng lặp nội dung
+        const duplicateMessage = state.chat.chatHistory.find(msg => 
+          msg.content === formattedMessage.content && 
+          msg.sender === formattedMessage.sender &&
+          Math.abs(new Date(msg.timestamp) - new Date(formattedMessage.timestamp)) < 3000 // 3 giây
+        );
+        
+        if (duplicateMessage) {
+          console.log('Phát hiện tin nhắn trùng lặp trong messageSent, không thêm:', 
+            {id: duplicateMessage._id, content: formattedMessage.content?.substring(0, 20)}
+          );
+          shouldAddMessage = false;
+        }
+        
+        // Add the message to Redux state if it's not a duplicate
+        if (shouldAddMessage) {
+          console.log('Thêm tin nhắn từ messageSent vào store:', {id: formattedMessage._id});
+          store.dispatch(addSocketMessage(formattedMessage));
+        } else {
+          // Chỉ cần cập nhật ID nếu tin nhắn đã tồn tại
+          // Điều này giúp tin nhắn tạm thời có _id chính thức từ server
+          if (formattedMessage._id && formattedMessage.tempId) {
+            store.dispatch(addSocketMessage(formattedMessage));
+          }
+        }
       }
     });
     
@@ -332,15 +418,6 @@ class SocketService {
       tempId: tempId || `temp-${Date.now()}`
     };
 
-    // Để sử dụng trong ứng dụng, thêm các trường bổ sung mà app cần
-    const appMessageData = {
-      ...messageData,
-      userId: messageData.senderId,
-      content: messageData.message,
-      sender: messageData.senderType,
-      timestamp: new Date().toISOString(),
-    };
-
     console.log('Sending message via socket:', messageData);
 
     try {
@@ -349,11 +426,8 @@ class SocketService {
         console.log('Message acknowledgement received:', acknowledgement);
       });
       
-      // Nếu gửi thành công qua socket, cập nhật UI ngay lập tức với định dạng ứng dụng
-      store.dispatch(addSocketMessage({
-        _id: `temp-${Date.now()}`,
-        ...appMessageData
-      }));
+      // Lưu ý: Không thêm tin nhắn vào Redux store ở đây
+      // Việc này đã được thực hiện trong Chat.jsx
       
       return true;
     } catch (error) {

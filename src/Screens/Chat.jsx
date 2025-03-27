@@ -151,6 +151,10 @@ const Chat = ({ navigation }) => {
     try {
       // Tạo một tempId độc đáo cho tin nhắn tạm thời
       const tempId = `temp-${Date.now()}`;
+      const messageContent = messageText.trim();
+      
+      // Xóa input ngay lập tức để UX tốt hơn
+      setMessageText('');
       
       // Create a temporary message for optimistic UI update
       const tempMessage = {
@@ -158,7 +162,7 @@ const Chat = ({ navigation }) => {
         tempId: tempId,  // Thêm tempId để có thể xác định tin nhắn này sau này
         userId: user._id,
         receiverId: 'admin',
-        content: messageText.trim(),
+        content: messageContent,
         sender: 'user',
         timestamp: new Date().toISOString()
       };
@@ -169,35 +173,38 @@ const Chat = ({ navigation }) => {
         payload: tempMessage 
       });
       
-      // Clear input immediately để người dùng có thể tiếp tục gõ tin nhắn tiếp theo
-      setMessageText('');
+      // Kiểm tra trạng thái socket
+      console.log('Socket state before sending:', 
+        socketService.isConnected() ? 'Connected' : 'Disconnected'
+      );
       
-      // Try to send via Socket.IO first, if not available, use API
-      let messageSent = false;
-      
+      // Try to send via Socket.IO first
       if (socketService.socket && socketService.socket.connected) {
-        messageSent = socketService.sendMessage('admin', messageText.trim(), tempId);
-        console.log('Socket message sent status:', messageSent ? 'Success' : 'Failed');
+        const socketSent = socketService.sendMessage('admin', messageContent, tempId);
+        console.log('Message sent via socket:', socketSent ? 'Success' : 'Failed');
+        
+        if (socketSent) {
+          // Nếu socket gửi thành công, không cần gửi qua API
+          return;
+        }
       }
       
-      // If Socket.IO failed or not available, try API
-      if (!messageSent) {
-        console.log('Socket not available or send failed, using API instead');
-        dispatch(sendMessage({
-          senderId: user._id,
-          receiverId: 'admin',
-          message: messageText.trim(),
-          senderType: 'user',
-          tempId: tempId // Truyền tempId để có thể cập nhật tin nhắn tạm thời
-        })).then(result => {
-          console.log('API send message result:', result);
-          if (result.error) {
-            console.error('API send message error:', result.error);
-          }
-        }).catch(error => {
-          console.error('API send message exception:', error);
-        });
-      }
+      // If Socket.IO failed or not available, use API
+      console.log('Socket not available or send failed, using API instead');
+      dispatch(sendMessage({
+        senderId: user._id,
+        receiverId: 'admin',
+        message: messageContent,
+        senderType: 'user',
+        tempId: tempId // Truyền tempId để có thể cập nhật tin nhắn tạm thời
+      })).then(result => {
+        console.log('API send message result:', result);
+        if (result.error) {
+          console.error('API send message error:', result.error);
+        }
+      }).catch(error => {
+        console.error('API send message exception:', error);
+      });
     } catch (err) {
       console.error('Error in handleSendMessage:', err);
       Alert.alert(

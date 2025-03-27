@@ -205,22 +205,68 @@ const chatSlice = createSlice({
     addSocketMessage: (state, action) => {
       const newMessage = action.payload;
       
+      console.log('addSocketMessage được gọi với tin nhắn:', {
+        id: newMessage._id,
+        tempId: newMessage.tempId,
+        content: newMessage.content?.substring(0, 20) + (newMessage.content?.length > 20 ? '...' : ''),
+        sender: newMessage.sender
+      });
+      
       // Kiểm tra xem tin nhắn đã tồn tại trong state chưa
-      const existingMsgIndex = state.chatHistory.findIndex(
-        msg => msg._id === newMessage._id || 
-              (newMessage.tempId && msg.tempId === newMessage.tempId)
-      );
+      let existingMsgIndex = -1;
+      
+      // 1. Kiểm tra theo _id
+      if (newMessage._id) {
+        existingMsgIndex = state.chatHistory.findIndex(msg => msg._id === newMessage._id);
+      }
+      
+      // 2. Nếu không tìm thấy theo _id, kiểm tra theo tempId
+      if (existingMsgIndex === -1 && newMessage.tempId) {
+        existingMsgIndex = state.chatHistory.findIndex(msg => 
+          msg.tempId === newMessage.tempId || 
+          (msg._id && newMessage.tempId && msg._id.includes(newMessage.tempId)) ||
+          (msg.tempId && newMessage._id && newMessage._id.includes(msg.tempId))
+        );
+      }
+      
+      // 3. Kiểm tra trùng lặp nội dung trong khoảng thời gian gần nhau
+      if (existingMsgIndex === -1 && newMessage.content && newMessage.timestamp) {
+        // Chỉ kiểm tra 10 tin nhắn gần nhất để tối ưu hiệu suất
+        const recentMessages = state.chatHistory.slice(-10);
+        
+        const duplicate = recentMessages.find(msg => 
+          msg.content === newMessage.content && 
+          msg.sender === newMessage.sender &&
+          Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 3000 // 3 giây
+        );
+        
+        if (duplicate) {
+          console.log('Phát hiện tin nhắn trùng lặp, bỏ qua:', {
+            content: newMessage.content?.substring(0, 20),
+            existing: duplicate._id
+          });
+          return;
+        }
+      }
       
       if (existingMsgIndex >= 0) {
         // Nếu đã tồn tại, cập nhật tin nhắn
+        console.log('Cập nhật tin nhắn đã tồn tại tại vị trí:', existingMsgIndex);
+        
         state.chatHistory[existingMsgIndex] = {
           ...state.chatHistory[existingMsgIndex],
           ...newMessage,
+          // Giữ lại ID gốc nếu tin nhắn mới không có ID
+          _id: newMessage._id || state.chatHistory[existingMsgIndex]._id,
           // Giữ lại tempId để đảm bảo khớp trong tương lai
           tempId: state.chatHistory[existingMsgIndex].tempId || newMessage.tempId
         };
       } else {
         // Nếu chưa tồn tại, thêm mới
+        console.log('Thêm tin nhắn mới vào state:', {
+          id: newMessage._id,
+          content: newMessage.content?.substring(0, 20)
+        });
         state.chatHistory.push(newMessage);
       }
     },
