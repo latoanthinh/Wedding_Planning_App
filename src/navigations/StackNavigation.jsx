@@ -30,6 +30,7 @@ import ForgotPassword from '../Screens/ForgotPassword'
 import Blog from '../Screens/Blog'
 import BlogDetail from '../Screens/BlogDetail'
 import Payos from '../Screens/Payos'
+import Chat from '../Screens/Chat'
 
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
@@ -117,6 +118,7 @@ const StackNavigation = () => {
       <Stack.Screen name="PanoramaView" component={PanoramaView} />
       <Stack.Screen name="Blog" component={Blog} />
       <Stack.Screen name="Payos" component={Payos} />
+      <Stack.Screen name="Chat" component={Chat} />
       <Stack.Screen 
         name="BlogDetail" 
         component={BlogDetail}

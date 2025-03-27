@@ -210,3 +210,25 @@ Notes:
 - React Navigation Shared Element requires specific configuration for animations between screens
 - Đảm bảo tên state trong redux slice phải nhất quán và tuân theo quy ước chung trong toàn ứng dụng
 - Sử dụng status dạng chuỗi ('idle', 'loading', 'succeeded', 'failed') để theo dõi trạng thái của request thay vì biến boolean
+
+## Cập nhật chức năng chat để sử dụng tài khoản người dùng đang đăng nhập
+
+[X] Cập nhật SocketService để hỗ trợ người dùng đăng nhập
+[X] Xử lý tình huống userData có thể là null
+[X] Cập nhật giao diện Message.jsx để hiển thị cuộc trò chuyện
+[X] Điều chỉnh trạng thái làm mới (refreshing) cho đúng
+[X] Thêm phần trò chuyện trống và hành động để bắt đầu trò chuyện
+[X] Cập nhật các xử lý sự kiện gửi tin nhắn và tải lịch sử
+[X] Cập nhật giao diện tin nhắn cho đẹp hơn
+[X] Xử lý các sự kiện khi gửi và nhận tin nhắn
+
+Chức năng chat đã được cập nhật để:
+1. Sử dụng thông tin người dùng đang đăng nhập từ auth state
+2. Kiểm tra userData trước khi thực hiện các thao tác
+3. Hiển thị thông báo lỗi phù hợp khi không có userData
+4. Cải thiện giao diện người dùng với layout và màu sắc mới
+5. Thêm nút "Bắt đầu trò chuyện" khi chưa có tin nhắn nào
+6. Cập nhật phương thức kéo để tải lại tin nhắn
+7. Cài đặt proper error handling và các trạng thái loading
+
+Tất cả những thay đổi này sẽ giúp người dùng có trải nghiệm chat tốt hơn, đặc biệt là đảm bảo rằng tin nhắn được gửi đi với thông tin người dùng chính xác từ tài khoản đang đăng nhập thay vì sử dụng tài khoản test.

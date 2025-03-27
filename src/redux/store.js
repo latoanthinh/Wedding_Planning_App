@@ -26,6 +26,7 @@ import  GetAllCateringReducer  from './GetAllCateringSlice';
 import  GetAllDecoratesReducer  from './GetAllDecoratesSlice';
 import  GetAllPresentReducer  from './GetAllPresentSlice';
 import  BlogReducer  from './BlogSlice';
+import  ChatReducer  from './ChatSlice';
 
 
 const dummyReducer = (state = {}) => state;
@@ -61,5 +62,6 @@ export const store = configureStore({
     dummy: dummyReducer,
     forgotPassword: ForgotPasswordReducer,
     blog: BlogReducer,
+    chat: ChatReducer,
   },
 });
