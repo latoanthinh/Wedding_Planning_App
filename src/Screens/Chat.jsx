@@ -9,6 +9,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Image,
   
   Alert,
 } from 'react-native';
@@ -19,6 +20,19 @@ import socketService from '../utils/socketService';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// Utility function to ensure avatar URL is properly formatted
+const formatAvatarUri = (avatar) => {
+  if (!avatar) return null;
+  
+  // If it's already a properly formatted URI with data: or http: prefix, return as is
+  if (avatar.startsWith('data:') || avatar.startsWith('http')) {
+    return avatar;
+  }
+  
+  // Otherwise, assume it's a base64 string that needs the data:image prefix
+  return `data:image/jpeg;base64,${avatar}`;
+};
+
 const Chat = ({ navigation }) => {
   const dispatch = useDispatch();
   const flatListRef = useRef(null);
@@ -26,6 +40,25 @@ const Chat = ({ navigation }) => {
   
   // States
   const [messageText, setMessageText] = useState('');
+  
+  // Format user avatar if exists
+  const formattedAvatar = user?.avatar ? formatAvatarUri(user.avatar) : null;
+  
+  // Debug logging for avatar
+  useEffect(() => {
+    if (user) {
+      console.log('Chat user data:', {
+        hasAvatar: !!user.avatar,
+        avatarType: user.avatar ? typeof user.avatar : 'none',
+        avatarLength: user.avatar ? user.avatar.length : 0,
+        avatarStartsWith: user.avatar ? user.avatar.substring(0, 20) + '...' : 'none',
+        formattedAvatar: formattedAvatar ? 'Formatted' : 'Not available',
+        userName: user.fullname || user.name || 'Unknown'
+      });
+    } else {
+      console.log('No user data available in Chat component');
+    }
+  }, [user, formattedAvatar]);
   
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(state => state.chat);
@@ -234,33 +267,60 @@ const Chat = ({ navigation }) => {
     const isUser = item.sender === 'user';
     // Lấy tên người gửi
     const senderName = isUser 
-      ? (user?.fullname || 'Bạn') 
+      ? (user?.fullname || user?.name || 'Bạn') 
       : 'Hỗ trợ khách hàng';
     
     return (
       <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.adminMessageContainer]}>
-        <Text style={[styles.senderName, isUser ? styles.userSenderName : styles.adminSenderName]}>
-          {senderName}
-        </Text>
-        <View style={styles.messageRow}>
+        <View style={[styles.nameContainer, isUser ? styles.userNameContainer : styles.adminNameContainer]}>
+          <Text style={[styles.senderName, isUser ? styles.userSenderName : styles.adminSenderName]}>
+            {senderName}
+          </Text>
+        </View>
+        
+        <View style={[styles.messageRow, isUser && styles.userMessageRow]}>
+          {/* Admin avatar */}
           {!isUser && (
             <View style={styles.avatarContainer}>
-              <Ionicons name="headset-outline" size={14} color="#fff" />
+              <Ionicons name="headset-outline" size={16} color="#fff" />
             </View>
           )}
+          
+          {/* Message bubble */}
           <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.adminBubble]}>
             <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
               {item.content}
             </Text>
-            <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.adminTimeText]}>
-              {formatMessageTime(item.timestamp)}
-            </Text>
           </View>
-          {isUser && <View style={styles.spacer} />}
+          
+          {/* User avatar */}
+          {isUser && (
+            <>
+              {formattedAvatar ? (
+                <Image 
+                  source={{ uri: formattedAvatar }} 
+                  style={styles.userAvatarImage}
+                  defaultSource={require('../Assets/Images/mask.png')}
+                  onError={(error) => console.log('Error loading user avatar:', error.nativeEvent.error)}
+                />
+              ) : (
+                <View style={styles.userAvatarContainer}>
+                  <Ionicons name="person" size={18} color="#fff" />
+                </View>
+              )}
+            </>
+          )}
+        </View>
+        
+        {/* Time stamp outside the bubble */}
+        <View style={[styles.timeContainer, isUser ? styles.userTimeContainer : styles.adminTimeContainer]}>
+          <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.adminTimeText]}>
+            {formatMessageTime(item.timestamp)}
+          </Text>
         </View>
       </View>
     );
-  }, [user, formatMessageTime]);
+  }, [user, formattedAvatar, formatMessageTime]);
 
   // Render message status indicators
   const renderSendingIndicator = useCallback(() => {
@@ -275,17 +335,68 @@ const Chat = ({ navigation }) => {
     return null;
   }, [sendStatus]);
 
-  // Scroll to bottom on new messages
+  // Scroll to bottom when new messages are added or when chat history is initially loaded
   useEffect(() => {
     if (chatHistory.length > 0 && flatListRef.current) {
+      // Sử dụng thời gian ngắn hơn cho việc cuộn khi có tin nhắn mới
       setTimeout(() => {
         flatListRef.current.scrollToEnd({ animated: true });
+      }, 50);
+    }
+  }, [chatHistory]);
+  
+  // Scroll to bottom when component mounts and chat status is ready
+  useEffect(() => {
+    let scrollTimer;
+    if (chatStatus === 'succeeded' && chatHistory.length > 0 && flatListRef.current) {
+      // Sử dụng một loạt các timer để đảm bảo sẽ cuộn được trong mọi trường hợp
+      scrollTimer = setTimeout(() => {
+        flatListRef.current.scrollToEnd({ animated: false });
+        
+        // Thêm cuộn thứ hai sau đó để đảm bảo cuộn hoạt động
+        setTimeout(() => {
+          if (flatListRef.current) {
+            flatListRef.current.scrollToEnd({ animated: false });
+          }
+        }, 100);
+      }, 200);
+    }
+    return () => {
+      if (scrollTimer) clearTimeout(scrollTimer);
+    };
+  }, [chatStatus, chatHistory]);
+  
+  // Auto scroll to bottom on content size change và ưu tiên cao nhất 
+  const onContentSizeChange = useCallback(() => {
+    if (flatListRef.current && chatHistory.length > 0) {
+      // Không dùng timeout để tránh độ trễ khi nội dung thay đổi
+      flatListRef.current.scrollToEnd({ animated: false });
+    }
+  }, [chatHistory]);
+  
+  // Optimized layout handler for first render
+  const onLayout = useCallback(() => {
+    if (flatListRef.current && chatHistory.length > 0) {
+      // Sử dụng một sequence các lần cuộn để đảm bảo nó hoạt động mượt mà
+      setTimeout(() => {
+        flatListRef.current.scrollToEnd({ animated: false });
+      }, 10);
+      
+      setTimeout(() => {
+        flatListRef.current.scrollToEnd({ animated: false });
+      }, 50);
+      
+      setTimeout(() => {
+        flatListRef.current.scrollToEnd({ animated: false });
       }, 100);
     }
   }, [chatHistory]);
 
   // Keyextractor for FlatList
   const keyExtractor = useCallback((item) => item._id || `msg-${Date.now()}-${Math.random()}`, []);
+
+  // Tối ưu hiệu suất renderItem với memo
+  const memoizedRenderMessage = useCallback(renderMessage, [user, formattedAvatar, formatMessageTime]);
 
   return (
     <SafeAreaView style={styles.container}>
@@ -329,9 +440,19 @@ const Chat = ({ navigation }) => {
         <FlatList
           ref={flatListRef}
           data={chatHistory}
-          renderItem={renderMessage}
+          renderItem={memoizedRenderMessage}
           keyExtractor={keyExtractor}
           contentContainerStyle={styles.messagesList}
+          onContentSizeChange={onContentSizeChange}
+          onLayout={onLayout}
+          initialNumToRender={15} // Chỉ render số lượng vừa đủ lúc đầu
+          maxToRenderPerBatch={10} // Giới hạn số lượng render mỗi batch
+          windowSize={10} // Window size tối ưu
+          removeClippedSubviews={Platform.OS === 'android'} // Tăng hiệu suất trên Android
+          maintainVisibleContentPosition={{
+            minIndexForVisible: 0,
+            autoscrollToTopThreshold: 10
+          }}
         />
       )}
       
@@ -388,7 +509,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    // fontWeight: 'bold',
     color: '#333',
     fontFamily: 'Playfair_me',
   },
@@ -461,8 +582,8 @@ const styles = StyleSheet.create({
     paddingBottom: 16,
   },
   messageContainer: {
-    marginVertical: 8,
-    maxWidth: '80%',
+    marginVertical: 10,
+    maxWidth: '85%',
   },
   userMessageContainer: {
     alignSelf: 'flex-end',
@@ -470,16 +591,38 @@ const styles = StyleSheet.create({
   adminMessageContainer: {
     alignSelf: 'flex-start',
   },
+  nameContainer: {
+    width: '100%',
+    marginBottom: 4,
+  },
+  userNameContainer: {
+    alignItems: 'flex-end',
+    paddingRight: 52,
+  },
+  adminNameContainer: {
+    alignItems: 'flex-start',
+    paddingLeft: 52,
+  },
+  messageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userMessageRow: {
+    justifyContent: 'flex-end',
+  },
   messageBubble: {
     borderRadius: 16,
     padding: 12,
     maxWidth: '100%',
+    marginBottom: 2,
   },
   userBubble: {
-    backgroundColor: '#7A60FF',
+    backgroundColor: '#000222',
+    marginRight: 8,
   },
   adminBubble: {
     backgroundColor: '#F0F0F0',
+    marginLeft: 8,
   },
   messageText: {
     fontSize: 16,
@@ -491,18 +634,40 @@ const styles = StyleSheet.create({
   adminMessageText: {
     color: '#333333',
   },
-  timeText: {
-    fontSize: 11,
-    marginTop: 4,
+  senderName: {
+    fontSize: 12,
     fontFamily: 'Playfair_me',
   },
+  userSenderName: {
+    color: '#000222',
+    textAlign: 'right',
+  },
+  adminSenderName: {
+    color: '#666',
+    textAlign: 'left',
+  },
+  timeContainer: {
+    width: '100%',
+    marginTop: 2,
+  },
+  userTimeContainer: {
+    alignItems: 'flex-end',
+    paddingRight: 52,
+  },
+  adminTimeContainer: {
+    alignItems: 'flex-start',
+    paddingLeft: 52,
+  },
+  timeText: {
+    fontSize: 9,
+    fontFamily: 'Playfair_me',
+    color: '#999',
+  },
   userTimeText: {
-    color: 'rgba(255, 255, 255, 0.7)',
     textAlign: 'right',
   },
   adminTimeText: {
-    color: '#999',
-    textAlign: 'right',
+    textAlign: 'left',
   },
   sendingContainer: {
     flexDirection: 'row',
@@ -548,38 +713,38 @@ const styles = StyleSheet.create({
   sendButtonDisabled: {
     backgroundColor: '#E5E5E5',
   },
-  senderName: {
-    fontSize: 12,
-    marginBottom: 4,
-    fontFamily: 'Playfair_me',
-  },
-  userSenderName: {
-    color: '#7A60FF',
-    textAlign: 'right',
-    alignSelf: 'flex-end',
-    marginRight: 8,
-  },
-  adminSenderName: {
-    color: '#666',
-    textAlign: 'left',
-    alignSelf: 'flex-start',
-    marginLeft: 32, // Để căn lề với tin nhắn (24px icon + 8px margin)
-  },
-  messageRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
   avatarContainer: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: '#7A60FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  userAvatarContainer: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#000222',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  userAvatarImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    marginLeft: 8,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
   },
   spacer: {
-    width: 24,
+    width: 20,
   },
 });
 

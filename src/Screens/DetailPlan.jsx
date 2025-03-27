@@ -78,14 +78,21 @@ const DetailPlan = ({ navigation, route }) => {
   if (!planData && ChitietPlanStatus !== 'loading' && ChitietPlanStatus !== 'idle') {
     return (
       <SafeAreaView style={styles.errorContainer}>
-        <Icon name="alert-circle" size={60} color="#FF4444" />
-        <Text style={styles.errorText}>Không có dữ liệu kế hoạch để hiển thị</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => dispatch(ChitietPlan(planId))}
-        >
-          <Text style={styles.retryButtonText}>Thử lại</Text>
-        </TouchableOpacity>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.errorContent}>
+          <View style={styles.errorIconContainer}>
+            <Icon name="alert-circle-outline" size={70} color="#000000" />
+          </View>
+          <Text style={styles.errorTitle}>Không tìm thấy dữ liệu</Text>
+          <Text style={styles.errorText}>Không có dữ liệu kế hoạch để hiển thị</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => dispatch(ChitietPlan(planId))}
+          >
+            <Icon name="refresh" size={20} color="#FFF" style={{marginRight: 8}} />
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -110,25 +117,36 @@ const DetailPlan = ({ navigation, route }) => {
     return (
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Icon name={iconName} size={28} color={color} style={styles.sectionIcon} />
+          <View style={[styles.sectionIconContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
+            <Icon name={iconName} size={24} color="#000000" />
+          </View>
           <Text style={styles.sectionTitle}>{title}</Text>
         </View>
         {services && services.length > 0 ? (
           <>
             {services.map((item, index) => (
               item ? (
-                <View key={index} style={styles.serviceCard}>
-                  {item.imageUrl && (
+                <View key={index} style={[styles.serviceCard, { borderLeftColor: '#000000' }]}>
+                  {item.imageUrl ? (
                     <Image source={{ uri: item.imageUrl }} style={styles.serviceImage} />
+                  ) : (
+                    <View style={[styles.serviceImagePlaceholder, { backgroundColor: 'rgba(0, 0, 0, 0.03)' }]}>
+                      <Icon name={iconName} size={30} color="#000000" />
+                    </View>
                   )}
                   <View style={styles.serviceContent}>
                     <Text style={styles.serviceText}>{item.name || 'Không có tên'}</Text>
                     {item.price !== undefined && (
-                      <Text style={styles.servicePrice}>
-                        Giá: {item.price.toLocaleString('vi-VN')} VNĐ{' '}
-                        {multiplyByTables &&
-                          `x ${numberOfTables} bàn = ${(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ`}
-                      </Text>
+                      <View style={styles.servicePriceContainer}>
+                        <Text style={[styles.servicePrice, { backgroundColor: 'rgba(0, 0, 0, 0.05)', color: '#000000' }]}>
+                          {item.price.toLocaleString('vi-VN')} VNĐ
+                        </Text>
+                        {multiplyByTables && (
+                          <Text style={styles.serviceMultiply}>
+                            x {numberOfTables} bàn = {(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ
+                          </Text>
+                        )}
+                      </View>
                     )}
                     {item.description && (
                       <Text style={styles.serviceDescription}>
@@ -138,15 +156,24 @@ const DetailPlan = ({ navigation, route }) => {
                   </View>
                 </View>
               ) : (
-                <Text key={index} style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
+                <View key={index} style={styles.noDataContainer}>
+                  <Icon name="alert-circle-outline" size={24} color="#000000" />
+                  <Text style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
+                </View>
               )
             ))}
-            <Text style={styles.sectionTotal}>
-              Tổng tiền: {sectionTotal.toLocaleString('vi-VN')} VNĐ
-            </Text>
+            <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
+              <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
+              <Text style={[styles.sectionTotal, { color: '#000000' }]}>
+                {sectionTotal.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </View>
           </>
         ) : (
-          <Text style={styles.noDataText}>Không có dữ liệu</Text>
+          <View style={styles.noDataContainer}>
+            <Icon name="information-outline" size={32} color="#000000" />
+            <Text style={styles.noDataText}>Không có dữ liệu {title.toLowerCase()}</Text>
+          </View>
         )}
       </View>
     );
@@ -155,8 +182,12 @@ const DetailPlan = ({ navigation, route }) => {
   if (ChitietPlanStatus === 'idle' && !routePlanData) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6F61" />
-        <Text style={styles.loadingText}>Đang chuẩn bị...</Text>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color="#000000" />
+          <Text style={styles.loadingText}>Đang chuẩn bị...</Text>
+          <Text style={styles.loadingSubText}>Vui lòng đợi một chút</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -164,8 +195,12 @@ const DetailPlan = ({ navigation, route }) => {
   if (ChitietPlanStatus === 'loading' && !routePlanData) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#FF6F61" />
-        <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.loadingContent}>
+          <ActivityIndicator size="large" color="#000000" />
+          <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+          <Text style={styles.loadingSubText}>Chúng tôi đang lấy thông tin kế hoạch của bạn</Text>
+        </View>
       </SafeAreaView>
     );
   }
@@ -173,14 +208,21 @@ const DetailPlan = ({ navigation, route }) => {
   if (ChitietPlanStatus === 'failed' && !routePlanData) {
     return (
       <SafeAreaView style={styles.errorContainer}>
-        <Icon name="alert-circle" size={60} color="#FF4444" />
-        <Text style={styles.errorText}>{error || 'Không tìm thấy kế hoạch'}</Text>
-        <TouchableOpacity
-          style={styles.retryButton}
-          onPress={() => dispatch(ChitietPlan(planId))}
-        >
-          <Text style={styles.retryButtonText}>Thử lại</Text>
-        </TouchableOpacity>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        <View style={styles.errorContent}>
+          <View style={styles.errorIconContainer}>
+            <Icon name="close-circle-outline" size={70} color="#000000" />
+          </View>
+          <Text style={styles.errorTitle}>Đã xảy ra lỗi</Text>
+          <Text style={styles.errorText}>{error || 'Không tìm thấy kế hoạch'}</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => dispatch(ChitietPlan(planId))}
+          >
+            <Icon name="refresh" size={20} color="#FFF" style={{marginRight: 8}} />
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   }
@@ -267,104 +309,158 @@ const DetailPlan = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#FF6F61" />
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <View style={styles.header}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <Icon name="arrow-left" size={22} color="#000000" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Chi tiết kế hoạch</Text>
+        <TouchableOpacity
+          onPress={() => navigation.navigate("TabNavigation")}
+          style={styles.backButton}
+        >
+          <Icon name="home" size={22} color="#000000" />
+        </TouchableOpacity>
+      </View>
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: 80 }}
+      >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-              <Icon name="arrow-left" size={28} color="#FFF" />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Chi tiết kế hoạch</Text>
-            <TouchableOpacity
-              onPress={() => navigation.navigate("TabNavigation")}
-              style={styles.backButton}
-            >
-              <Image source={require("../Assets/Images/home48.png")} style={styles.homeIcon} />
-            </TouchableOpacity>
-          </View>
-
           <View style={styles.planInfoCard}>
             <Text style={styles.planTitle}>{planData.name || 'Kế hoạch không tên'}</Text>
-            <Text style={styles.planPrice}>
-              Tổng giá: {(planData.totalPrice || 0).toLocaleString('vi-VN')} VNĐ
-            </Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.planPrice}>
+                {(planData.totalPrice || 0).toLocaleString('vi-VN')} VNĐ
+              </Text>
+              <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
+            </View>
+            
+            <View style={styles.divider} />
+            
             {planData.SanhId && (
-              <View style={styles.infoRow}>
-                <Icon name="home" size={24} color="#FF6F61" style={styles.infoIcon} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.planDetail}>Sảnh: {planData.SanhId.name || 'N/A'}</Text>
-                  <Text style={styles.planSubDetail}>
-                    Giá: {(planData.SanhId.price || 0).toLocaleString('vi-VN')} VNĐ
+              <View style={styles.venueContainer}>
+                <View style={styles.venueTitleRow}>
+                  <Icon name="home-variant" size={26} color="#000000" />
+                  <Text style={styles.venueTitle}>Thông tin sảnh cưới</Text>
+                </View>
+                {planData.SanhId.imageUrl && (
+                  <Image source={{ uri: planData.SanhId.imageUrl }} style={styles.sanhImage} />
+                )}
+                <View style={styles.venueDetails}>
+                  <View style={styles.venueDetailItem}>
+                    <Icon name="tag" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Text style={styles.venueItemText}>{planData.SanhId.name || 'Chưa có tên'}</Text>
+                  </View>
+                  <View style={styles.venueDetailItem}>
+                    <Icon name="currency-usd" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Text style={styles.venueItemText}>
+                      Giá: {(planData.SanhId.price || 0).toLocaleString('vi-VN')} VNĐ
+                    </Text>
+                  </View>
+                  <View style={styles.venueDetailItem}>
+                    <Icon name="account-group" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Text style={styles.venueItemText}>
+                      Sức chứa: {planData.SanhId.SoLuongKhach || 'N/A'} khách
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.venueTotalContainer}>
+                  <Text style={styles.venueTotal}>
+                    {sanhTotal.toLocaleString('vi-VN')} VNĐ
                   </Text>
-                  <Text style={styles.planSubDetail}>
-                    Số lượng khách: {planData.SanhId.SoLuongKhach || 'N/A'}
-                  </Text>
-                  {planData.SanhId.imageUrl && (
-                    <Image source={{ uri: planData.SanhId.imageUrl }} style={styles.sanhImage} />
-                  )}
-                  <Text style={styles.sectionTotal}>
-                    Tổng tiền sảnh: {sanhTotal.toLocaleString('vi-VN')} VNĐ
-                  </Text>
+                  <Text style={styles.venueTotalLabel}>Tổng chi phí sảnh</Text>
                 </View>
               </View>
             )}
-            <View style={styles.infoRow}>
-              <Icon name="calendar" size={24} color="#FF6F61" style={styles.infoIcon} />
-              <Text style={styles.planDetail}>
-                Ngày: {planData.plandateevent
-                  ? new Date(planData.plandateevent).toLocaleDateString('vi-VN')
-                  : 'N/A'}
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Icon name="account-group" size={24} color="#FF6F61" style={styles.infoIcon} />
-              <Text style={styles.planDetail}>
-                Số khách: {planData.plansoluongkhach || 'N/A'} (Dự kiến: {numberOfTables} bàn)
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Icon name="cash" size={24} color="#FF6F61" style={styles.infoIcon} />
-              <Text style={styles.planDetail}>
-                Ngân sách: {(planData.planprice || 0).toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </View>
-            <View style={styles.infoRow}>
-              <Icon name="scale-balance" size={24} color="#FF6F61" style={styles.infoIcon} />
-              <Text
-                style={[
-                  styles.planDetail,
-                  {
-                    color:
-                      priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#777',
-                    fontWeight: '600',
-                  },
-                ]}
-              >
-                Chênh lệch: {priceDifference.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </View>
 
-            <View style={styles.buttonContainer}>
-              <TouchableOpacity style={styles.editButton} onPress={handleEditPlan}>
-                <Icon name="pencil" size={20} color="#FFF" style={styles.buttonIcon} />
-                <Text style={styles.buttonText}>Chỉnh sửa</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.depositButton, isDepositDisabled && styles.disabledButton]}
-                onPress={handleDeposit}
-                disabled={isDepositDisabled}
-              >
-                <Icon name="cash-plus" size={20} color="#FFF" style={styles.buttonIcon} />
-                <Text style={styles.buttonText}>Đặt cọc</Text>
-              </TouchableOpacity>
+            <View style={styles.divider} />
+
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
+              
+              <View style={styles.infoRow}>
+                <Icon name="calendar-month" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Ngày sự kiện</Text>
+                  <Text style={styles.planDetail}>
+                    {planData.plandateevent
+                      ? new Date(planData.plandateevent).toLocaleDateString('vi-VN')
+                      : 'Chưa xác định'}
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.infoRow}>
+                <Icon name="account-group" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Số lượng khách</Text>
+                  <Text style={styles.planDetail}>
+                    {planData.plansoluongkhach || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.infoRow}>
+                <Icon name="cash-multiple" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Ngân sách</Text>
+                  <Text style={styles.planDetail}>
+                    {(planData.planprice || 0).toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                </View>
+              </View>
+              
+              <View style={styles.infoRow}>
+                <Icon name="scale-balance" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
+                  <Text
+                    style={[
+                      styles.planDetail,
+                      {
+                        color:
+                          priceDifference > 0 ? '#43A047' : priceDifference < 0 ? '#E53935' : '#757575',
+                      },
+                    ]}
+                  >
+                    {priceDifference > 0 ? '+' : ''}{priceDifference.toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                </View>
+              </View>
             </View>
           </View>
 
-          {renderServiceItem('Dịch vụ ăn uống', planData.caterings, 'food-fork-drink', '#FF6F61', true)}
-          {renderServiceItem('Trang trí', planData.decorates, 'flower', '#FFB300', false)}
-          {renderServiceItem('Quà tặng', planData.presents, 'gift', '#4CAF50', true)}
+          <View style={styles.divider} />
+
+          {renderServiceItem('Dịch vụ ăn uống', planData.caterings, 'food-fork-drink', '#000000', true)}
+          {renderServiceItem('Trang trí', planData.decorates, 'flower', '#333333', false)}
+          {renderServiceItem('Quà tặng', planData.presents, 'gift', '#000000', true)}
         </Animated.View>
       </ScrollView>
+
+      <View style={styles.persistentBottomBar}>
+        <TouchableOpacity 
+          style={styles.bottomBarButton}
+          onPress={handleEditPlan}
+        >
+          <Icon name="pencil-outline" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
+          <Text style={styles.bottomBarButtonText}>Chỉnh sửa</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.bottomBarButton,
+            styles.depositBottomBarButton,
+            isDepositDisabled && styles.disabledBottomBarButton
+          ]}
+          onPress={handleDeposit}
+          disabled={isDepositDisabled}
+        >
+          <Icon name="cash-plus" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
+          <Text style={styles.bottomBarButtonText}>Đặt cọc</Text>
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -372,269 +468,453 @@ const DetailPlan = ({ navigation, route }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: '#FFFFFF',
   },
   scrollView: {
     flex: 1,
   },
   content: {
-    padding: 15,
+    padding: 20,
+    paddingBottom: 30,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FF6F61',
-    paddingVertical: 20,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 30,
-    borderBottomRightRadius: 30,
-    elevation: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 5,
-    marginBottom: 25,
+    backgroundColor: '#FFFFFF',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
   backButton: {
-    padding: 5,
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
   headerTitle: {
-    fontSize: 26,
-    fontWeight: '700',
-    color: '#FFF',
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',
     fontFamily: 'sans-serif-medium',
   },
-  homeIcon: {
-    width: 24,
-    height: 24,
-    tintColor: '#FFF',
-  },
   planInfoCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 25,
-    elevation: 6,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.15,
-    shadowRadius: 6,
-    borderWidth: 1,
-    borderColor: '#EDEDED',
+    padding: 0,
+    marginBottom: 10,
+    marginTop: 10,
   },
   planTitle: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 15,
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 20,
     textAlign: 'center',
+  },
+  priceContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 20,
+    alignItems: 'center',
   },
   planPrice: {
     fontSize: 22,
-    fontWeight: '600',
-    color: '#FF6F61',
-    marginBottom: 20,
-    textAlign: 'center',
-    backgroundColor: '#FFF3F2',
-    paddingVertical: 8,
-    borderRadius: 12,
+    fontWeight: 'bold',
+    color: '#000000',
   },
-  infoRow: {
+  planPriceLabel: {
+    fontSize: 14,
+    color: '#000000',
+    marginTop: 4,
+  },
+  venueContainer: {
+    padding: 0,
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  venueTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  infoIcon: {
-    marginRight: 15,
-  },
-  infoContent: {
-    flex: 1,
-  },
-  planDetail: {
-    fontSize: 16,
-    color: '#444',
-    fontWeight: '500',
-  },
-  planSubDetail: {
-    fontSize: 14,
-    color: '#777',
-    marginTop: 6,
+  venueTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginLeft: 10,
   },
   sanhImage: {
     width: '100%',
     height: 180,
-    borderRadius: 15,
-    marginTop: 12,
-    borderWidth: 1,
-    borderColor: '#EDEDED',
+    borderRadius: 8,
+    marginBottom: 16,
   },
-  section: {
-    marginBottom: 30,
-    backgroundColor: '#FFF',
-    borderRadius: 15,
+  venueDetails: {
+    marginBottom: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
     padding: 15,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
   },
-  sectionHeader: {
+  venueDetailItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#EDEDED',
-    paddingBottom: 10,
-  },
-  sectionIcon: {
-    marginRight: 12,
-  },
-  sectionTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    color: '#333',
-  },
-  serviceCard: {
-    flexDirection: 'row',
-    backgroundColor: '#F9FAFB',
-    borderRadius: 12,
-    padding: 15,
     marginBottom: 12,
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 3,
   },
-  serviceImage: {
-    width: 90,
-    height: 90,
-    borderRadius: 10,
-    marginRight: 15,
-    borderWidth: 1,
-    borderColor: '#EDEDED',
+  venueItemIcon: {
+    marginRight: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 8,
+    borderRadius: 8,
   },
-  serviceContent: {
+  venueItemText: {
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  venueTotalContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+  },
+  venueTotal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    textAlign: 'right',
+  },
+  venueTotalLabel: {
+    fontSize: 14,
+    color: '#000000',
+    textAlign: 'right',
+    marginBottom: 6,
+  },
+  infoContainer: {
+    padding: 0,
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  infoSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 20,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#000000',
+  },
+  infoIcon: {
+    marginRight: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 6,
+    borderRadius: 8,
+  },
+  infoContent: {
     flex: 1,
   },
-  serviceText: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#333',
-    marginBottom: 6,
+  infoLabel: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 4,
   },
-  servicePrice: {
+  planDetail: {
     fontSize: 15,
+    color: '#000000',
     fontWeight: '500',
-    color: '#FF6F61',
-    marginBottom: 6,
-  },
-  serviceDescription: {
-    fontSize: 14,
-    color: '#777',
-    lineHeight: 20,
-  },
-  noDataText: {
-    fontSize: 16,
-    color: '#888',
-    fontStyle: 'italic',
-    textAlign: 'center',
-    padding: 10,
-  },
-  sectionTotal: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#4CAF50',
-    marginTop: 12,
-    textAlign: 'right',
-    backgroundColor: '#F0F9F0',
-    paddingVertical: 6,
-    borderRadius: 8,
   },
   buttonContainer: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 25,
+    marginTop: 20,
   },
   editButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#333',
-    paddingVertical: 14,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    justifyContent: 'center',
+    backgroundColor: '#000000',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    elevation: 2,
+    flex: 1,
+    marginRight: 8,
   },
   depositButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 14,
-    paddingHorizontal: 25,
-    borderRadius: 30,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
+    justifyContent: 'center',
+    backgroundColor: '#333333',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    elevation: 2,
+    flex: 1,
+    marginLeft: 8,
   },
   disabledButton: {
     opacity: 0.5,
   },
   buttonIcon: {
-    marginRight: 10,
+    marginRight: 8,
   },
   buttonText: {
     color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  section: {
+    marginBottom: 20,
+    padding: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAEAEA',
+    paddingBottom: 12,
+  },
+  sectionIconContainer: {
+    marginRight: 12,
+    padding: 8,
+    borderRadius: 8,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+  },
+  serviceCard: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+  },
+  serviceImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  serviceContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  serviceText: {
     fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 6,
+  },
+  servicePriceContainer: {
+    flexDirection: 'column',
+    marginBottom: 6,
+  },
+  servicePrice: {
+    fontSize: 14,
     fontWeight: '600',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  serviceMultiply: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 2,
+  },
+  serviceDescription: {
+    fontSize: 13,
+    color: '#757575',
+    lineHeight: 18,
+  },
+  serviceImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 6,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTotalContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  sectionTotalLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 6,
+  },
+  sectionTotal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'right',
+  },
+  noDataContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#757575',
+    marginLeft: 8,
+    fontStyle: 'italic',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F7F9FC',
+    backgroundColor: '#FFFFFF',
+    padding: 20,
+  },
+  loadingContent: {
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    padding: 30,
+    borderRadius: 10,
+    maxWidth: 500,
   },
   loadingText: {
-    marginTop: 15,
+    marginTop: 20,
     fontSize: 18,
-    color: '#333',
-    fontWeight: '500',
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  loadingSubText: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#757575',
+    textAlign: 'center',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F7F9FC',
+    backgroundColor: '#FFFFFF',
+  },
+  errorContent: {
+    width: '100%',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    padding: 30,
+    borderRadius: 10,
+    maxWidth: 500,
+  },
+  errorIconContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 20,
+    borderRadius: 50,
+    marginBottom: 20,
+  },
+  errorTitle: {
+    fontSize: 20,
+    color: '#000000',
+    fontWeight: 'bold',
+    marginBottom: 8,
   },
   errorText: {
-    fontSize: 20,
-    color: '#FF4444',
+    fontSize: 14,
+    color: '#757575',
     textAlign: 'center',
-    marginTop: 15,
-    fontWeight: '600',
+    marginTop: 8,
+    maxWidth: width - 120,
   },
   retryButton: {
-    marginTop: 25,
-    backgroundColor: '#FF6F61',
+    marginTop: 24,
+    backgroundColor: '#000000',
     paddingVertical: 12,
-    paddingHorizontal: 30,
-    borderRadius: 25,
-    elevation: 5,
+    paddingHorizontal: 28,
+    borderRadius: 8,
+    elevation: 2,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   retryButtonText: {
     color: '#FFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    marginVertical: 24,
+  },
+  persistentBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    height: 70,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    elevation: 10,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+  },
+  bottomBarButton: {
+    flex: 1,
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginHorizontal: 6,
+    flexDirection: 'row',
+    height: 50,
+  },
+  depositBottomBarButton: {
+    backgroundColor: '#333333',
+  },
+  disabledBottomBarButton: {
+    opacity: 0.5,
+  },
+  bottomBarButtonIcon: {
+    marginRight: 8,
+  },
+  bottomBarButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: 'bold',
   },

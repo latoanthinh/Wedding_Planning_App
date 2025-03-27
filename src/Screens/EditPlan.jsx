@@ -24,8 +24,6 @@ const EditPlan = ({ navigation, route }) => {
   const { user } = useContext(AppContext);
   const userId = user._id;
 
- 
-
   const { caterings, cateringStatus, error: cateringError } = useSelector((state) => state.getallcatering);
   const { decorates, decorateStatus, error: decorateError } = useSelector((state) => state.getalldecorates);
   const { HallData, HallStatus, error: hallError } = useSelector((state) => state.hall);
@@ -55,7 +53,7 @@ const EditPlan = ({ navigation, route }) => {
         ? String(planData.planprice)
         : '')
   );
-  const [totalPrice, setTotalPrice] = useState(0); // Thay đổi thành number thay vì string
+  const [totalPrice, setTotalPrice] = useState(0);
   const [sanhId, setSanhId] = useState(planData?.SanhId?._id || '');
   const [selectedSanh, setSelectedSanh] = useState(planData?.SanhId || null);
   const [cateringsList, setCateringsList] = useState(planData?.caterings?.filter(item => item && item._id) || []);
@@ -72,6 +70,7 @@ const EditPlan = ({ navigation, route }) => {
   const [showSanhFavorites, setShowSanhFavorites] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
   const [priceDifference, setPriceDifference] = useState(0);
+  const [presentQuantity, setPresentQuantity] = useState("1");
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -79,31 +78,26 @@ const EditPlan = ({ navigation, route }) => {
     if (userId) dispatch(fetchUserFavorites(userId));
   }, [dispatch, userId]);
 
-  // Logic tính toán totalPrice và priceDifference
   useEffect(() => {
     const calculateTotalPrice = () => {
       let total = 0;
 
-      // Giá sảnh
       const sanhPrice = selectedSanh?.price ? parseFloat(selectedSanh.price) : 0;
       total += sanhPrice;
 
-      // Giá dịch vụ ăn uống (caterings): Giá từng món * (số lượng khách / 10)
-      const guestCount = parseInt(plansoluongkhach, 10) || 0; // Số lượng khách
+      const guestCount = parseInt(plansoluongkhach, 10) || 0;
       const cateringTotal = cateringsList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         return sum + (price * (guestCount / 10));
       }, 0);
       total += cateringTotal;
 
-      // Giá trang trí (decorates)
       const decorateTotal = decoratesList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         return sum + price;
       }, 0);
       total += decorateTotal;
 
-      // Giá quà tặng (presents) - Nhân với số lượng
       const presentTotal = presentsList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         const quantity = item?.quantity ? parseInt(item.quantity, 10) : 1;
@@ -111,10 +105,8 @@ const EditPlan = ({ navigation, route }) => {
       }, 0);
       total += presentTotal;
 
-      // Cập nhật tổng giá
       setTotalPrice(total);
 
-      // Tính toán chênh lệch với ngân sách
       const budget = parseFloat(planprice) || 0;
       const difference = budget - total;
       setPriceDifference(difference);
@@ -130,6 +122,7 @@ const EditPlan = ({ navigation, route }) => {
     setModalVisible(true);
     setShowFavorites(false);
     setSelectedItemDetail(null);
+    setPresentQuantity("1");
 
     if (type === 'caterings') dispatch(fetchCaterings());
     else if (type === 'decorates') dispatch(fetchDecorates());
@@ -205,7 +198,6 @@ const EditPlan = ({ navigation, route }) => {
 
   const handleSelectItem = (item) => {
     if (!item) {
-      
       return;
     }
 
@@ -215,31 +207,27 @@ const EditPlan = ({ navigation, route }) => {
       price: item.price || 0,
       imageUrl: item.imageUrl || item.image || null,
       description: item.description || '',
-      ...(currentType === 'presents' && { quantity: parseInt(presentQuantity) || 1 }), // Thêm số lượng cho quà tặng
+      ...(currentType === 'presents' && { quantity: parseInt(presentQuantity) || 1 }),
     };
 
     const updateList = (list, setList) => {
-      // Kiểm tra xem item đã tồn tại trong danh sách chưa
       const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
 
       if (actionType === 'add') {
         if (existingIndex !== -1) {
-          // Nếu đã tồn tại, hiển thị thông báo và không đóng Modal
           ToastAndroid.show(
             `Món "${normalizedItem.name}" đã có trong danh sách. Vui lòng chọn món khác!`,
             ToastAndroid.SHORT
           );
-          return; // Dừng hàm, giữ Modal mở để người dùng chọn lại
+          return;
         }
-        // Nếu chưa tồn tại, thêm mới
         setList([...list, normalizedItem]);
-        setModalVisible(false); // Đóng Modal sau khi thêm thành công
+        setModalVisible(false);
       } else if (actionType === 'replace' && replaceIndex !== null) {
-        // Khi thay thế, cho phép chọn lại cùng món (nếu cần)
         const newList = [...list];
         newList[replaceIndex] = normalizedItem;
         setList(newList);
-        setModalVisible(false); // Đóng Modal sau khi thay thế
+        setModalVisible(false);
       }
     };
 
@@ -299,7 +287,7 @@ const EditPlan = ({ navigation, route }) => {
       decorates: decoratesList.map(item => item._id).filter(Boolean),
       presents: presentsList.map(item => item._id).filter(Boolean),
       isCopy: planData.isCopy || false,
-      originalPlanId: planData.originalPlanId || planId, // Giữ nguyên ID gốc
+      originalPlanId: planData.originalPlanId || planId,
     };
   
     dispatch(updatePlan({ planId, updateData }))
@@ -339,9 +327,16 @@ const EditPlan = ({ navigation, route }) => {
       price: item.price || 0,
       imageUrl: item.imageUrl || item.image || null,
       description: item.Description || 'Không có mô tả',
-      SoLuongKhach: item.SoLuongKhach || null, // Chỉ dành cho sảnh
+      SoLuongKhach: item.SoLuongKhach || null,
     };
-    setSelectedItemDetail(normalizedItem); // Hiển thị chi tiết item
+    setSelectedItemDetail(normalizedItem);
+  };
+
+  const handleUpdateQuantity = (index, newQuantity) => {
+    const updatedPresents = [...presentsList];
+    const quantity = parseInt(newQuantity) || 1;
+    updatedPresents[index] = { ...updatedPresents[index], quantity };
+    setPresentsList(updatedPresents);
   };
 
   const renderItemList = (items, type) => (
@@ -404,6 +399,18 @@ const EditPlan = ({ navigation, route }) => {
           <View style={styles.modalItemContent}>
             <Text style={styles.modalItemText}>{item.name || 'Không có tên'}</Text>
             <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+            {currentType === 'presents' && (
+              <View style={styles.quantityInputContainer}>
+                <Text style={styles.quantityLabel}>Số lượng:</Text>
+                <TextInput
+                  style={styles.smallQuantityInput}
+                  value={presentQuantity}
+                  onChangeText={setPresentQuantity}
+                  keyboardType="numeric"
+                  placeholder="1"
+                />
+              </View>
+            )}
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.viewButton} onPress={() => handleViewDetail(item)}>
@@ -456,11 +463,19 @@ const EditPlan = ({ navigation, route }) => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="light-content" backgroundColor="#FF6F61" />
-      <ScrollView showsVerticalScrollIndicator={false} style={styles.scrollView}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+      <ScrollView 
+        showsVerticalScrollIndicator={false} 
+        style={styles.scrollView}
+        contentContainerStyle={{ paddingBottom: 80 }}
+      >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.header}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Icon name="arrow-left" size={22} color="#000000" />
+            </TouchableOpacity>
             <Text style={styles.headerTitle}>Chỉnh sửa kế hoạch</Text>
+            <View style={{width: 22}} />
           </View>
 
           <View style={styles.planInfoCard}>
@@ -540,6 +555,8 @@ const EditPlan = ({ navigation, route }) => {
               </Text>
             </View>
 
+            <View style={styles.divider} />
+
             <View style={styles.inputRow}>
               <Text style={styles.label}>Sảnh:</Text>
               <View style={styles.itemCard}>
@@ -558,28 +575,68 @@ const EditPlan = ({ navigation, route }) => {
               </TouchableOpacity>
             </View>
 
+            <View style={styles.divider} />
+
             <View style={styles.inputRow}>
               <Text style={styles.label}>Dịch vụ ăn uống:</Text>
               {renderItemList(cateringsList, 'caterings')}
             </View>
+
+            <View style={styles.divider} />
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Trang trí:</Text>
               {renderItemList(decoratesList, 'decorates')}
             </View>
 
+            <View style={styles.divider} />
+
             <View style={styles.inputRow}>
               <Text style={styles.label}>Quà tặng:</Text>
               {renderItemList(presentsList, 'presents')}
             </View>
-
-            <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-              <Icon name="content-save" size={20} color="#FFF" style={styles.buttonIcon} />
-              <Text style={styles.buttonText}>Lưu thay đổi</Text>
-            </TouchableOpacity>
           </View>
         </Animated.View>
       </ScrollView>
+
+      <View style={styles.persistentBottomBar}>
+        <View style={styles.bottomBarPriceInfo}>
+          <View style={styles.bottomBarPriceRow}>
+            <Text style={styles.bottomBarPriceLabel}>Ngân sách:</Text>
+            <Text style={styles.bottomBarPriceValue}>{parseFloat(planprice || 0).toLocaleString('vi-VN')} VNĐ</Text>
+          </View>
+          <View style={styles.bottomBarPriceRow}>
+            <Text style={styles.bottomBarPriceLabel}>Tổng chi phí:</Text>
+            <Text style={styles.bottomBarPriceValue}>{totalPrice.toLocaleString('vi-VN')} VNĐ</Text>
+          </View>
+          <View style={styles.bottomBarPriceRow}>
+            <Text style={styles.bottomBarPriceLabel}>Chênh lệch:</Text>
+            <View style={styles.differenceContainer}>
+              <Icon 
+                name={priceDifference >= 0 ? "arrow-up-bold" : "arrow-down-bold"} 
+                size={13} 
+                color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'} 
+                style={{marginRight: 4}}
+              />
+              <Text 
+                style={[
+                  styles.bottomBarPriceValue, 
+                  {color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
+                ]}
+              >
+                {priceDifference.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </View>
+          </View>
+        </View>
+        <TouchableOpacity 
+          style={styles.saveBottomBarButton}
+          onPress={handleSave}
+        >
+          <Icon name="content-save" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
+          <Text style={styles.bottomBarButtonText}>Lưu thay đổi</Text>
+        </TouchableOpacity>
+      </View>
 
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
@@ -592,13 +649,13 @@ const EditPlan = ({ navigation, route }) => {
                 style={[styles.toggleButton, !showFavorites && styles.activeToggle]}
                 onPress={() => setShowFavorites(false)}
               >
-                <Text style={styles.toggleText}>Tất cả</Text>
+                <Text style={[styles.toggleText, !showFavorites && styles.activeToggleText]}>Tất cả</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.toggleButton, showFavorites && styles.activeToggle]}
                 onPress={() => setShowFavorites(true)}
               >
-                <Text style={styles.toggleText}>Yêu thích</Text>
+                <Text style={[styles.toggleText, showFavorites && styles.activeToggleText]}>Yêu thích</Text>
               </TouchableOpacity>
             </View>
             {selectedItemDetail ? (
@@ -610,7 +667,7 @@ const EditPlan = ({ navigation, route }) => {
                   (currentType === 'presents' && presentStatus === 'loading') ||
                   (showFavorites && favoriteStatus === 'loading') ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#FF6F61" />
+                    <ActivityIndicator size="large" color="#000000" />
                     <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
                   </View>
                 ) : availableItems.length > 0 ? (
@@ -647,13 +704,13 @@ const EditPlan = ({ navigation, route }) => {
                 style={[styles.toggleButton, !showSanhFavorites && styles.activeToggle]}
                 onPress={() => setShowSanhFavorites(false)}
               >
-                <Text style={styles.toggleText}>Tất cả</Text>
+                <Text style={[styles.toggleText, !showSanhFavorites && styles.activeToggleText]}>Tất cả</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.toggleButton, showSanhFavorites && styles.activeToggle]}
                 onPress={() => setShowSanhFavorites(true)}
               >
-                <Text style={styles.toggleText}>Yêu thích</Text>
+                <Text style={[styles.toggleText, showSanhFavorites && styles.activeToggleText]}>Yêu thích</Text>
               </TouchableOpacity>
             </View>
             {selectedItemDetail ? (
@@ -662,7 +719,7 @@ const EditPlan = ({ navigation, route }) => {
               <>
                 {(HallStatus === 'loading' || (showSanhFavorites && favoriteStatus === 'loading')) ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#FF6F61" />
+                    <ActivityIndicator size="large" color="#000000" />
                     <Text style={styles.loadingText}>Đang tải danh sách sảnh...</Text>
                   </View>
                 ) : availableItems.length > 0 ? (
@@ -694,86 +751,200 @@ const EditPlan = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
-  toggleContainer: { flexDirection: 'row', justifyContent: 'center', marginBottom: 15 },
-  toggleButton: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, backgroundColor: '#EEE', marginHorizontal: 5 },
-  activeToggle: { backgroundColor: '#FF6F61' },
-  toggleText: { fontSize: 16, color: '#333', fontWeight: 'bold' },
-  homeIcon: { width: 22, height: 22 },
-  container: { flex: 1, backgroundColor: '#F5F5F5' },
-  scrollView: { flex: 1 },
-  content: { padding: 20 },
+  toggleContainer: { 
+    flexDirection: 'row', 
+    justifyContent: 'center', 
+    marginBottom: 15 
+  },
+  toggleButton: { 
+    paddingVertical: 8, 
+    paddingHorizontal: 20, 
+    borderRadius: 20, 
+    backgroundColor: 'rgba(0, 0, 0, 0.05)', 
+    marginHorizontal: 5 
+  },
+  activeToggle: { 
+    backgroundColor: '#000000'
+  },
+  toggleText: { 
+    fontSize: 16, 
+    color: '#000000', 
+    fontWeight: 'bold' 
+  },
+  activeToggleText: {
+    color: '#FFFFFF'
+  },
+  homeIcon: { 
+    width: 22, 
+    height: 22 
+  },
+  container: { 
+    flex: 1, 
+    backgroundColor: '#FFFFFF' 
+  },
+  scrollView: { 
+    flex: 1 
+  },
+  content: { 
+    padding: 20 
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#FF6F61',
+    backgroundColor: '#FFFFFF',
     paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    elevation: 5,
+    paddingHorizontal: 16,
     marginBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
   },
-  backButton: { width: 22, height: 22 },
-  headerTitle: { fontSize: 24, fontWeight: 'bold', color: '#FFF' },
+  backButton: {
+    padding: 8,
+    borderRadius: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+  },
+  headerTitle: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#000000' 
+  },
   planInfoCard: {
-    backgroundColor: '#FFF',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 5,
+    padding: 0,
   },
-  planTitle: { fontSize: 24, fontWeight: 'bold', color: '#333', marginBottom: 15 },
-  inputRow: { marginBottom: 20 },
-  label: { fontSize: 16, fontWeight: '600', color: '#666', marginBottom: 5 },
+  planTitle: { 
+    fontSize: 24, 
+    fontWeight: 'bold', 
+    color: '#000000', 
+    marginBottom: 20 
+  },
+  inputRow: { 
+    marginBottom: 20 
+  },
+  label: { 
+    fontSize: 16, 
+    fontWeight: '600', 
+    color: '#000000', 
+    marginBottom: 8 
+  },
   input: {
     borderWidth: 1,
-    borderColor: '#DDD',
+    borderColor: 'rgba(0, 0, 0, 0.1)',
     borderRadius: 10,
-    padding: 10,
+    padding: 12,
     fontSize: 16,
-    color: '#333',
-    backgroundColor: '#F9F9F9',
+    color: '#000000',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
   },
   itemCard: {
     flexDirection: 'row',
-    backgroundColor: '#F9F9F9',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
     borderRadius: 8,
-    padding: 10,
+    padding: 12,
     marginBottom: 10,
     alignItems: 'center',
   },
-  itemImage: { width: 80, height: 80, borderRadius: 8, marginRight: 10 },
-  itemContent: { flex: 1 },
-  itemText: { fontSize: 14, color: '#444', fontWeight: '500' },
-  itemPrice: { fontSize: 12, color: '#FF6F61', marginTop: 5 },
-  itemDescription: { fontSize: 12, color: '#888', marginTop: 5 },
-  itemActions: { flexDirection: 'row', marginLeft: 10 },
-  replaceButton: { backgroundColor: '#FFB300', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 15, marginRight: 5 },
-  removeButton: { backgroundColor: '#FF4444', paddingVertical: 5, paddingHorizontal: 10, borderRadius: 15 },
-  noDataText: { fontSize: 14, color: '#888', fontStyle: 'italic', textAlign: 'center' },
-  changeButton: { backgroundColor: '#FFB300', paddingVertical: 8, paddingHorizontal: 15, borderRadius: 20, alignSelf: 'flex-start' },
+  itemImage: { 
+    width: 80, 
+    height: 80, 
+    borderRadius: 8, 
+    marginRight: 10 
+  },
+  itemContent: { 
+    flex: 1 
+  },
+  itemText: { 
+    fontSize: 14, 
+    color: '#000000', 
+    fontWeight: '500' 
+  },
+  itemPrice: { 
+    fontSize: 12, 
+    color: '#000000', 
+    marginTop: 5 
+  },
+  itemDescription: { 
+    fontSize: 12, 
+    color: '#757575', 
+    marginTop: 5 
+  },
+  itemActions: { 
+    flexDirection: 'row', 
+    marginLeft: 10 
+  },
+  replaceButton: { 
+    backgroundColor: '#000000', 
+    paddingVertical: 5, 
+    paddingHorizontal: 10, 
+    borderRadius: 8, 
+    marginRight: 5 
+  },
+  removeButton: { 
+    backgroundColor: '#333333', 
+    paddingVertical: 5, 
+    paddingHorizontal: 10, 
+    borderRadius: 8 
+  },
+  noDataText: { 
+    fontSize: 14, 
+    color: '#757575', 
+    fontStyle: 'italic', 
+    textAlign: 'center' 
+  },
+  changeButton: { 
+    backgroundColor: '#000000', 
+    paddingVertical: 8, 
+    paddingHorizontal: 15, 
+    borderRadius: 8, 
+    alignSelf: 'flex-start' 
+  },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#4CAF50',
+    backgroundColor: '#000000',
     paddingVertical: 12,
     paddingHorizontal: 20,
-    borderRadius: 25,
+    borderRadius: 8,
     alignSelf: 'center',
-    marginTop: 20,
+    marginTop: 30,
+    marginBottom: 20,
   },
-  buttonIcon: { marginRight: 8 },
-  buttonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  modalOverlay: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: 'rgba(0, 0, 0, 0.5)' },
-  modalContent: { width: width * 0.9, backgroundColor: '#FFF', borderRadius: 15, padding: 20, maxHeight: '80%' },
-  modalTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 15, textAlign: 'center' },
-  modalList: { flexGrow: 0 },
+  buttonIcon: { 
+    marginRight: 8 
+  },
+  buttonText: { 
+    color: '#FFF', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  modalOverlay: { 
+    flex: 1, 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    backgroundColor: 'rgba(0, 0, 0, 0.5)' 
+  },
+  modalContent: { 
+    width: '90%', 
+    backgroundColor: '#FFF', 
+    borderRadius: 10, 
+    padding: 20, 
+    maxHeight: '80%' 
+  },
+  modalTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#000000', 
+    marginBottom: 15, 
+    textAlign: 'center' 
+  },
+  modalList: { 
+    flexGrow: 0 
+  },
   modalItem: {
     flexDirection: 'row',
-    padding: 10,
+    padding: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#EEE',
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     alignItems: 'center',
     justifyContent: 'space-between'
   },
@@ -782,33 +953,202 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center'
   },
-  modalItemImage: { width: 50, height: 50, borderRadius: 8, marginRight: 10 },
-  modalItemContent: { flex: 1 },
-  modalItemText: { fontSize: 16, color: '#444', fontWeight: '500' },
-  modalItemPrice: { fontSize: 14, color: '#FF6F61', marginTop: 5 },
+  modalItemImage: { 
+    width: 50, 
+    height: 50, 
+    borderRadius: 8, 
+    marginRight: 10 
+  },
+  modalItemContent: { 
+    flex: 1 
+  },
+  modalItemText: { 
+    fontSize: 16, 
+    color: '#000000', 
+    fontWeight: '500' 
+  },
+  modalItemPrice: { 
+    fontSize: 14, 
+    color: '#000000', 
+    marginTop: 5 
+  },
   viewButton: {
-    backgroundColor: '#2196F3',
+    backgroundColor: '#000000',
     paddingVertical: 5,
     paddingHorizontal: 10,
-    borderRadius: 15,
+    borderRadius: 8,
     marginLeft: 10
   },
-  closeButton: { backgroundColor: '#FF6F61', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 25, alignSelf: 'center', marginTop: 15 },
-  closeButtonText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
-  loadingContainer: { justifyContent: 'center', alignItems: 'center', padding: 20 },
-  loadingText: { marginTop: 10, fontSize: 16, color: '#666' },
-  detailContainer: { padding: 10 },
-  detailTitle: { fontSize: 20, fontWeight: 'bold', color: '#333', marginBottom: 10, textAlign: 'center' },
-  detailImage: { width: '100%', height: 200, borderRadius: 10, marginBottom: 10 },
-  detailPrice: { fontSize: 18, color: '#FF6F61', marginBottom: 10, textAlign: 'center' },
-  detailDescription: { fontSize: 16, color: '#666', marginBottom: 10, textAlign: 'center' },
-  detailCapacity: { fontSize: 16, color: '#666', marginBottom: 10, textAlign: 'center' },
+  closeButton: { 
+    backgroundColor: '#000000', 
+    paddingVertical: 10, 
+    paddingHorizontal: 20, 
+    borderRadius: 8, 
+    alignSelf: 'center', 
+    marginTop: 15 
+  },
+  closeButtonText: { 
+    color: '#FFF', 
+    fontSize: 16, 
+    fontWeight: 'bold' 
+  },
+  loadingContainer: { 
+    justifyContent: 'center', 
+    alignItems: 'center', 
+    padding: 20 
+  },
+  loadingText: { 
+    marginTop: 10, 
+    fontSize: 16, 
+    color: '#000000' 
+  },
+  detailContainer: { 
+    padding: 10 
+  },
+  detailTitle: { 
+    fontSize: 20, 
+    fontWeight: 'bold', 
+    color: '#000000', 
+    marginBottom: 10, 
+    textAlign: 'center' 
+  },
+  detailImage: { 
+    width: '100%', 
+    height: 200, 
+    borderRadius: 10, 
+    marginBottom: 10 
+  },
+  detailPrice: { 
+    fontSize: 18, 
+    color: '#000000', 
+    marginBottom: 10, 
+    textAlign: 'center' 
+  },
+  detailDescription: { 
+    fontSize: 16, 
+    color: '#757575', 
+    marginBottom: 10, 
+    textAlign: 'center' 
+  },
+  detailCapacity: { 
+    fontSize: 16, 
+    color: '#757575', 
+    marginBottom: 10, 
+    textAlign: 'center' 
+  },
   backButtonDetail: {
-    backgroundColor: '#FFB300',
+    backgroundColor: '#000000',
     paddingVertical: 10,
     paddingHorizontal: 20,
-    borderRadius: 25,
+    borderRadius: 8,
     alignSelf: 'center'
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    marginVertical: 20,
+  },
+  quantityInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 5,
+  },
+  quantityLabel: {
+    fontSize: 12,
+    color: '#000000',
+    marginRight: 5,
+  },
+  smallQuantityInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 4,
+    padding: 4,
+    width: 40,
+    fontSize: 12,
+    color: '#000000',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    textAlign: 'center',
+  },
+  quantityInput: {
+    borderWidth: 1,
+    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 6,
+    padding: 6,
+    width: 60,
+    fontSize: 14,
+    color: '#000000',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    textAlign: 'center',
+    marginTop: 5,
+  },
+  persistentBottomBar: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    height: 80,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(0, 0, 0, 0.1)',
+    elevation: 10,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: -2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  bottomBarPriceInfo: {
+    flex: 1,
+    paddingRight: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    padding: 8,
+  },
+  bottomBarPriceRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  bottomBarPriceLabel: {
+    fontSize: 12,
+    color: '#666666',
+    fontWeight: '500',
+  },
+  bottomBarPriceValue: {
+    fontSize: 13,
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  saveBottomBarButton: {
+    backgroundColor: '#000000',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 3,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  bottomBarButtonIcon: {
+    marginRight: 8,
+  },
+  bottomBarButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  differenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
 });
 
