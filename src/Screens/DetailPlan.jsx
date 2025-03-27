@@ -31,12 +31,13 @@ const DetailPlan = ({ navigation, route }) => {
   const planId = routePlanId || (ChitietPlanData?._id || routePlanData?._id);
 
   const fadeAnim = useRef(new Animated.Value(0)).current;
-
+  const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || null;
   useEffect(() => {
     if (planData) {
-      const budget = parseFloat(planData.planprice) || 0;
-      const total = parseFloat(planData.totalPrice) || 0;
-      const difference = budget - total;
+      // Lấy priceDifference từ backend nếu có, nếu không thì tính thủ công
+      const difference = planData.priceDifference !== undefined 
+        ? planData.priceDifference 
+        : (parseFloat(planData.planprice) || 0) - (parseFloat(planData.totalPrice) || 0);
       setPriceDifference(difference);
     }
   }, [planData]);
@@ -68,7 +69,7 @@ const DetailPlan = ({ navigation, route }) => {
     }
   }, [error]);
 
-  const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || null;
+ 
 
   // Kiểm tra nếu không có dữ liệu kế hoạch
   if (!planData && ChitietPlanStatus !== 'loading' && ChitietPlanStatus !== 'idle') {

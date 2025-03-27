@@ -29,10 +29,10 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
 
   const Payment = async () => {
     const amount = 5000;
-    const cancelUrl = 'https://localhost:3000/cancel'; // Thay bằng URL thực tế
+    const cancelUrl = 'https://abc123.ngrok.io/cancel'; // Thay bằng URL thực tế
     const description = 'Đơn hàng của Bikerrrr nè';
     const newOrderCode = Date.now();
-    const returnUrl = 'https://localhost:3000/success';
+    const returnUrl = 'https://abc123.ngrok.io/success';
 
     const dataString = `amount=${amount}&cancelUrl=${cancelUrl}&description=${description}&orderCode=${newOrderCode}&returnUrl=${returnUrl}`;
     const signature = CryptoJS.HmacSHA256(dataString, checkSum).toString(CryptoJS.enc.Hex);
@@ -80,7 +80,7 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
     try {
       const response = await axios.post('https://apidatn.onrender.com/users/transactions', transactionData);
       console.log('Giao dịch đã được lưu:', response.data);
-      Alert.alert('Thông báo', 'Giao dịch đã được gửi đến admin để xác nhận.');
+      
     } catch (error) {
       console.error('Lỗi khi lưu giao dịch:', error.response ? error.response.data : error.message);
       if (error.response?.status === 500) {

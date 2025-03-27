@@ -92,7 +92,7 @@ const DiaDiem_Screen = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
           <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
         </TouchableOpacity>
-        <Text style={styles.title}>Địa điểm</Text>
+        <Text style={styles.title}>Trang Trí</Text>
         <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
           <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
         </TouchableOpacity>
