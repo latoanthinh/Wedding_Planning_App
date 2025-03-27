@@ -49,6 +49,9 @@ const DetailPlan = ({ navigation, route }) => {
       dispatch(resetChitietPlan());
       dispatch(ChitietPlan(planId))
         .unwrap()
+        .then(() => {
+          Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
+        })
         .catch((err) => {
           ToastAndroid.show(`Lỗi tải chi tiết kế hoạch: ${err.message || err}`, ToastAndroid.SHORT);
         });
@@ -187,26 +190,39 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show('Không tìm thấy thông tin người dùng!', ToastAndroid.SHORT);
       return;
     }
-
+  
     const userIdFromPlan = typeof planData.UserId === 'string' ? planData.UserId : planData.UserId?._id;
     const isOwner = userIdFromPlan && userIdFromPlan.toString() === userId.toString();
-
-    if (isOwner) {
-      // Truyền thêm eventDate, guestCount, budget vào EditPlan
+    const originalPlanId = planData.originalPlanId || planId; // Lấy ID gốc nếu có
+  
+    const navigateToEditPlan = (id, data) => {
       navigation.navigate('EditPlan', {
-        planId: planId,
+        planId: id,
         planData: {
-          ...planData,
-          eventDate: planData.eventDate, // Từ GenPlan
-          guestCount: planData.guestCount, // Từ GenPlan
-          budget: planData.budget, // Từ GenPlan
+          ...data,
+          eventDate: data.eventDate,
+          guestCount: data.guestCount,
+          budget: data.budget,
         },
       });
+    };
+  
+    console.log('planId:', planId);
+    console.log('originalPlanId:', originalPlanId);
+    console.log('isOwner:', isOwner);
+    console.log('isCopy:', planData.isCopy);
+  
+    if (isOwner) {
+      // Nếu là chủ sở hữu, chỉnh sửa trực tiếp kế hoạch hiện tại
+      navigateToEditPlan(planId, planData);
+    } else if (planData.isCopy && userIdFromPlan === userId) {
+      // Nếu đây là bản sao của người dùng hiện tại, chỉnh sửa bản sao
+      navigateToEditPlan(planId, planData);
     } else {
-      dispatch(duplicatePlan({ planId: planId, userId }))
+      // Tạo bản sao mới từ kế hoạch gốc
+      dispatch(duplicatePlan({ planId: originalPlanId, userId }))
         .unwrap()
         .then((newPlan) => {
-          console.log('Dữ liệu newPlan:', newPlan);
           const combinedPlanData = {
             ...planData,
             _id: newPlan._id,
@@ -222,16 +238,16 @@ const DetailPlan = ({ navigation, route }) => {
             SanhId: planData.SanhId || newPlan.SanhId || null,
             plansoluongkhach: planData.plansoluongkhach || newPlan.plansoluongkhach || 0,
             planprice: planData.planprice || newPlan.planprice || 0,
-            eventDate: planData.eventDate, // Truyền thêm eventDate
-            guestCount: planData.guestCount, // Truyền thêm guestCount
-            budget: planData.budget, // Truyền thêm budget
+            eventDate: planData.eventDate,
+            guestCount: planData.guestCount,
+            budget: planData.budget,
+            isCopy: true,
+            originalPlanId: originalPlanId, // Đảm bảo lưu ID gốc
           };
-          console.log('Dữ liệu combinedPlanData:', combinedPlanData);
-          navigation.navigate('EditPlan', { planId: newPlan._id, planData: combinedPlanData });
+          navigateToEditPlan(newPlan._id, combinedPlanData);
           ToastAndroid.show('Đã tạo bản sao kế hoạch để chỉnh sửa!', ToastAndroid.SHORT);
         })
         .catch((err) => {
-          console.log('Lỗi khi tạo bản sao:', err);
           ToastAndroid.show(`Lỗi khi tạo mới plan: ${err.message || err}`, ToastAndroid.SHORT);
         });
     }

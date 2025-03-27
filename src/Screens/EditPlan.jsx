@@ -293,15 +293,15 @@ const EditPlan = ({ navigation, route }) => {
       plandateevent: plandateevent.toISOString(),
       plansoluongkhach: parseInt(plansoluongkhach, 10) || undefined,
       planprice: parseFloat(planprice) || undefined,
-      totalPrice: totalPrice, // Gửi totalPrice đã tính toán
+      totalPrice: totalPrice,
       SanhId: sanhId || undefined,
       caterings: cateringsList.map(item => item._id).filter(Boolean),
       decorates: decoratesList.map(item => item._id).filter(Boolean),
       presents: presentsList.map(item => item._id).filter(Boolean),
+      isCopy: planData.isCopy || false,
+      originalPlanId: planData.originalPlanId || planId, // Giữ nguyên ID gốc
     };
-
-    
-
+  
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
@@ -315,19 +315,20 @@ const EditPlan = ({ navigation, route }) => {
           presents: presentsList.length > 0 ? presentsList : updatedPlan.presents || [],
           plansoluongkhach: updateData.plansoluongkhach || updatedPlan.plansoluongkhach || 0,
           planprice: updateData.planprice || updatedPlan.planprice || 0,
-          totalPrice: totalPrice, // Sử dụng totalPrice đã tính toán
+          totalPrice: totalPrice,
           plandateevent: updateData.plandateevent || updatedPlan.plandateevent,
           name: updateData.name || updatedPlan.name || 'Kế hoạch không tên',
           eventDate: planData.eventDate,
           guestCount: planData.guestCount,
           budget: planData.budget,
-          priceDifference: updatedPlan.priceDifference || priceDifference, // Lấy từ server hoặc frontend
+          priceDifference: updatedPlan.priceDifference || priceDifference,
+          isCopy: updateData.isCopy,
+          originalPlanId: updateData.originalPlanId,
         };
         navigation.navigate('DetailPlan', { planId, planData: combinedPlanData });
       })
       .catch((err) => {
-        
-        ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || 'Không xác định'}`, ToastAndroid.SHORT);
+        ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || err}`, ToastAndroid.SHORT);
       });
   };
 

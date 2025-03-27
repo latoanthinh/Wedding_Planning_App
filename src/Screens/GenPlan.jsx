@@ -30,12 +30,13 @@ const GenPlan = ({ navigation, route }) => {
     num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
 
   const renderPlan = ({ item }) => {
-    // Kết hợp planData với dữ liệu từ params
     const planDataWithParams = {
       ...item,
-      eventDate: params?.eventDate, // Thêm eventDate
-      guestCount: params?.guestCount, // Thêm guestCount
-      budget: params?.budget, // Thêm budget
+      eventDate: params?.eventDate,
+      guestCount: params?.guestCount,
+      budget: params?.budget,
+      isCopy: item.isCopy || false, // Đảm bảo giữ trạng thái bản sao
+      originalPlanId: item.originalPlanId || item._id, // Lưu ID gốc
     };
 
     return (

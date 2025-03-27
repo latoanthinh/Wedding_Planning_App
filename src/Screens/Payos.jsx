@@ -16,6 +16,7 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
   const [orderCode, setOrderCode] = useState(null);
   const { user } = useContext(AppContext);
   const userId = user?._id;
+  const [transactionSaved, setTransactionSaved] = useState(false);
 
   useEffect(() => {
     console.log('Route params trong Payos:', route.params); // Log để kiểm tra
@@ -96,7 +97,9 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
   const handleNavigationChange = (navState) => {
     const { url } = navState;
     console.log('URL hiện tại:', url);
-    if (url.includes('/success')) {
+    
+    if (url.includes('/success') && !transactionSaved) {
+      setTransactionSaved(true); // Đánh dấu đã gửi giao dịch
       Alert.alert('Thành công', 'Bạn đã thanh toán thành công', [
         { text: 'OK', onPress: () => saveTransaction(5000) },
       ]);

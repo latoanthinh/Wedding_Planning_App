@@ -31,23 +31,38 @@ export const duplicatePlan = createAsyncThunk(
       const response = await fetch(`https://apidatn.onrender.com/plan/update/${planId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ UserId: userId, forceDuplicate: true }),
+        body: JSON.stringify({ 
+          UserId: userId, 
+          forceDuplicate: true, 
+          isCopy: true, 
+          originalPlanId: planId 
+        }),
       });
-
       const text = await response.text();
-      if (!response.ok) {
-        throw new Error(`Tạo bản sao thất bại: ${response.status} - ${text}`);
-      }
+      if (!response.ok) throw new Error(`Tạo bản sao thất bại: ${response.status} - ${text}`);
       if (!text) throw new Error('Phản hồi từ server rỗng');
       const data = JSON.parse(text);
       console.log('API Response (duplicate):', data);
-      return data.data;
+      
+      // Kiểm tra xem server có trả về _id mới không
+      if (!data.data._id || data.data._id === planId) {
+        throw new Error('Server không tạo bản sao mới, _id không thay đổi');
+      }
+      
+      return { 
+        ...data.data, 
+        isCopy: true, 
+        originalPlanId: planId 
+      };
     } catch (error) {
       console.error('Lỗi duplicatePlan:', error.message);
       return rejectWithValue(error.message);
     }
   }
 );
+
+
+
 
 // Thunk để cập nhật kế hoạch (dùng sau khi chỉnh sửa bản sao)
 export const updatePlan = createAsyncThunk(
@@ -113,7 +128,14 @@ const ChitietPlanSlice = createSlice({
       })
       .addCase(duplicatePlan.fulfilled, (state, action) => {
         state.ChitietPlanStatus = 'succeeded';
-        state.ChitietPlanData = action.payload;
+        if (state.ChitietPlanData) {
+          state.ChitietPlanData = {
+            ...state.ChitietPlanData,
+            duplicatedPlans: [...(state.ChitietPlanData.duplicatedPlans || []), action.payload],
+          };
+        } else {
+          state.ChitietPlanData = { duplicatedPlans: [action.payload] };
+        }
         state.error = null;
       })
       .addCase(duplicatePlan.rejected, (state, action) => {
