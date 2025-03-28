@@ -12,7 +12,9 @@ import {
   Platform,
   RefreshControl,
   Animated,
-  Dimensions
+  Dimensions,
+  useWindowDimensions,
+  LogBox
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -22,12 +24,36 @@ import { SharedElement } from 'react-navigation-shared-element';
 import moment from 'moment';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import 'moment/locale/vi'; // Import Vietnamese locale
+import RenderHTML from 'react-native-render-html';
+
+// Bỏ qua các cảnh báo về defaultProps từ react-native-render-html
+LogBox.ignoreLogs([
+  'Support for defaultProps will be removed from function components in a future major release',
+  'Support for defaultProps will be removed from memo components in a future major release'
+]);
 
 const { width } = Dimensions.get('window');
+
+// Custom image renderer to fix the defaultProps warning
+const CustomImageRenderer = (props) => {
+  const { 
+    Renderer, 
+    rendererProps 
+  } = useInternalRenderer('img', props);
+  
+  // Đảm bảo rằng enableExperimentalPercentWidth và contentWidth được truyền vào
+  const enhancedProps = {
+    ...rendererProps,
+    enableExperimentalPercentWidth: true
+  };
+  
+  return <Renderer {...enhancedProps} />;
+};
 
 const Blog = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const { width: screenWidth } = useWindowDimensions();
   
   // Get state from Redux store
   const { blogData, blogStatus, error } = useSelector((state) => state.blog);
@@ -80,6 +106,61 @@ const Blog = () => {
     return moment(dateString).format('DD MMM, YYYY');
   };
 
+  // Function to create a truncated HTML snippet from content
+  const createContentSnippet = (content, maxLength = 150) => {
+    if (!content) return '';
+    
+    // Check if content is HTML
+    const isHtml = content.includes('<') && content.includes('>');
+    
+    if (isHtml) {
+      // More robust HTML stripping with regex
+      const strippedContent = content
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
+        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove styles
+        .replace(/<[^>]*>/g, '')                                           // Remove HTML tags
+        .replace(/&nbsp;/g, ' ')                                           // Replace &nbsp; with space
+        .replace(/\s\s+/g, ' ')                                            // Replace multiple spaces with one
+        .trim();
+      
+      const truncated = strippedContent.substring(0, maxLength);
+      return truncated + (truncated.length < strippedContent.length ? '...' : '');
+    }
+    
+    // Plain text handling
+    return content.substring(0, maxLength) + (content.length > maxLength ? '...' : '');
+  };
+
+  // Function to create a safe HTML snippet for RenderHTML
+  const createHtmlSnippet = (content, maxLength = 200) => {
+    if (!content) return '';
+    
+    // First paragraph extraction - often better than just truncating HTML
+    let firstPara = '';
+    const paraMatch = content.match(/<p[^>]*>(.*?)<\/p>/i);
+    
+    if (paraMatch && paraMatch[1]) {
+      // Use the first paragraph as the snippet
+      firstPara = paraMatch[0];
+    } else {
+      // Fall back to a reasonable truncation
+      firstPara = content.substring(0, maxLength);
+      
+      // Make sure we're not cutting in the middle of an HTML tag
+      const lastOpenBracket = firstPara.lastIndexOf('<');
+      const lastCloseBracket = firstPara.lastIndexOf('>');
+      
+      if (lastOpenBracket > lastCloseBracket) {
+        firstPara = firstPara.substring(0, lastOpenBracket);
+      }
+      
+      firstPara += '...';
+    }
+    
+    // Wrap in a div to ensure valid HTML
+    return `<div>${firstPara}</div>`;
+  };
+
   // Render each blog item
   const renderItem = ({ item, index }) => {
     // Check for valid data before rendering
@@ -94,6 +175,12 @@ const Blog = () => {
     const content = item.content ? item.content.toString() : '';
     const coverImage = item.coverImage || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog';
     const category = item.category || 'Blog';
+    
+    // Create content snippet for summary
+    const contentSnippet = createContentSnippet(content);
+    
+    // Check if content is HTML
+    const isHtml = content.includes('<') && content.includes('>');
     
     // Alternating layouts for visual interest
     const isEven = index % 2 === 0;
@@ -137,9 +224,40 @@ const Blog = () => {
           
           <View style={styles.contentContainer}>
             <Text style={styles.title} numberOfLines={2}>{title}</Text>
-            <Text style={styles.summary} numberOfLines={2}>
-              {content ? content.substring(0, 100) + '...' : 'Bài viết đám cưới'}
-            </Text>
+            
+            {/* Summary with RenderHTML for HTML content */}
+            <View style={styles.summaryContainer}>
+              {isHtml ? (
+                <View style={{height: 50, overflow: 'hidden'}}>
+                  <RenderHTML
+                    contentWidth={screenWidth - 88} // Adjust for padding
+                    source={{ html: createHtmlSnippet(content) }}
+                    tagsStyles={{
+                      body: styles.htmlSummaryBody,
+                      p: styles.htmlSummaryText,
+                      div: styles.htmlSummaryText,
+                    }}
+                    defaultTextProps={{
+                      numberOfLines: 2,
+                      style: {
+                        fontFamily: 'Playfair_me',
+                      },
+                    }}
+                    renderersProps={{
+                      img: {
+                        contentWidth: screenWidth - 88,
+                        enableExperimentalPercentWidth: true
+                      }
+                    }}
+                  />
+                </View>
+              ) : (
+                <Text style={styles.summary} numberOfLines={2}>
+                  {contentSnippet}
+                </Text>
+              )}
+            </View>
+            
             <View style={styles.metaContainer}>
               {item.created_at && (
                 <View style={styles.metaItem}>
@@ -457,6 +575,10 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
     lineHeight: 28,
   },
+  summaryContainer: {
+    marginBottom: 20,
+    height: 50,
+  },
   summary: {
     fontSize: 15,
     color: '#666',
@@ -630,6 +752,19 @@ const styles = StyleSheet.create({
     color: '#C8815F',
     fontWeight: '500',
     fontSize: 15,
+    fontFamily: 'Playfair_me',
+  },
+  
+  // HTML styles for summary
+  htmlSummaryBody: {
+    color: '#666',
+    fontFamily: 'Playfair_me',
+    fontSize: 15,
+  },
+  htmlSummaryText: {
+    fontSize: 15,
+    color: '#666',
+    lineHeight: 22,
     fontFamily: 'Playfair_me',
   },
 });

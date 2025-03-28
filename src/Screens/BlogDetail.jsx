@@ -11,6 +11,8 @@ import {
   StatusBar,
   Platform,
   Dimensions,
+  useWindowDimensions,
+  LogBox,
 } from 'react-native';
 import {useDispatch, useSelector} from 'react-redux';
 import {
@@ -25,6 +27,16 @@ import moment from 'moment';
 import 'moment/locale/vi';
 import {SharedElement} from 'react-navigation-shared-element';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import RenderHTML from 'react-native-render-html';
+
+// Suppress specific warnings related to react-native-render-html's defaultProps deprecation
+LogBox.ignoreLogs([
+  'Support for defaultProps will be removed from function components in a future major release',
+  'Support for defaultProps will be removed from memo components in a future major release',
+  'TRenderEngineProvider: Support for defaultProps',
+  'MemoizedTNodeRenderer: Support for defaultProps',
+  'TNodeChildrenRenderer: Support for defaultProps'
+]);
 
 const {width, height} = Dimensions.get('window');
 
@@ -32,6 +44,7 @@ const BlogDetail = ({route}) => {
   const {slug} = route.params;
   const dispatch = useDispatch();
   const navigation = useNavigation();
+  const { width: windowWidth } = useWindowDimensions();
 
   // Get state from Redux store
   const {selectedBlog, relatedBlogs, detailStatus, relatedStatus, detailError} =
@@ -138,6 +151,122 @@ const BlogDetail = ({route}) => {
 
   const navigateToRelatedBlog = relatedSlug => {
     navigation.push('BlogDetail', {slug: relatedSlug});
+  };
+
+  // Function to extract headings from HTML content
+  const extractHeadings = (htmlContent) => {
+    if (!htmlContent) return '';
+    
+    // Simple regex to extract headings - can be made more robust
+    const headingRegex = /<h[1-6][^>]*>(.*?)<\/h[1-6]>/g;
+    let headings = [];
+    let match;
+    
+    while ((match = headingRegex.exec(htmlContent)) !== null) {
+      headings.push(match[1].replace(/<[^>]*>/g, ''));
+    }
+    
+    return headings.join(' | ');
+  };
+
+  // Function to safely render HTML content
+  const renderHtmlContent = (htmlContent) => {
+    try {
+      // Ensure htmlContent is a string and not empty
+      if (!htmlContent || typeof htmlContent !== 'string') {
+        console.log('Invalid HTML content:', htmlContent);
+        return (
+          <Text style={styles.noContentText}>
+            Nội dung bài viết không hợp lệ
+          </Text>
+        );
+      }
+
+      return (
+        <RenderHTML
+          contentWidth={windowWidth - 40} // Adjust for padding
+          source={{ html: htmlContent }}
+          // Ensure we always pass valid objects for all props
+          tagsStyles={{
+            body: styles.htmlBody || {},
+            p: styles.htmlParagraph || {},
+            h1: styles.htmlHeading1 || {},
+            h2: styles.htmlHeading2 || {},
+            h3: styles.htmlHeading3 || {},
+            h4: styles.htmlHeading3 || {},
+            h5: styles.htmlHeading3 || {},
+            h6: styles.htmlHeading3 || {},
+            a: styles.htmlLink || {},
+            ul: styles.htmlList || {},
+            ol: styles.htmlOrderedList || {},
+            li: styles.htmlListItem || {},
+            img: styles.htmlImage || {},
+            blockquote: styles.htmlBlockquote || {},
+            div: styles.htmlParagraph || {},
+            span: { fontFamily: 'Playfair_me' },
+            strong: { fontWeight: 'bold', color: '#333' },
+            em: { fontStyle: 'italic', color: '#555' },
+            table: styles.htmlTable || {},
+            th: styles.htmlTableHeader || {},
+            td: styles.htmlTableCell || {},
+            figcaption: styles.captionClass || {},
+            br: { marginBottom: 8 },
+            hr: styles.horizontalRule || {},
+          }}
+          classesStyles={{
+            'quote-block': styles.quoteClass || {},
+            'image-caption': styles.captionClass || {},
+            'wp-caption': styles.captionClass || {},
+            'aligncenter': { alignSelf: 'center', width: '100%', marginHorizontal: 'auto' },
+            'alignleft': { alignSelf: 'flex-start', marginRight: 20 },
+            'alignright': { alignSelf: 'flex-end', marginLeft: 20 },
+            'article-media': styles.articleMedia || {},
+            'article-highlight': styles.articleHighlight || {},
+            'article-callout': styles.articleCallout || {},
+          }}
+          defaultTextProps={{
+            selectable: true,
+            style: { fontFamily: 'Playfair_me' },
+          }}
+          renderersProps={{
+            img: {
+              enableExperimentalPercentWidth: true,
+              contentWidth: windowWidth - 40,
+              // Enhance image styling with shadow
+              style: { 
+                borderRadius: 8, 
+                marginVertical: 20,
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.1,
+                shadowRadius: 3,
+                elevation: 2,
+                backgroundColor: '#fff',
+              }
+            },
+            a: {
+              onPress: (_, href) => {
+                console.log('Link pressed:', href);
+              }
+            }
+          }}
+          enableExperimentalMarginCollapsing={true}
+          // Add error fallback
+          WebView={null}
+          defaultViewProps={{ style: { marginVertical: 8 } }}
+          systemFonts={['Playfair_me']}
+        />
+      );
+    } catch (error) {
+      console.error('Error rendering HTML content:', error);
+      return (
+        <View style={styles.errorRendering}>
+          <Text style={styles.errorRenderingText}>
+            Không thể hiển thị nội dung HTML. Vui lòng thử lại sau.
+          </Text>
+        </View>
+      );
+    }
   };
 
   // Render loading state
@@ -348,36 +477,125 @@ const BlogDetail = ({route}) => {
                     'Khám phá những ý tưởng tuyệt vời về đám cưới trong bài viết này.'}
                 </Text>
 
-                {/* Main Content - Split into paragraphs */}
-                <View style={styles.mainContent}>
-                  {selectedBlog.content
-                    .split('\n\n')
-                    .map((paragraph, index) => {
-                      if (!paragraph.trim()) return null;
-                      
-                      // Check if paragraph is a heading (starts with # character)
-                      if (paragraph.trim().startsWith('#')) {
-                        return (
-                          <Text key={index} style={styles.subheading}>
-                            {paragraph.replace(/^#+\s+/, '')}
-                          </Text>
-                        );
-                      }
-                      
-                      return (
-                        <Text key={index} style={styles.paragraph}>
-                          {paragraph}
-                        </Text>
-                      );
-                    })}
-                </View>
+                {/* Content wrapper with enhanced layout */}
+                <View style={styles.contentWrapper}>
+                  {/* Table of Contents - Only show if content has headings */}
+                  {selectedBlog.content.includes('<h1') || 
+                   selectedBlog.content.includes('<h2') || 
+                   selectedBlog.content.includes('<h3') || 
+                   selectedBlog.content.includes('<h4') ? (
+                    <View style={styles.tableOfContents}>
+                      <View style={styles.tocHeader}>
+                        <Ionicons name="list" size={18} color="#C8815F" />
+                        <Text style={styles.tocTitle}>Mục lục</Text>
+                      </View>
+                      <Text style={styles.tocContent}>
+                        {extractHeadings(selectedBlog.content)}
+                      </Text>
+                    </View>
+                  ) : null}
 
-                {/* Quote Box - Example decorative element */}
-                <View style={styles.quoteBox}>
-                  <Text style={styles.quoteText}>
-                    "Một cuộc hôn nhân thành công đòi hỏi nhiều lần yêu nhau, nhiều lần tha thứ, và luôn ghi nhớ lý do bạn đã kết hôn."
-                  </Text>
-                  <Text style={styles.quoteAuthor}>- Trích Ngôn Tình Cưới</Text>
+                  {/* Reading Progress - Nice touch for longer articles */}
+                  <View style={styles.readingProgressContainer}>
+                    <View style={styles.readingProgressBar}>
+                      <View style={[styles.readingProgress, { width: '40%' }]} />
+                    </View>
+                    <Text style={styles.readingTimeText}>
+                      {calculateReadingTime(selectedBlog.content)}
+                    </Text>
+                  </View>
+
+                  {/* Main Content with improved rendering */}
+                  <View style={styles.mainContent}>
+                    {/* Check if content is HTML format or plain text */}
+                    {selectedBlog.content && selectedBlog.content.includes('<') && 
+                     (selectedBlog.content.includes('</p>') || 
+                      selectedBlog.content.includes('</div>') || 
+                      selectedBlog.content.includes('</h')) ? (
+                      // Use our safe renderer function
+                      renderHtmlContent(selectedBlog.content)
+                    ) : (
+                      // Enhanced Fallback for plain text content
+                      <View style={styles.plainTextContainer}>
+                        {(selectedBlog.content || '')
+                          .split('\n\n')
+                          .map((paragraph, index) => {
+                            if (!paragraph || !paragraph.trim()) return null;
+                            
+                            // Check if paragraph is a heading (starts with # character)
+                            if (paragraph.trim().startsWith('#')) {
+                              // Determine heading level by counting #
+                              const headingMatch = paragraph.trim().match(/^#+/);
+                              const level = headingMatch ? headingMatch[0].length : 1;
+                              const headingStyle = level === 1 ? styles.plainTextH1 : 
+                                                  level === 2 ? styles.plainTextH2 : 
+                                                  styles.plainTextH3;
+                              
+                              return (
+                                <View key={index} style={styles.headingContainer}>
+                                  <Text style={headingStyle}>
+                                    {paragraph.replace(/^#+\s+/, '')}
+                                  </Text>
+                                  <View style={styles.headingUnderline} />
+                                </View>
+                              );
+                            }
+                            
+                            // Check if paragraph is a list item (starts with - or * or number)
+                            if (paragraph.trim().match(/^[\-\*•]|\d+\.\s/)) {
+                              return (
+                                <Text key={index} style={styles.plainTextListItem}>
+                                  {paragraph}
+                                </Text>
+                              );
+                            }
+                            
+                            // Regular paragraph
+                            return (
+                              <Text key={index} style={styles.paragraph}>
+                                {paragraph}
+                              </Text>
+                            );
+                          })}
+                      </View>
+                    )}
+                  </View>
+
+                  {/* Add section divider for visual hierarchy */}
+                  <View style={styles.sectionDivider}>
+                    <View style={styles.dividerLine} />
+                    <View style={styles.dividerIcon}>
+                      <Ionicons name="flower-outline" size={18} color="#C8815F" />
+                    </View>
+                    <View style={styles.dividerLine} />
+                  </View>
+
+                  {/* Quote Box - Example decorative element */}
+                  <View style={styles.quoteBox}>
+                    <Text style={styles.quoteText}>
+                      "Một cuộc hôn nhân thành công đòi hỏi nhiều lần yêu nhau, nhiều lần tha thứ, và luôn ghi nhớ lý do bạn đã kết hôn."
+                    </Text>
+                    <Text style={styles.quoteAuthor}>- Trích Ngôn Tình Cưới</Text>
+                  </View>
+
+                  {/* Article Tags - if available */}
+                  {selectedBlog.tags && selectedBlog.tags.length > 0 && (
+                    <View style={styles.tagsContainer}>
+                      <Text style={styles.tagsLabel}>Chủ đề:</Text>
+                      <View style={styles.tagsList}>
+                        {Array.isArray(selectedBlog.tags) ? 
+                          selectedBlog.tags.map((tag, index) => (
+                            <View key={index} style={styles.tagItem}>
+                              <Text style={styles.tagText}>{tag}</Text>
+                            </View>
+                          )) :
+                          <View style={styles.tagItem}>
+                            <Text style={styles.tagText}>{selectedBlog.tags}</Text>
+                          </View>
+                        }
+                      </View>
+                    </View>
+                  )}
                 </View>
               </View>
             ) : (
@@ -698,22 +916,169 @@ const styles = StyleSheet.create({
   mainContent: {
     marginBottom: 24,
   },
-  subheading: {
+  contentWrapper: {
+    paddingHorizontal: 4,
+  },
+  tableOfContents: {
+    backgroundColor: '#FEF9F4',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 24,
+    borderWidth: 1,
+    borderColor: '#F0EAE3',
+  },
+  tocHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  tocTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginLeft: 8,
+    fontFamily: 'Playfair_me',
+  },
+  tocContent: {
+    color: '#555',
+    lineHeight: 22,
+    fontSize: 14,
+    fontFamily: 'Playfair_me',
+  },
+  readingProgressContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    marginTop: 5,
+  },
+  readingProgressBar: {
+    flex: 1,
+    height: 4,
+    backgroundColor: '#F0EAE3',
+    borderRadius: 2,
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  readingProgress: {
+    height: '100%',
+    backgroundColor: '#C8815F',
+    borderRadius: 2,
+  },
+  readingTimeText: {
+    fontSize: 13,
+    color: '#888',
+    fontFamily: 'Playfair_me',
+  },
+  sectionDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 30,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#F0EAE3',
+  },
+  dividerIcon: {
+    marginHorizontal: 12,
+  },
+  tagsContainer: {
+    marginTop: 24,
+    marginBottom: 16,
+  },
+  tagsLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 12,
+    color: '#333',
+    fontFamily: 'Playfair_me',
+  },
+  tagsList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+  },
+  tagItem: {
+    backgroundColor: '#F8F2EA',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginRight: 8,
+    marginBottom: 8,
+  },
+  tagText: {
+    color: '#8A6E63',
+    fontSize: 13,
+    fontFamily: 'Playfair_me',
+  },
+  plainTextContainer: {
+    paddingVertical: 10,
+  },
+  headingContainer: {
+    marginTop: 28,
+    marginBottom: 18,
+  },
+  plainTextH1: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#222',
+    fontFamily: 'Playfair_me',
+    marginBottom: 8,
+  },
+  plainTextH2: {
     fontSize: 22,
     fontWeight: 'bold',
     color: '#333',
-    marginTop: 26,
-    marginBottom: 18,
     fontFamily: 'Playfair_me',
-    letterSpacing: 0.5,
+    marginBottom: 6,
   },
-  paragraph: {
-    fontSize: 16,
-    color: '#333',
-    lineHeight: 26,
-    marginBottom: 18,
-    textAlign: 'justify',
+  plainTextH3: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#444',
     fontFamily: 'Playfair_me',
+    marginBottom: 4,
+  },
+  headingUnderline: {
+    height: 2,
+    width: 60,
+    backgroundColor: '#C8815F',
+    marginTop: 6,
+  },
+  plainTextListItem: {
+    fontSize: 16,
+    color: '#444',
+    lineHeight: 26,
+    marginBottom: 12,
+    paddingLeft: 16,
+    fontFamily: 'Playfair_me',
+  },
+  articleMedia: {
+    marginVertical: 24,
+    borderRadius: 12,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#F0EAE3',
+  },
+  articleHighlight: {
+    backgroundColor: '#FFF8EC',
+    padding: 16,
+    borderRadius: 8,
+    marginVertical: 16,
+    borderLeftWidth: 3,
+    borderLeftColor: '#F0C674',
+  },
+  articleCallout: {
+    backgroundColor: '#F4F8FC',
+    padding: 20,
+    borderRadius: 12,
+    marginVertical: 20,
+    borderWidth: 1,
+    borderColor: '#E6EEF7',
+  },
+  horizontalRule: {
+    height: 1,
+    backgroundColor: '#F0EAE3',
+    marginVertical: 20,
   },
   quoteBox: {
     borderWidth: 1,
@@ -958,6 +1323,150 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#666',
     textAlign: 'center',
+    fontFamily: 'Playfair_me',
+  },
+
+  // HTML content styles
+  htmlBody: {
+    color: '#333',
+    lineHeight: 24,
+    fontFamily: 'Playfair_me',
+  },
+  htmlParagraph: {
+    fontSize: 16,
+    marginBottom: 20,
+    lineHeight: 26,
+    textAlign: 'justify',
+    color: '#333',
+    fontFamily: 'Playfair_me',
+    letterSpacing: 0.3,
+  },
+  htmlHeading1: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#222',
+    marginTop: 35,
+    marginBottom: 20,
+    lineHeight: 36,
+    fontFamily: 'Playfair_me',
+    borderBottomWidth: 2,
+    borderBottomColor: '#F0EAE3',
+    paddingBottom: 10,
+  },
+  htmlHeading2: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 30,
+    marginBottom: 18,
+    lineHeight: 30,
+    fontFamily: 'Playfair_me',
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EAE3',
+    paddingBottom: 8,
+  },
+  htmlHeading3: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#444',
+    marginTop: 25,
+    marginBottom: 16,
+    lineHeight: 26,
+    fontFamily: 'Playfair_me',
+  },
+  htmlLink: {
+    color: '#C8815F',
+    textDecorationLine: 'underline',
+    fontWeight: '500',
+  },
+  htmlList: {
+    marginBottom: 24,
+    paddingLeft: 16,
+  },
+  htmlOrderedList: {
+    marginBottom: 24,
+    paddingLeft: 16,
+  },
+  htmlListItem: {
+    fontSize: 16,
+    lineHeight: 26,
+    marginBottom: 12,
+    fontFamily: 'Playfair_me',
+    paddingLeft: 8,
+    color: '#444',
+  },
+  htmlImage: {
+    borderRadius: 12,
+    marginVertical: 24,
+    borderWidth: 1,
+    borderColor: '#F0EAE3',
+    overflow: 'hidden',
+  },
+  htmlBlockquote: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#C8815F',
+    paddingLeft: 18,
+    marginVertical: 24,
+    fontStyle: 'italic',
+    backgroundColor: '#FEF9F4',
+    borderRadius: 8,
+    padding: 18,
+    marginHorizontal: 6,
+  },
+  quoteClass: {
+    fontStyle: 'italic',
+    backgroundColor: '#FFFAF5',
+    borderLeftWidth: 4,
+    borderLeftColor: '#C8815F',
+    padding: 16,
+    marginVertical: 16,
+  },
+  captionClass: {
+    textAlign: 'center',
+    fontSize: 14,
+    color: '#777',
+    marginTop: -10,
+    marginBottom: 16,
+    fontStyle: 'italic',
+  },
+  errorRendering: {
+    padding: 20,
+    backgroundColor: '#FFF3F3',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#FFCDD2',
+    marginVertical: 16,
+  },
+  errorRenderingText: {
+    color: '#D32F2F',
+    textAlign: 'center',
+    fontFamily: 'Playfair_me',
+    fontSize: 16,
+    lineHeight: 24,
+  },
+  htmlTable: {
+    borderWidth: 1,
+    borderColor: '#E8DFD5',
+    borderRadius: 8,
+    marginVertical: 16,
+    overflow: 'hidden',
+  },
+  htmlTableHeader: {
+    backgroundColor: '#F8F2EA',
+    padding: 12,
+    fontWeight: 'bold',
+    color: '#333',
+    fontSize: 16,
+    fontFamily: 'Playfair_me',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8DFD5',
+  },
+  htmlTableCell: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E8DFD5',
+    color: '#333',
+    fontSize: 15,
     fontFamily: 'Playfair_me',
   },
 });
