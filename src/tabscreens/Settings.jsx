@@ -145,6 +145,13 @@ const Settings = (props) => {
             <Text style={styles.optionText}>Trợ giúp & Phản hồi</Text>
           </View>
         </TouchableOpacity>
+
+        <TouchableOpacity style={styles.optionRow}>
+          <View style={styles.optionLeft}>
+            <Image source={require('../Assets/Images/question.png')} style={styles.optionIcon} />
+            <Text style={styles.optionText}>Đăng Xuất</Text>
+          </View>
+        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );

@@ -23,6 +23,11 @@ const EditPlan = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { user } = useContext(AppContext);
   const userId = user._id;
+  const flatListRef = useRef(null);
+
+  const scrollToIndex = (index) => {
+    flatListRef.current?.scrollToIndex({ index, animated: true });
+  };
 
   const { caterings, cateringStatus, error: cateringError } = useSelector((state) => state.getallcatering);
   const { decorates, decorateStatus, error: decorateError } = useSelector((state) => state.getalldecorates);
@@ -30,6 +35,7 @@ const EditPlan = ({ navigation, route }) => {
   const { presents, presentStatus, error: presentError } = useSelector((state) => state.getallpresent);
   const { data: favorites, status: favoriteStatus, error: favoriteError } = useSelector((state) => state.favoriteset);
 
+  const [confirmModalVisible, setConfirmModalVisible] = useState(false);
   const [name, setName] = useState(planData?.name || '');
   const [plandateevent, setPlandateevent] = useState(
     planData?.eventDate && !isNaN(new Date(planData.eventDate).getTime())
@@ -58,8 +64,12 @@ const EditPlan = ({ navigation, route }) => {
   const [selectedSanh, setSelectedSanh] = useState(planData?.SanhId || null);
   const [cateringsList, setCateringsList] = useState(planData?.caterings?.filter(item => item && item._id) || []);
   const [decoratesList, setDecoratesList] = useState(planData?.decorates?.filter(item => item && item._id) || []);
-  const [presentsList, setPresentsList] = useState(planData?.presents?.filter(item => item && item._id) || []);
-
+  const [presentsList, setPresentsList] = useState(
+    planData?.presents?.filter(item => item && item._id).map(item => ({
+      ...item,
+      quantity: item.quantity || 1
+    })) || []
+  );
   const [modalVisible, setModalVisible] = useState(false);
   const [currentType, setCurrentType] = useState('');
   const [availableItems, setAvailableItems] = useState([]);
@@ -70,8 +80,43 @@ const EditPlan = ({ navigation, route }) => {
   const [showSanhFavorites, setShowSanhFavorites] = useState(false);
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
   const [priceDifference, setPriceDifference] = useState(0);
-  const [presentQuantity, setPresentQuantity] = useState("1");
+  const [presentQuantities, setPresentQuantities] = useState({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // Thêm state để bật/tắt tự động lưu
+
+  // Thêm state để lưu tổng tiền từng loại
+  const [sanhTotal, setSanhTotal] = useState(0);
+  const [cateringTotal, setCateringTotal] = useState(0);
+  const [decorateTotal, setDecorateTotal] = useState(0);
+  const [presentTotal, setPresentTotal] = useState(0);
+
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (autoSaveEnabled && userId && planId && name.trim() && !isNaN(parseInt(plansoluongkhach, 10)) && !isNaN(parseFloat(planprice))) {
+        const updateData = {
+          UserId: userId,
+          name,
+          plandateevent: plandateevent.toISOString(),
+          plansoluongkhach: parseInt(plansoluongkhach, 10) || undefined,
+          planprice: parseFloat(planprice) || undefined,
+          totalPrice: totalPrice,
+          SanhId: sanhId || undefined,
+          caterings: cateringsList.map(item => item._id).filter(Boolean),
+          decorates: decoratesList.map(item => item._id).filter(Boolean),
+          presents: presentsList.map(item => ({
+            _id: item._id,
+            quantity: item.quantity || 1
+          })).filter(item => item._id),
+          isCopy: planData.isCopy || false,
+          originalPlanId: planData.originalPlanId || planId,
+        };
+        savePlan(updateData); // Lưu tự động
+      }
+    });
+
+    return unsubscribe;
+  }, [cateringsList, decoratesList, presentsList, selectedSanh, plansoluongkhach, planprice, name, plandateevent, sanhId, navigation, autoSaveEnabled]);
+
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
@@ -79,40 +124,45 @@ const EditPlan = ({ navigation, route }) => {
   }, [dispatch, userId]);
 
   useEffect(() => {
-    const calculateTotalPrice = () => {
-      let total = 0;
-
+    const calculateTotals = () => {
+      // Tổng tiền sảnh
       const sanhPrice = selectedSanh?.price ? parseFloat(selectedSanh.price) : 0;
-      total += sanhPrice;
+      setSanhTotal(sanhPrice);
 
+      // Tổng tiền dịch vụ ăn uống
       const guestCount = parseInt(plansoluongkhach, 10) || 0;
       const cateringTotal = cateringsList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         return sum + (price * (guestCount / 10));
       }, 0);
-      total += cateringTotal;
+      setCateringTotal(cateringTotal);
 
+      // Tổng tiền trang trí
       const decorateTotal = decoratesList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         return sum + price;
       }, 0);
-      total += decorateTotal;
+      setDecorateTotal(decorateTotal);
 
+      // Tổng tiền quà tặng
       const presentTotal = presentsList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         const quantity = item?.quantity ? parseInt(item.quantity, 10) : 1;
         return sum + price * quantity;
       }, 0);
-      total += presentTotal;
+      setPresentTotal(presentTotal);
 
+      // Tổng tiền tất cả
+      const total = sanhPrice + cateringTotal + decorateTotal + presentTotal;
       setTotalPrice(total);
 
+      // Chênh lệch ngân sách
       const budget = parseFloat(planprice) || 0;
       const difference = budget - total;
       setPriceDifference(difference);
     };
 
-    calculateTotalPrice();
+    calculateTotals();
   }, [cateringsList, decoratesList, presentsList, selectedSanh, plansoluongkhach, planprice]);
 
   const openChangeModal = (type, action = 'add', index = null) => {
@@ -122,7 +172,7 @@ const EditPlan = ({ navigation, route }) => {
     setModalVisible(true);
     setShowFavorites(false);
     setSelectedItemDetail(null);
-    setPresentQuantity("1");
+    setPresentQuantities({});
 
     if (type === 'caterings') dispatch(fetchCaterings());
     else if (type === 'decorates') dispatch(fetchDecorates());
@@ -155,15 +205,13 @@ const EditPlan = ({ navigation, route }) => {
         items = Array.from(new Map(presents.map(item => [item._id, item])).values());
       }
       setAvailableItems(items);
-      
     }
-  
+
     if (sanhModalVisible && HallStatus === 'succeeded') {
       const sanhItems = showSanhFavorites && favoriteStatus === 'succeeded'
         ? Array.from(new Map(favorites.filter(item => item.type === 'Sanh').map(item => [item._id, item])).values())
         : Array.from(new Map(HallData.map(item => [item._id, item])).values());
       setAvailableItems(sanhItems);
-     
     }
   }, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData, sanhModalVisible, showSanhFavorites]);
 
@@ -197,9 +245,7 @@ const EditPlan = ({ navigation, route }) => {
   }, [dispatch]);
 
   const handleSelectItem = (item) => {
-    if (!item) {
-      return;
-    }
+    if (!item) return;
 
     const normalizedItem = {
       _id: item.itemId || item._id,
@@ -207,7 +253,9 @@ const EditPlan = ({ navigation, route }) => {
       price: item.price || 0,
       imageUrl: item.imageUrl || item.image || null,
       description: item.description || '',
-      ...(currentType === 'presents' && { quantity: parseInt(presentQuantity) || 1 }),
+      ...(currentType === 'presents' && {
+        quantity: parseInt(presentQuantities[item._id] || '1') || 1
+      }),
     };
 
     const updateList = (list, setList) => {
@@ -225,7 +273,8 @@ const EditPlan = ({ navigation, route }) => {
         setModalVisible(false);
       } else if (actionType === 'replace' && replaceIndex !== null) {
         const newList = [...list];
-        newList[replaceIndex] = normalizedItem;
+        const existingQuantity = list[replaceIndex]?.quantity || 1;
+        newList[replaceIndex] = { ...normalizedItem, quantity: existingQuantity };
         setList(newList);
         setModalVisible(false);
       }
@@ -247,7 +296,6 @@ const EditPlan = ({ navigation, route }) => {
   };
 
   const handleSelectSanh = (item) => {
-    
     const normalizedSanh = {
       _id: item.itemId || item._id,
       name: item.name || 'Không có tên',
@@ -255,7 +303,6 @@ const EditPlan = ({ navigation, route }) => {
       imageUrl: item.imageUrl || item.image || null,
       SoLuongKhach: item.SoLuongKhach || 0,
     };
-   
     setSanhId(normalizedSanh._id);
     setSelectedSanh(normalizedSanh);
     setSanhModalVisible(false);
@@ -268,13 +315,6 @@ const EditPlan = ({ navigation, route }) => {
     if (plansoluongkhach && isNaN(parseInt(plansoluongkhach, 10))) return ToastAndroid.show('Số lượng khách không hợp lệ!', ToastAndroid.SHORT);
     if (planprice && isNaN(parseFloat(planprice))) return ToastAndroid.show('Ngân sách không hợp lệ!', ToastAndroid.SHORT);
 
-    if (priceDifference < 0) {
-      ToastAndroid.show(
-        `Tổng giá vượt ngân sách ${Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ. Bạn có chắc chắn muốn lưu?`,
-        ToastAndroid.LONG
-      );
-    }
-
     const updateData = {
       UserId: userId,
       name,
@@ -285,11 +325,22 @@ const EditPlan = ({ navigation, route }) => {
       SanhId: sanhId || undefined,
       caterings: cateringsList.map(item => item._id).filter(Boolean),
       decorates: decoratesList.map(item => item._id).filter(Boolean),
-      presents: presentsList.map(item => item._id).filter(Boolean),
+      presents: presentsList.map(item => ({
+        id: item._id, // Thay _id thành id để khớp với API
+        quantity: item.quantity || 1
+      })).filter(item => item.id), // Đảm bảo chỉ gửi các item có id
       isCopy: planData.isCopy || false,
       originalPlanId: planData.originalPlanId || planId,
     };
-  
+
+    if (priceDifference < 0) {
+      setConfirmModalVisible(true);
+    } else {
+      savePlan(updateData);
+    }
+  };
+
+  const savePlan = (updateData) => {
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
@@ -339,12 +390,11 @@ const EditPlan = ({ navigation, route }) => {
     setPresentsList(updatedPresents);
   };
 
-  const renderItemList = (items, type) => (
+  const renderItemList = (items, type, total) => (
     <View>
       {items.length > 0 ? (
         items.map((item, index) => {
           const uniqueKey = `${type}-${item._id}-${index}`;
-         
           return item && item._id ? (
             <View key={uniqueKey} style={styles.itemCard}>
               {item.imageUrl && <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />}
@@ -378,13 +428,40 @@ const EditPlan = ({ navigation, route }) => {
         })
       ) : (
         <Text style={styles.noDataText}>
-          Chưa đại {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
+          Chưa chọn {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
         </Text>
       )}
+      <View style={styles.totalContainer}>
+        <Text style={styles.totalLabel}>Tổng chi phí {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}:</Text>
+        <Text style={styles.totalValue}>{total.toLocaleString('vi-VN')} VNĐ</Text>
+      </View>
       <TouchableOpacity style={styles.changeButton} onPress={() => openChangeModal(type, 'add')}>
         <Text style={styles.buttonText}>
           Thêm {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
         </Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  const renderSanhSection = () => (
+    <View>
+      <View style={styles.itemCard}>
+        {selectedSanh?.imageUrl && (
+          <Image source={{ uri: selectedSanh.imageUrl }} style={styles.itemImage} />
+        )}
+        <View style={styles.itemContent}>
+          <Text style={styles.itemText}>{selectedSanh?.name || 'Chưa chọn sảnh'}</Text>
+          <Text style={styles.itemPrice}>
+            {selectedSanh?.price?.toLocaleString('vi-VN') || '0'} VNĐ
+          </Text>
+        </View>
+      </View>
+      <View style={styles.totalContainer}>
+        <Text style={styles.totalLabel}>Tổng chi phí sảnh:</Text>
+        <Text style={styles.totalValue}>{sanhTotal.toLocaleString('vi-VN')} VNĐ</Text>
+      </View>
+      <TouchableOpacity style={styles.changeButton} onPress={handleChangeSanh}>
+        <Text style={styles.buttonText}>Thay đổi sảnh</Text>
       </TouchableOpacity>
     </View>
   );
@@ -404,8 +481,11 @@ const EditPlan = ({ navigation, route }) => {
                 <Text style={styles.quantityLabel}>Số lượng:</Text>
                 <TextInput
                   style={styles.smallQuantityInput}
-                  value={presentQuantity}
-                  onChangeText={setPresentQuantity}
+                  value={presentQuantities[item._id] || '1'}
+                  onChangeText={(text) => setPresentQuantities({
+                    ...presentQuantities,
+                    [item._id]: text
+                  })}
                   keyboardType="numeric"
                   placeholder="1"
                 />
@@ -414,7 +494,7 @@ const EditPlan = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.viewButton} onPress={() => handleViewDetail(item)}>
-          <Text style={styles.buttonText}>View</Text>
+          <Icon name="eye" size={20} color="#FFF" />
         </TouchableOpacity>
       </View>
     ) : null
@@ -436,7 +516,7 @@ const EditPlan = ({ navigation, route }) => {
           </View>
         </TouchableOpacity>
         <TouchableOpacity style={styles.viewButton} onPress={() => handleViewDetail(item)}>
-          <Text style={styles.buttonText}>View</Text>
+          <Icon name="eye" size={20} color="#FFF" />
         </TouchableOpacity>
       </View>
     ) : null
@@ -464,8 +544,8 @@ const EditPlan = ({ navigation, route }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: 80 }}
       >
@@ -475,11 +555,19 @@ const EditPlan = ({ navigation, route }) => {
               <Icon name="arrow-left" size={22} color="#000000" />
             </TouchableOpacity>
             <Text style={styles.headerTitle}>Chỉnh sửa kế hoạch</Text>
-            <View style={{width: 22}} />
+            <View style={{ width: 22 }} />
           </View>
 
           <View style={styles.planInfoCard}>
             <Text style={styles.planTitle}>Thông tin kế hoạch</Text>
+            <TouchableOpacity
+              style={styles.toggleAutoSaveButton}
+              onPress={() => setAutoSaveEnabled(!autoSaveEnabled)}
+            >
+              <Text style={styles.buttonText}>
+                {autoSaveEnabled ? 'Tắt tự động lưu' : 'Bật tự động lưu'}
+              </Text>
+            </TouchableOpacity>
             <View style={styles.inputRow}>
               <Text style={styles.label}>Tên kế hoạch:</Text>
               <TextInput
@@ -559,41 +647,28 @@ const EditPlan = ({ navigation, route }) => {
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Sảnh:</Text>
-              <View style={styles.itemCard}>
-                {selectedSanh?.imageUrl && (
-                  <Image source={{ uri: selectedSanh.imageUrl }} style={styles.itemImage} />
-                )}
-                <View style={styles.itemContent}>
-                  <Text style={styles.itemText}>{selectedSanh?.name || 'Chưa chọn sảnh'}</Text>
-                  <Text style={styles.itemPrice}>
-                    {selectedSanh?.price?.toLocaleString('vi-VN') || '0'} VNĐ
-                  </Text>
-                </View>
-              </View>
-              <TouchableOpacity style={styles.changeButton} onPress={handleChangeSanh}>
-                <Text style={styles.buttonText}>Thay đổi sảnh</Text>
-              </TouchableOpacity>
+              {renderSanhSection()}
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Dịch vụ ăn uống:</Text>
-              {renderItemList(cateringsList, 'caterings')}
+              {renderItemList(cateringsList, 'caterings', cateringTotal)}
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Trang trí:</Text>
-              {renderItemList(decoratesList, 'decorates')}
+              {renderItemList(decoratesList, 'decorates', decorateTotal)}
             </View>
 
             <View style={styles.divider} />
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Quà tặng:</Text>
-              {renderItemList(presentsList, 'presents')}
+              {renderItemList(presentsList, 'presents', presentTotal)}
             </View>
           </View>
         </Animated.View>
@@ -612,16 +687,16 @@ const EditPlan = ({ navigation, route }) => {
           <View style={styles.bottomBarPriceRow}>
             <Text style={styles.bottomBarPriceLabel}>Chênh lệch:</Text>
             <View style={styles.differenceContainer}>
-              <Icon 
-                name={priceDifference >= 0 ? "arrow-up-bold" : "arrow-down-bold"} 
-                size={13} 
-                color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'} 
-                style={{marginRight: 4}}
+              <Icon
+                name={priceDifference >= 0 ? "arrow-down-bold" : "arrow-up-bold"}
+                size={13}
+                color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
+                style={{ marginRight: 4 }}
               />
-              <Text 
+              <Text
                 style={[
-                  styles.bottomBarPriceValue, 
-                  {color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
+                  styles.bottomBarPriceValue,
+                  { color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000' }
                 ]}
               >
                 {priceDifference.toLocaleString('vi-VN')} VNĐ
@@ -629,7 +704,7 @@ const EditPlan = ({ navigation, route }) => {
             </View>
           </View>
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.saveBottomBarButton}
           onPress={handleSave}
         >
@@ -674,12 +749,14 @@ const EditPlan = ({ navigation, route }) => {
                   <FlatList
                     data={availableItems}
                     renderItem={renderModalItem}
-                    keyExtractor={(item, index) => {
-                      const key = `${currentType}-${item._id || item.itemId || 'item'}-${index}`;
-                      
-                      return key;
-                    }}
+                    keyExtractor={(item, index) => `${currentType}-${item._id || item.itemId || 'item'}-${index}`}
                     style={styles.modalList}
+                    onScrollToIndexFailed={(info) => {
+                      const wait = new Promise((resolve) => setTimeout(resolve, 500));
+                      wait.then(() => {
+                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                      });
+                    }}
                   />
                 ) : (
                   <Text style={styles.noDataText}>
@@ -726,12 +803,14 @@ const EditPlan = ({ navigation, route }) => {
                   <FlatList
                     data={availableItems}
                     renderItem={renderSanhItem}
-                    keyExtractor={(item, index) => {
-                      const key = `sanh-${item._id || item.itemId || 'sanh'}-${index}`;
-                      
-                      return key;
-                    }}
+                    keyExtractor={(item, index) => `sanh-${item._id || item.itemId || 'sanh'}-${index}`}
                     style={styles.modalList}
+                    onScrollToIndexFailed={(info) => {
+                      const wait = new Promise((resolve) => setTimeout(resolve, 500));
+                      wait.then(() => {
+                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
+                      });
+                    }}
                   />
                 ) : (
                   <Text style={styles.noDataText}>
@@ -746,47 +825,135 @@ const EditPlan = ({ navigation, route }) => {
           </View>
         </View>
       </Modal>
+
+      <Modal
+        animationType="fade"
+        transparent={true}
+        visible={confirmModalVisible}
+        onRequestClose={() => setConfirmModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModalContent}>
+            <Text style={styles.confirmModalTitle}>Xác nhận lưu kế hoạch</Text>
+            <Text style={styles.confirmModalText}>
+              Tổng chi phí vượt ngân sách {Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ.
+              Bạn có chắc chắn muốn lưu?
+            </Text>
+            <View style={styles.confirmButtonContainer}>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.cancelButton]}
+                onPress={() => setConfirmModalVisible(false)}
+              >
+                <Text style={styles.confirmButtonText}>Không</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.confirmSaveButton]}
+                onPress={() => {
+                  setConfirmModalVisible(false);
+                  savePlan({
+                    UserId: userId,
+                    name,
+                    plandateevent: plandateevent.toISOString(),
+                    plansoluongkhach: parseInt(plansoluongkhach, 10) || undefined,
+                    planprice: parseFloat(planprice) || undefined,
+                    totalPrice: totalPrice,
+                    SanhId: sanhId || undefined,
+                    caterings: cateringsList.map(item => item._id).filter(Boolean),
+                    decorates: decoratesList.map(item => item._id).filter(Boolean),
+                    presents: presentsList.map(item => ({
+                      id: item._id, // Thay _id thành id để khớp với API
+                      quantity: item.quantity || 1
+                    })).filter(item => item.id),
+                    isCopy: planData.isCopy || false,
+                    originalPlanId: planData.originalPlanId || planId,
+                  });
+                }}
+              >
+                <Text style={styles.confirmButtonText}>Có</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  toggleContainer: { 
-    flexDirection: 'row', 
-    justifyContent: 'center', 
-    marginBottom: 15 
+  confirmModalContent: {
+    width: '80%',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    padding: 20,
+    alignItems: 'center',
   },
-  toggleButton: { 
-    paddingVertical: 8, 
-    paddingHorizontal: 20, 
-    borderRadius: 20, 
-    backgroundColor: 'rgba(0, 0, 0, 0.05)', 
-    marginHorizontal: 5 
+  confirmModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 15,
   },
-  activeToggle: { 
-    backgroundColor: '#000000'
+  confirmModalText: {
+    fontSize: 16,
+    color: '#666666',
+    textAlign: 'center',
+    marginBottom: 20,
   },
-  toggleText: { 
-    fontSize: 16, 
-    color: '#000000', 
-    fontWeight: 'bold' 
+  confirmButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '100%',
+  },
+  confirmButton: {
+    flex: 1,
+    paddingVertical: 10,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginHorizontal: 5,
+  },
+  cancelButton: {
+    backgroundColor: '#666666',
+  },
+  confirmSaveButton: {
+    backgroundColor: '#000000',
+  },
+  confirmButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginBottom: 15,
+  },
+  toggleButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 20,
+    borderRadius: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    marginHorizontal: 5,
+  },
+  activeToggle: {
+    backgroundColor: '#000000',
+  },
+  toggleText: {
+    fontSize: 16,
+    color: '#000000',
+    fontWeight: 'bold',
   },
   activeToggleText: {
-    color: '#FFFFFF'
+    color: '#FFFFFF',
   },
-  homeIcon: { 
-    width: 22, 
-    height: 22 
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
   },
-  container: { 
-    flex: 1, 
-    backgroundColor: '#FFFFFF' 
+  scrollView: {
+    flex: 1,
   },
-  scrollView: { 
-    flex: 1 
-  },
-  content: { 
-    padding: 20 
+  content: {
+    padding: 20,
   },
   header: {
     flexDirection: 'row',
@@ -804,28 +971,28 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     backgroundColor: 'rgba(0, 0, 0, 0.05)',
   },
-  headerTitle: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    color: '#000000' 
+  headerTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
   },
   planInfoCard: {
     padding: 0,
   },
-  planTitle: { 
-    fontSize: 24, 
-    fontWeight: 'bold', 
-    color: '#000000', 
-    marginBottom: 20 
+  planTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 20,
   },
-  inputRow: { 
-    marginBottom: 20 
+  inputRow: {
+    marginBottom: 20,
   },
-  label: { 
-    fontSize: 16, 
-    fontWeight: '600', 
-    color: '#000000', 
-    marginBottom: 8 
+  label: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 8,
   },
   input: {
     borderWidth: 1,
@@ -844,101 +1011,82 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     alignItems: 'center',
   },
-  itemImage: { 
-    width: 80, 
-    height: 80, 
-    borderRadius: 8, 
-    marginRight: 10 
-  },
-  itemContent: { 
-    flex: 1 
-  },
-  itemText: { 
-    fontSize: 14, 
-    color: '#000000', 
-    fontWeight: '500' 
-  },
-  itemPrice: { 
-    fontSize: 12, 
-    color: '#000000', 
-    marginTop: 5 
-  },
-  itemDescription: { 
-    fontSize: 12, 
-    color: '#757575', 
-    marginTop: 5 
-  },
-  itemActions: { 
-    flexDirection: 'row', 
-    marginLeft: 10 
-  },
-  replaceButton: { 
-    backgroundColor: '#000000', 
-    paddingVertical: 5, 
-    paddingHorizontal: 10, 
-    borderRadius: 8, 
-    marginRight: 5 
-  },
-  removeButton: { 
-    backgroundColor: '#333333', 
-    paddingVertical: 5, 
-    paddingHorizontal: 10, 
-    borderRadius: 8 
-  },
-  noDataText: { 
-    fontSize: 14, 
-    color: '#757575', 
-    fontStyle: 'italic', 
-    textAlign: 'center' 
-  },
-  changeButton: { 
-    backgroundColor: '#000000', 
-    paddingVertical: 8, 
-    paddingHorizontal: 15, 
-    borderRadius: 8, 
-    alignSelf: 'flex-start' 
-  },
-  saveButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000000',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+  itemImage: {
+    width: 80,
+    height: 80,
     borderRadius: 8,
-    alignSelf: 'center',
-    marginTop: 30,
-    marginBottom: 20,
+    marginRight: 10,
   },
-  buttonIcon: { 
-    marginRight: 8 
+  itemContent: {
+    flex: 1,
   },
-  buttonText: { 
-    color: '#FFF', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  itemText: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '500',
   },
-  modalOverlay: { 
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    backgroundColor: 'rgba(0, 0, 0, 0.5)' 
+  itemPrice: {
+    fontSize: 12,
+    color: '#000000',
+    marginTop: 5,
   },
-  modalContent: { 
-    width: '90%', 
-    backgroundColor: '#FFF', 
-    borderRadius: 10, 
-    padding: 20, 
-    maxHeight: '80%' 
+  itemActions: {
+    flexDirection: 'row',
+    marginLeft: 10,
   },
-  modalTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#000000', 
-    marginBottom: 15, 
-    textAlign: 'center' 
+  replaceButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginRight: 5,
   },
-  modalList: { 
-    flexGrow: 0 
+  removeButton: {
+    backgroundColor: '#333333',
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 8,
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#757575',
+    fontStyle: 'italic',
+    textAlign: 'center',
+  },
+  changeButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  buttonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: '#FFF',
+    borderRadius: 10,
+    padding: 20,
+    maxHeight: '80%',
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalList: {
+    flexGrow: 0,
   },
   modalItem: {
     flexDirection: 'row',
@@ -946,102 +1094,102 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: 'rgba(0, 0, 0, 0.1)',
     alignItems: 'center',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   },
   modalItemSelect: {
     flexDirection: 'row',
     flex: 1,
-    alignItems: 'center'
+    alignItems: 'center',
   },
-  modalItemImage: { 
-    width: 50, 
-    height: 50, 
-    borderRadius: 8, 
-    marginRight: 10 
+  modalItemImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 8,
+    marginRight: 10,
   },
-  modalItemContent: { 
-    flex: 1 
+  modalItemContent: {
+    flex: 1,
   },
-  modalItemText: { 
-    fontSize: 16, 
-    color: '#000000', 
-    fontWeight: '500' 
+  modalItemText: {
+    fontSize: 16,
+    color: '#000000',
+    fontWeight: '500',
   },
-  modalItemPrice: { 
-    fontSize: 14, 
-    color: '#000000', 
-    marginTop: 5 
+  modalItemPrice: {
+    fontSize: 14,
+    color: '#000000',
+    marginTop: 5,
   },
   viewButton: {
     backgroundColor: '#000000',
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 8,
-    marginLeft: 10
+    marginLeft: 10,
   },
-  closeButton: { 
-    backgroundColor: '#000000', 
-    paddingVertical: 10, 
-    paddingHorizontal: 20, 
-    borderRadius: 8, 
-    alignSelf: 'center', 
-    marginTop: 15 
+  closeButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    marginTop: 15,
   },
-  closeButtonText: { 
-    color: '#FFF', 
-    fontSize: 16, 
-    fontWeight: 'bold' 
+  closeButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  loadingContainer: { 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    padding: 20 
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
   },
-  loadingText: { 
-    marginTop: 10, 
-    fontSize: 16, 
-    color: '#000000' 
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#000000',
   },
-  detailContainer: { 
-    padding: 10 
+  detailContainer: {
+    padding: 10,
   },
-  detailTitle: { 
-    fontSize: 20, 
-    fontWeight: 'bold', 
-    color: '#000000', 
-    marginBottom: 10, 
-    textAlign: 'center' 
+  detailTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  detailImage: { 
-    width: '100%', 
-    height: 200, 
-    borderRadius: 10, 
-    marginBottom: 10 
+  detailImage: {
+    width: '100%',
+    height: 200,
+    borderRadius: 10,
+    marginBottom: 10,
   },
-  detailPrice: { 
-    fontSize: 18, 
-    color: '#000000', 
-    marginBottom: 10, 
-    textAlign: 'center' 
+  detailPrice: {
+    fontSize: 18,
+    color: '#000000',
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  detailDescription: { 
-    fontSize: 16, 
-    color: '#757575', 
-    marginBottom: 10, 
-    textAlign: 'center' 
+  detailDescription: {
+    fontSize: 16,
+    color: '#757575',
+    marginBottom: 10,
+    textAlign: 'center',
   },
-  detailCapacity: { 
-    fontSize: 16, 
-    color: '#757575', 
-    marginBottom: 10, 
-    textAlign: 'center' 
+  detailCapacity: {
+    fontSize: 16,
+    color: '#757575',
+    marginBottom: 10,
+    textAlign: 'center',
   },
   backButtonDetail: {
     backgroundColor: '#000000',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
-    alignSelf: 'center'
+    alignSelf: 'center',
   },
   divider: {
     height: 1,
@@ -1149,6 +1297,33 @@ const styles = StyleSheet.create({
   differenceContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  totalLabel: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: '600',
+  },
+  totalValue: {
+    fontSize: 14,
+    color: '#000000',
+    fontWeight: 'bold',
+  },
+  toggleAutoSaveButton: {
+    backgroundColor: '#000000',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    marginTop: 10,
   },
 });
 

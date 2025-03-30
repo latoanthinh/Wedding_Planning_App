@@ -7,21 +7,39 @@ import { DangNhapTaiKhoan } from '../redux/LoginSlice';
 import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
 
 const SignIn = (props) => {
-
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const { navigation } = props;
-
-    const [email, setEmail] = useState('lmao2@gmail.com');
-    const [password, setPassword] = useState('123456');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const { user, setUser } = useContext(AppContext);
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
 
+    // Load thông tin đã lưu khi component mount
+    useEffect(() => {
+        const loadSavedCredentials = async () => {
+            try {
+                const savedEmail = await AsyncStorage.getItem('savedEmail');
+                const savedPassword = await AsyncStorage.getItem('savedPassword');
+                const rememberMe = await AsyncStorage.getItem('rememberMe');
+                
+                if (savedEmail && savedPassword && rememberMe === 'true') {
+                    setEmail(savedEmail);
+                    setPassword(savedPassword);
+                    setIsChecked(true);
+                }
+            } catch (error) {
+                console.log('Error loading saved credentials:', error);
+            }
+        };
+        
+        loadSavedCredentials();
+    }, []);
+
     const validateInputs = () => {
         let valid = true;
 
-        // Kiểm tra email
         if (!email.trim()) {
             setEmailError("Email không được để trống");
             valid = false;
@@ -32,7 +50,6 @@ const SignIn = (props) => {
             setEmailError("");
         }
 
-        // Kiểm tra mật khẩu
         if (!password.trim()) {
             setPasswordError("Mật khẩu không được để trống");
             valid = false;
@@ -54,19 +71,29 @@ const SignIn = (props) => {
     const { loginData, loginStatus } = useSelector((state) => state.login);
 
     useEffect(() => {
-        if (loginStatus == "succeeded") {
-            console.log('Login successful, user data:', JSON.stringify({
-                ...loginData.user,
-                avatar: loginData.user.avatar ? 'AVATAR_DATA_PRESENT' : null
-            }));
+        if (loginStatus === "succeeded") {
+            const saveCredentials = async () => {
+                try {
+                    if (isChecked) {
+                        await AsyncStorage.setItem('savedEmail', email);
+                        await AsyncStorage.setItem('savedPassword', password);
+                        await AsyncStorage.setItem('rememberMe', 'true');
+                    } else {
+                        await AsyncStorage.removeItem('savedEmail');
+                        await AsyncStorage.removeItem('savedPassword');
+                        await AsyncStorage.setItem('rememberMe', 'false');
+                    }
+                } catch (error) {
+                    console.log('Error saving credentials:', error);
+                }
+            };
             
-            // Ensure avatar has proper format
+            saveCredentials();
+            
             const userData = {...loginData.user};
-            
             if (userData.avatar && typeof userData.avatar === 'string' && 
                 !userData.avatar.startsWith('data:') && 
                 !userData.avatar.startsWith('http')) {
-                console.log('Fixing avatar format during login');
                 userData.avatar = `data:image/jpeg;base64,${userData.avatar}`;
             }
             
@@ -80,11 +107,10 @@ const SignIn = (props) => {
             
             setUser(userData);
             ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
-        }
-        else if (loginStatus === 'failed') {
+        } else if (loginStatus === 'failed') {
             ToastAndroid.show('Đăng nhập thất bại!', ToastAndroid.SHORT);
         }
-    }, [loginStatus, loginData, setUser])
+    }, [loginStatus, loginData, setUser, isChecked, email, password]);
 
     const dangnhap = () => {
         if (validateInputs()) {
@@ -106,10 +132,15 @@ const SignIn = (props) => {
         navigation.navigate('SignUp');
     };
 
+    const handleForgotPasswordPress = () => {
+        navigation.navigate('EmailOpt');
+    };
+
     return (
         <View style={SignInPageStyles.container}>
             <Text style={SignInPageStyles.welcomeText}>Chào mừng bạn!</Text>
             <Text style={SignInPageStyles.instructionText}>Vui lòng đăng nhập để tiếp tục.</Text>
+            
             <View>
                 <TextInput
                     style={[SignInPageStyles.input, emailError ? { borderColor: 'red', borderWidth: 1 } : {}]}
@@ -121,7 +152,6 @@ const SignIn = (props) => {
                 {emailError ? <Text style={{ color: 'red', fontSize: 12 }}>{emailError}</Text> : null}
                 <Image source={require('../Assets/Images/user.png')} style={{ width: 20, height: 20, position: 'absolute', top: 15, left: 8 }} />
             </View>
-
 
             <View>
                 <TextInput
@@ -154,7 +184,7 @@ const SignIn = (props) => {
                     </TouchableOpacity>
                     <Text style={SignInPageStyles.rememberMeText}>Ghi nhớ</Text>
                 </View>
-                <TouchableOpacity onPress={handleForgotPasswordPress} style={SignInPageStyles.forgotPasswordText}>
+                <TouchableOpacity onPress={handleForgotPasswordPress}>
                     <Text style={SignInPageStyles.forgotPasswordText}>Quên mật khẩu?</Text>
                 </TouchableOpacity>
             </View>
@@ -176,11 +206,11 @@ const SignIn = (props) => {
                 </TouchableOpacity>
             </View>
 
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }} >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={SignInPageStyles.signUpPrompt}>
                     Bạn không có tài khoản? </Text>
-                <TouchableOpacity onPress={handleSignUpPress} style={{ marginLeft: 10, fontFamily: 'Playfair_me' }}>
-                    <Text style={{ color: 'gray', fontFamily:'Playfair_me' }}>Đăng ký</Text>
+                <TouchableOpacity onPress={handleSignUpPress}>
+                    <Text style={{ color: 'gray', fontFamily: 'Playfair_me' }}>Đăng ký</Text>
                 </TouchableOpacity>
             </View>
         </View>

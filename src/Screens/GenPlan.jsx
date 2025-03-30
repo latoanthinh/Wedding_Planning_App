@@ -56,7 +56,7 @@ const GenPlan = ({ navigation, route }) => {
           </View>
           <TouchableOpacity
             style={styles.detailButtonContainer}
-            onPress={() => navigation.navigate("DetailPlan", { planData: planDataWithParams })}
+            onPress={() => navigation.navigate("DetailPlan", { planData: planDataWithParams, fromGenPlan: true })}
           >
             <Text style={styles.detailButton}>Xem chi tiết</Text>
           </TouchableOpacity>
@@ -114,6 +114,7 @@ const GenPlan = ({ navigation, route }) => {
               keyExtractor={(item) => item._id.toString()}
               style={styles.planList}
               scrollEnabled={false}
+              
             />
           ) : (
             <View style={styles.noPlansContainer}>

@@ -187,12 +187,6 @@ const Favorites = ({ navigation }) => {
             </View>
             <Text style={styles.emptyTitle}>Không có mục yêu thích</Text>
             <Text style={styles.emptyMessage}>Hãy thêm sản phẩm vào danh sách yêu thích của bạn</Text>
-            <TouchableOpacity
-                style={styles.shopButton}
-                onPress={() => navigation.navigate('HomeScreen')}
-            >
-                <Text style={styles.shopButtonText}>Tiếp tục mua sắm</Text>
-            </TouchableOpacity>
         </View>
     );
 
@@ -230,7 +224,7 @@ const Favorites = ({ navigation }) => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Danh sách yêu thích</Text>
-                <Text style={styles.itemCount}>{validatedData.length} sản phẩm</Text>
+                
             </View>
 
             {validatedData.length === 0 ? (

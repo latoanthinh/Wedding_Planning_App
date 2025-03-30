@@ -26,7 +26,7 @@ const AllPlan = ({ navigation }) => {
           if (!item._id) {
             return;
           }
-          navigation.navigate("DetailPlan", { planId: item._id });
+          navigation.navigate("DetailPlan", { planId: item._id, fromGenPlan: false });
         }}
         style={styles.cardContainer}
       >
@@ -82,59 +82,68 @@ const AllPlan = ({ navigation }) => {
     }
   };
 
+  const handleCreateNewPlan = () => {
+    navigation.navigate('Thongtincoban'); // Điều hướng đến màn hình tạo plan mới
+  };
+
   const renderContent = useCallback(() => {
-    switch (AllPlanStatus) {
-      case 'idle':
-        return (
-          <View style={styles.statusContainer}>
-            <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
-            <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
-            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-              <Text style={styles.refreshButtonText}>Làm mới</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      case 'loading':
-        return (
-          <View style={styles.statusContainer}>
-            <ActivityIndicator size="large" color="#2196F3" />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-          </View>
-        );
-      case 'succeeded':
-        return AllPlanData && AllPlanData.length > 0 ? (
-          <FlatList
-            data={AllPlanData}
-            keyExtractor={(item) => item._id}
-            renderItem={PlanCard}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.flatListContent}
-            ListFooterComponent={
-              <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-                <Text style={styles.refreshButtonText}>Làm mới</Text>
-              </TouchableOpacity>
-            }
-          />
-        ) : (
-          <View style={styles.statusContainer}>
-            <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
-            <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
-            
-          </View>
-        );
-      case 'failed':
-        return (
-          <View style={styles.statusContainer}>
-            <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
-            <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé </Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-              <Text style={styles.retryButtonText}>Thử lại</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      default:
-        return null;
-    }
+    return (
+      <>
+        {(() => {
+          switch (AllPlanStatus) {
+            case 'idle':
+              return (
+                <View style={styles.statusContainer}>
+                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
+                  <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
+                </View>
+              );
+            case 'loading':
+              return (
+                <View style={styles.statusContainer}>
+                  <ActivityIndicator size="large" color="#2196F3" />
+                  <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+                </View>
+              );
+            case 'succeeded':
+              return AllPlanData && AllPlanData.length > 0 ? (
+                <FlatList
+                  data={AllPlanData}
+                  keyExtractor={(item) => item._id}
+                  renderItem={PlanCard}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.flatListContent}
+                  refreshing={AllPlanStatus === 'loading'}
+                  onRefresh={handleRefresh}
+                  
+                />
+              ) : (
+                <View style={styles.statusContainer}>
+                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
+                  <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
+                </View>
+              );
+            case 'failed':
+              return (
+                <View style={styles.statusContainer}>
+                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
+                  <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé</Text>
+                </View>
+              );
+            default:
+              return null;
+          }
+        })()}
+
+        {/* Nút tạo plan mới */}
+        <TouchableOpacity
+          style={styles.createPlanButton}
+          onPress={handleCreateNewPlan}
+        >
+          <Text style={styles.createPlanButtonText}>Tạo plan mới</Text>
+        </TouchableOpacity>
+      </>
+    );
   }, [AllPlanData, AllPlanStatus, error, dispatch, userId, PlanCard]);
 
   return (
@@ -209,7 +218,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   flatListContent: {
-    paddingBottom: 20,
+    paddingBottom: 100, // Tăng padding để nút "Tạo plan mới" không che danh sách
   },
   cardContainer: {
     marginBottom: 16,
@@ -314,7 +323,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#757575',
     textAlign: 'center',
-    marginBottom: 20, // Thêm khoảng cách cho nút
+    marginBottom: 20,
   },
   loadingText: {
     fontSize: 16,
@@ -327,31 +336,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 12,
   },
-  retryButton: {
-    backgroundColor: '#2196F3',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    marginTop: 16,
-    elevation: 2,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  refreshButton: {
+  createPlanButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
     backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    marginVertical: 16,
-    elevation: 2,
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderRadius: 30,
+    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  refreshButtonText: {
+  createPlanButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
+    fontWeight: '700',
   },
 });
 
