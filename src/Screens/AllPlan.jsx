@@ -83,58 +83,70 @@ const AllPlan = ({ navigation }) => {
   };
 
   const renderContent = useCallback(() => {
-    switch (AllPlanStatus) {
-      case 'idle':
-        return (
-          <View style={styles.statusContainer}>
-            <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
-            <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
-            <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-              <Text style={styles.refreshButtonText}>Làm mới</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      case 'loading':
-        return (
-          <View style={styles.statusContainer}>
-            <ActivityIndicator size="large" color="#2196F3" />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-          </View>
-        );
-      case 'succeeded':
-        return AllPlanData && AllPlanData.length > 0 ? (
-          <FlatList
-            data={AllPlanData}
-            keyExtractor={(item) => item._id}
-            renderItem={PlanCard}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.flatListContent}
-            ListFooterComponent={
-              <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
-                <Text style={styles.refreshButtonText}>Làm mới</Text>
-              </TouchableOpacity>
-            }
-          />
-        ) : (
-          <View style={styles.statusContainer}>
-            <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
-            <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
-            
-          </View>
-        );
-      case 'failed':
-        return (
-          <View style={styles.statusContainer}>
-            <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
-            <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé </Text>
-            <TouchableOpacity style={styles.retryButton} onPress={handleRefresh}>
-              <Text style={styles.retryButtonText}>Thử lại</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      default:
-        return null;
-    }
+    return (
+      <>
+        <TouchableOpacity 
+          style={styles.refreshButtonTop}
+          onPress={handleRefresh}
+          disabled={AllPlanStatus === 'loading'}
+        >
+          {AllPlanStatus === 'loading' ? (
+            <ActivityIndicator size="small" color="#FFFFFF" />
+          ) : (
+            <Image 
+              source={require('../Assets/Images/refresh.png')} // Thay bằng icon refresh của bạn
+              style={styles.refreshIcon}
+            />
+          )}
+          <Text style={styles.refreshButtonText}>
+            Làm mới
+          </Text>
+        </TouchableOpacity>
+
+        {(() => {
+          switch (AllPlanStatus) {
+            case 'idle':
+              return (
+                <View style={styles.statusContainer}>
+                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
+                  <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
+                </View>
+              );
+            case 'loading':
+              return (
+                <View style={styles.statusContainer}>
+                  <ActivityIndicator size="large" color="#2196F3" />
+                  <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+                </View>
+              );
+            case 'succeeded':
+              return AllPlanData && AllPlanData.length > 0 ? (
+                <FlatList
+                  data={AllPlanData}
+                  keyExtractor={(item) => item._id}
+                  renderItem={PlanCard}
+                  showsVerticalScrollIndicator={false}
+                  contentContainerStyle={styles.flatListContent}
+                />
+              ) : (
+                <View style={styles.statusContainer}>
+                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
+                  <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
+                </View>
+              );
+            case 'failed':
+              return (
+                <View style={styles.statusContainer}>
+                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
+                  <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé </Text>
+                </View>
+              );
+            default:
+              return null;
+          }
+        })()}
+      </>
+    );
   }, [AllPlanData, AllPlanStatus, error, dispatch, userId, PlanCard]);
 
   return (
@@ -352,6 +364,36 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
+  },
+  refreshButtonTop: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#4CAF50',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 24,
+    marginBottom: 16,
+    elevation: 2,
+  },
+  refreshIcon: {
+    width: 20,
+    height: 20,
+    tintColor: '#FFFFFF',
+    marginRight: 8,
+  },
+  refreshButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  listContainer: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+  },
+  flatListContent: {
+    paddingBottom: 20,
   },
 });
 
