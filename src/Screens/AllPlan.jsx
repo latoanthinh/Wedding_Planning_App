@@ -26,7 +26,7 @@ const AllPlan = ({ navigation }) => {
           if (!item._id) {
             return;
           }
-          navigation.navigate("DetailPlan", { planId: item._id });
+          navigation.navigate("DetailPlan", { planId: item._id, fromGenPlan: false });
         }}
         style={styles.cardContainer}
       >
@@ -115,6 +115,7 @@ const AllPlan = ({ navigation }) => {
                   contentContainerStyle={styles.flatListContent}
                   refreshing={AllPlanStatus === 'loading'}
                   onRefresh={handleRefresh}
+                  
                 />
               ) : (
                 <View style={styles.statusContainer}>

@@ -21,27 +21,39 @@ import { AppContext } from '../AppContext';
 const { width } = Dimensions.get('window');
 
 const DetailPlan = ({ navigation, route }) => {
-  const { planId: routePlanId, planData: routePlanData } = route?.params || {};
+  const { planId: routePlanId, planData: routePlanData, fromGenPlan } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietPlanData, ChitietPlanStatus, error } = useSelector((state) => state.chitietplan);
   const { user } = useContext(AppContext);
   const userId = user?._id;
   const [priceDifference, setPriceDifference] = useState(0);
+  const [calculatedTotalPrice, setCalculatedTotalPrice] = useState(0);
 
   const planId = routePlanId || (ChitietPlanData?._id || routePlanData?._id);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || null;
 
+  // Tính tổng giá và chênh lệch khi từ GenPlan
   useEffect(() => {
-    if (planData) {
+    if (fromGenPlan && planData) {
+      const sanhPrice = planData.SanhId?.price ? parseFloat(planData.SanhId.price) : 0;
+      const cateringTotal = calculateSectionTotal(planData.caterings, true);
+      const decorateTotal = calculateSectionTotal(planData.decorates, false);
+      const presentTotal = calculateSectionTotal(planData.presents, false);
+      const total = sanhPrice + cateringTotal + decorateTotal + presentTotal;
+      setCalculatedTotalPrice(total);
+
+      const budget = parseFloat(planData.budget) || 0;
+      const difference = budget - total;
+      setPriceDifference(difference);
+    } else if (!fromGenPlan && planData) {
       const budget = parseFloat(planData.planprice || planData.budget) || 0;
       const totalPrice = parseFloat(planData.totalPrice) || 0;
-      const difference = planData.priceDifference !== undefined 
-        ? planData.priceDifference 
-        : budget - totalPrice;
+      const difference = planData.priceDifference !== undefined ? planData.priceDifference : budget - totalPrice;
       setPriceDifference(difference);
+      setCalculatedTotalPrice(totalPrice);
     }
-  }, [planData]);
+  }, [planData, fromGenPlan]);
 
   useEffect(() => {
     if (routePlanData) {
@@ -104,7 +116,8 @@ const DetailPlan = ({ navigation, route }) => {
     if (!services || services.length === 0) return 0;
     const total = services.reduce((sum, item) => {
       const price = item && item.price ? parseFloat(item.price) : 0;
-      return sum + (multiplyByTables ? price * numberOfTables : price);
+      const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
+      return sum + (price * quantity);
     }, 0);
     return total;
   };
@@ -139,11 +152,15 @@ const DetailPlan = ({ navigation, route }) => {
                         <Text style={[styles.servicePrice, { backgroundColor: 'rgba(0, 0, 0, 0.05)', color: '#000000' }]}>
                           {item.price.toLocaleString('vi-VN')} VNĐ
                         </Text>
-                        {multiplyByTables && (
+                        {title === 'Quà tặng' ? (
+                          <Text style={styles.serviceMultiply}>
+                            x {item.quantity || 1} = {(item.price * (item.quantity || 1)).toLocaleString('vi-VN')} VNĐ
+                          </Text>
+                        ) : multiplyByTables ? (
                           <Text style={styles.serviceMultiply}>
                             x {numberOfTables} bàn = {(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ
                           </Text>
-                        )}
+                        ) : null}
                       </View>
                     )}
                     {item.description && (
@@ -266,7 +283,7 @@ const DetailPlan = ({ navigation, route }) => {
             caterings: planData.caterings || newPlan.caterings || [],
             decorates: planData.decorates || newPlan.decorates || [],
             presents: planData.presents || newPlan.presents || [],
-            totalPrice: planData.totalPrice || newPlan.totalPrice || 0,
+            totalPrice: newPlan.totalPrice || calculatedTotalPrice,
             SanhId: planData.SanhId || newPlan.SanhId || null,
             plansoluongkhach: planData.plansoluongkhach || newPlan.plansoluongkhach || planData.guestCount || 0,
             planprice: planData.planprice || newPlan.planprice || planData.budget || 0,
@@ -290,11 +307,15 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show('Không thể đặt cọc: Thiếu planId', ToastAndroid.SHORT);
       return;
     }
-    navigation.navigate('Payos', { planId: planId, totalPrice: planData.totalPrice });
+    navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice || planData.totalPrice });
   };
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
   const isDepositDisabled = planData.status === 'active';
+
+  // Tính giá tiền đặt cọc (10% tổng tiền)
+  const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
+  const depositPrice = totalPrice * 0.1;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -319,17 +340,15 @@ const DetailPlan = ({ navigation, route }) => {
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.planInfoCard}>
             <Text style={styles.planTitle}>{planData.name || 'Kế hoạch không tên'}</Text>
-            {/* Tổng giá */}
             <View style={styles.priceContainer}>
               <Text style={styles.planPrice}>
-                {(planData.totalPrice || 0).toLocaleString('vi-VN')} VNĐ
+                {totalPrice.toLocaleString('vi-VN')} VNĐ
               </Text>
               <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
             </View>
 
             <View style={styles.divider} />
 
-            {/* Thông tin chung */}
             <View style={styles.infoContainer}>
               <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
 
@@ -385,7 +404,6 @@ const DetailPlan = ({ navigation, route }) => {
 
             <View style={styles.divider} />
 
-            {/* Thông tin sảnh cưới */}
             {planData.SanhId && (
               <View style={styles.venueContainer}>
                 <View style={styles.venueTitleRow}>
@@ -427,7 +445,7 @@ const DetailPlan = ({ navigation, route }) => {
 
           {renderServiceItem('Dịch vụ ăn uống', planData.caterings, 'food-fork-drink', '#000000', true)}
           {renderServiceItem('Trang trí', planData.decorates, 'flower', '#333333', false)}
-          {renderServiceItem('Quà tặng', planData.presents, 'gift', '#000000', true)}
+          {renderServiceItem('Quà tặng', planData.presents, 'gift', '#000000', false)}
         </Animated.View>
       </ScrollView>
 
@@ -443,20 +461,28 @@ const DetailPlan = ({ navigation, route }) => {
           style={[
             styles.bottomBarButton,
             styles.depositBottomBarButton,
-            isDepositDisabled && styles.disabledBottomBarButton
+            isDepositDisabled && styles.disabledBottomBarButton,
           ]}
           onPress={handleDeposit}
           disabled={isDepositDisabled}
         >
-          <Icon name="cash-plus" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
-          <Text style={styles.bottomBarButtonText}>Đặt cọc</Text>
+          <View style={styles.depositButtonContent}>
+            <View style={styles.depositTextContainer}>
+              <Text style={styles.bottomBarButtonText}>Đặt cọc</Text>
+              <Text style={styles.depositPriceText}>
+                {depositPrice.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </View>
+            <Icon name="cash-plus" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
+          </View>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
 };
 
-// Styles
+export default DetailPlan;
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -870,6 +896,21 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  depositButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    paddingHorizontal: 10,
+  },
+  depositTextContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  depositPriceText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '500',
+    marginTop: 2,
+  },
 });
-
-export default DetailPlan;
