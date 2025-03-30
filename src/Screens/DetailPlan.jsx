@@ -25,19 +25,20 @@ const DetailPlan = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const { ChitietPlanData, ChitietPlanStatus, error } = useSelector((state) => state.chitietplan);
   const { user } = useContext(AppContext);
-  const userId = user?._id; // Sửa user._id thành user.userId
+  const userId = user?._id;
   const [priceDifference, setPriceDifference] = useState(0);
 
   const planId = routePlanId || (ChitietPlanData?._id || routePlanData?._id);
-
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || null;
+
   useEffect(() => {
     if (planData) {
-      // Lấy priceDifference từ backend nếu có, nếu không thì tính thủ công
+      const budget = parseFloat(planData.planprice || planData.budget) || 0;
+      const totalPrice = parseFloat(planData.totalPrice) || 0;
       const difference = planData.priceDifference !== undefined 
         ? planData.priceDifference 
-        : (parseFloat(planData.planprice) || 0) - (parseFloat(planData.totalPrice) || 0);
+        : budget - totalPrice;
       setPriceDifference(difference);
     }
   }, [planData]);
@@ -72,9 +73,6 @@ const DetailPlan = ({ navigation, route }) => {
     }
   }, [error]);
 
- 
-
-  // Kiểm tra nếu không có dữ liệu kế hoạch
   if (!planData && ChitietPlanStatus !== 'loading' && ChitietPlanStatus !== 'idle') {
     return (
       <SafeAreaView style={styles.errorContainer}>
@@ -89,7 +87,7 @@ const DetailPlan = ({ navigation, route }) => {
             style={styles.retryButton}
             onPress={() => dispatch(ChitietPlan(planId))}
           >
-            <Icon name="refresh" size={20} color="#FFF" style={{marginRight: 8}} />
+            <Icon name="refresh" size={20} color="#FFF" style={{ marginRight: 8 }} />
             <Text style={styles.retryButtonText}>Thử lại</Text>
           </TouchableOpacity>
         </View>
@@ -98,8 +96,8 @@ const DetailPlan = ({ navigation, route }) => {
   }
 
   const GUESTS_PER_TABLE = 10;
-  const numberOfTables = planData?.plansoluongkhach
-    ? Math.ceil(planData.plansoluongkhach / GUESTS_PER_TABLE)
+  const numberOfTables = planData?.plansoluongkhach || planData?.guestCount
+    ? Math.ceil((planData.plansoluongkhach || planData.guestCount) / GUESTS_PER_TABLE)
     : 0;
 
   const calculateSectionTotal = (services, multiplyByTables = false) => {
@@ -219,7 +217,7 @@ const DetailPlan = ({ navigation, route }) => {
             style={styles.retryButton}
             onPress={() => dispatch(ChitietPlan(planId))}
           >
-            <Icon name="refresh" size={20} color="#FFF" style={{marginRight: 8}} />
+            <Icon name="refresh" size={20} color="#FFF" style={{ marginRight: 8 }} />
             <Text style={styles.retryButtonText}>Thử lại</Text>
           </TouchableOpacity>
         </View>
@@ -232,36 +230,28 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show('Không tìm thấy thông tin người dùng!', ToastAndroid.SHORT);
       return;
     }
-  
+
     const userIdFromPlan = typeof planData.UserId === 'string' ? planData.UserId : planData.UserId?._id;
     const isOwner = userIdFromPlan && userIdFromPlan.toString() === userId.toString();
-    const originalPlanId = planData.originalPlanId || planId; // Lấy ID gốc nếu có
-  
+    const originalPlanId = planData.originalPlanId || planId;
+
     const navigateToEditPlan = (id, data) => {
       navigation.navigate('EditPlan', {
         planId: id,
         planData: {
           ...data,
-          eventDate: data.eventDate,
-          guestCount: data.guestCount,
-          budget: data.budget,
+          eventDate: data.eventDate || data.plandateevent,
+          guestCount: data.guestCount || data.plansoluongkhach,
+          budget: data.budget || data.planprice,
         },
       });
     };
-  
-    console.log('planId:', planId);
-    console.log('originalPlanId:', originalPlanId);
-    console.log('isOwner:', isOwner);
-    console.log('isCopy:', planData.isCopy);
-  
+
     if (isOwner) {
-      // Nếu là chủ sở hữu, chỉnh sửa trực tiếp kế hoạch hiện tại
       navigateToEditPlan(planId, planData);
     } else if (planData.isCopy && userIdFromPlan === userId) {
-      // Nếu đây là bản sao của người dùng hiện tại, chỉnh sửa bản sao
       navigateToEditPlan(planId, planData);
     } else {
-      // Tạo bản sao mới từ kế hoạch gốc
       dispatch(duplicatePlan({ planId: originalPlanId, userId }))
         .unwrap()
         .then((newPlan) => {
@@ -270,7 +260,7 @@ const DetailPlan = ({ navigation, route }) => {
             _id: newPlan._id,
             UserId: userId,
             name: newPlan.name || `Copy of ${planData.name}`,
-            plandateevent: newPlan.plandateevent || planData.plandateevent,
+            plandateevent: newPlan.plandateevent || planData.plandateevent || planData.eventDate,
             createdAt: newPlan.createdAt,
             updatedAt: newPlan.updatedAt,
             caterings: planData.caterings || newPlan.caterings || [],
@@ -278,13 +268,13 @@ const DetailPlan = ({ navigation, route }) => {
             presents: planData.presents || newPlan.presents || [],
             totalPrice: planData.totalPrice || newPlan.totalPrice || 0,
             SanhId: planData.SanhId || newPlan.SanhId || null,
-            plansoluongkhach: planData.plansoluongkhach || newPlan.plansoluongkhach || 0,
-            planprice: planData.planprice || newPlan.planprice || 0,
-            eventDate: planData.eventDate,
-            guestCount: planData.guestCount,
-            budget: planData.budget,
+            plansoluongkhach: planData.plansoluongkhach || newPlan.plansoluongkhach || planData.guestCount || 0,
+            planprice: planData.planprice || newPlan.planprice || planData.budget || 0,
+            eventDate: planData.eventDate || newPlan.plandateevent,
+            guestCount: planData.guestCount || newPlan.plansoluongkhach,
+            budget: planData.budget || newPlan.planprice,
             isCopy: true,
-            originalPlanId: originalPlanId, // Đảm bảo lưu ID gốc
+            originalPlanId: originalPlanId,
           };
           navigateToEditPlan(newPlan._id, combinedPlanData);
           ToastAndroid.show('Đã tạo bản sao kế hoạch để chỉnh sửa!', ToastAndroid.SHORT);
@@ -304,7 +294,6 @@ const DetailPlan = ({ navigation, route }) => {
   };
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
-
   const isDepositDisabled = planData.status === 'active';
 
   return (
@@ -322,23 +311,81 @@ const DetailPlan = ({ navigation, route }) => {
           <Icon name="home" size={22} color="#000000" />
         </TouchableOpacity>
       </View>
-      <ScrollView 
-        showsVerticalScrollIndicator={false} 
+      <ScrollView
+        showsVerticalScrollIndicator={false}
         style={styles.scrollView}
         contentContainerStyle={{ paddingBottom: 80 }}
       >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.planInfoCard}>
             <Text style={styles.planTitle}>{planData.name || 'Kế hoạch không tên'}</Text>
+            {/* Tổng giá */}
             <View style={styles.priceContainer}>
               <Text style={styles.planPrice}>
                 {(planData.totalPrice || 0).toLocaleString('vi-VN')} VNĐ
               </Text>
               <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
             </View>
-            
+
             <View style={styles.divider} />
-            
+
+            {/* Thông tin chung */}
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
+
+              <View style={styles.infoRow}>
+                <Icon name="calendar-month" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Ngày sự kiện</Text>
+                  <Text style={styles.planDetail}>
+                    {planData.eventDate || planData.plandateevent
+                      ? new Date(planData.eventDate || planData.plandateevent).toLocaleDateString('vi-VN')
+                      : 'Chưa xác định'}
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Icon name="account-group" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Số lượng khách</Text>
+                  <Text style={styles.planDetail}>
+                    {planData.plansoluongkhach || planData.guestCount || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Icon name="cash-multiple" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Ngân sách</Text>
+                  <Text style={styles.planDetail}>
+                    {(planData.planprice || planData.budget || 0).toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.infoRow}>
+                <Icon name="scale-balance" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
+                  <Text
+                    style={[
+                      styles.planDetail,
+                      {
+                        color: priceDifference > 0 ? '#43A047' : priceDifference < 0 ? '#E53935' : '#757575',
+                      },
+                    ]}
+                  >
+                    {priceDifference > 0 ? '+' : ''}{priceDifference.toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                </View>
+              </View>
+            </View>
+
+            <View style={styles.divider} />
+
+            {/* Thông tin sảnh cưới */}
             {planData.SanhId && (
               <View style={styles.venueContainer}>
                 <View style={styles.venueTitleRow}>
@@ -374,62 +421,6 @@ const DetailPlan = ({ navigation, route }) => {
                 </View>
               </View>
             )}
-
-            <View style={styles.divider} />
-
-            <View style={styles.infoContainer}>
-              <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
-              
-              <View style={styles.infoRow}>
-                <Icon name="calendar-month" size={22} color="#000000" style={styles.infoIcon} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Ngày sự kiện</Text>
-                  <Text style={styles.planDetail}>
-                    {planData.plandateevent
-                      ? new Date(planData.plandateevent).toLocaleDateString('vi-VN')
-                      : 'Chưa xác định'}
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.infoRow}>
-                <Icon name="account-group" size={22} color="#000000" style={styles.infoIcon} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Số lượng khách</Text>
-                  <Text style={styles.planDetail}>
-                    {planData.plansoluongkhach || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.infoRow}>
-                <Icon name="cash-multiple" size={22} color="#000000" style={styles.infoIcon} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Ngân sách</Text>
-                  <Text style={styles.planDetail}>
-                    {(planData.planprice || 0).toLocaleString('vi-VN')} VNĐ
-                  </Text>
-                </View>
-              </View>
-              
-              <View style={styles.infoRow}>
-                <Icon name="scale-balance" size={22} color="#000000" style={styles.infoIcon} />
-                <View style={styles.infoContent}>
-                  <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
-                  <Text
-                    style={[
-                      styles.planDetail,
-                      {
-                        color:
-                          priceDifference > 0 ? '#43A047' : priceDifference < 0 ? '#E53935' : '#757575',
-                      },
-                    ]}
-                  >
-                    {priceDifference > 0 ? '+' : ''}{priceDifference.toLocaleString('vi-VN')} VNĐ
-                  </Text>
-                </View>
-              </View>
-            </View>
           </View>
 
           <View style={styles.divider} />
@@ -441,7 +432,7 @@ const DetailPlan = ({ navigation, route }) => {
       </ScrollView>
 
       <View style={styles.persistentBottomBar}>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.bottomBarButton}
           onPress={handleEditPlan}
         >
@@ -465,6 +456,7 @@ const DetailPlan = ({ navigation, route }) => {
   );
 };
 
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -636,46 +628,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#000000',
     fontWeight: '500',
-  },
-  buttonContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#000000',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    elevation: 2,
-    flex: 1,
-    marginRight: 8,
-  },
-  depositButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#333333',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    elevation: 2,
-    flex: 1,
-    marginLeft: 8,
-  },
-  disabledButton: {
-    opacity: 0.5,
-  },
-  buttonIcon: {
-    marginRight: 8,
-  },
-  buttonText: {
-    color: '#FFF',
-    fontSize: 14,
-    fontWeight: 'bold',
   },
   section: {
     marginBottom: 20,

@@ -82,27 +82,13 @@ const AllPlan = ({ navigation }) => {
     }
   };
 
+  const handleCreateNewPlan = () => {
+    navigation.navigate('Thongtincoban'); // Điều hướng đến màn hình tạo plan mới
+  };
+
   const renderContent = useCallback(() => {
     return (
       <>
-        <TouchableOpacity 
-          style={styles.refreshButtonTop}
-          onPress={handleRefresh}
-          disabled={AllPlanStatus === 'loading'}
-        >
-          {AllPlanStatus === 'loading' ? (
-            <ActivityIndicator size="small" color="#FFFFFF" />
-          ) : (
-            <Image 
-              source={require('../Assets/Images/refresh.png')} // Thay bằng icon refresh của bạn
-              style={styles.refreshIcon}
-            />
-          )}
-          <Text style={styles.refreshButtonText}>
-            Làm mới
-          </Text>
-        </TouchableOpacity>
-
         {(() => {
           switch (AllPlanStatus) {
             case 'idle':
@@ -127,6 +113,8 @@ const AllPlan = ({ navigation }) => {
                   renderItem={PlanCard}
                   showsVerticalScrollIndicator={false}
                   contentContainerStyle={styles.flatListContent}
+                  refreshing={AllPlanStatus === 'loading'}
+                  onRefresh={handleRefresh}
                 />
               ) : (
                 <View style={styles.statusContainer}>
@@ -138,13 +126,21 @@ const AllPlan = ({ navigation }) => {
               return (
                 <View style={styles.statusContainer}>
                   <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
-                  <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé </Text>
+                  <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé</Text>
                 </View>
               );
             default:
               return null;
           }
         })()}
+
+        {/* Nút tạo plan mới */}
+        <TouchableOpacity
+          style={styles.createPlanButton}
+          onPress={handleCreateNewPlan}
+        >
+          <Text style={styles.createPlanButtonText}>Tạo plan mới</Text>
+        </TouchableOpacity>
       </>
     );
   }, [AllPlanData, AllPlanStatus, error, dispatch, userId, PlanCard]);
@@ -221,7 +217,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   flatListContent: {
-    paddingBottom: 20,
+    paddingBottom: 100, // Tăng padding để nút "Tạo plan mới" không che danh sách
   },
   cardContainer: {
     marginBottom: 16,
@@ -326,7 +322,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#757575',
     textAlign: 'center',
-    marginBottom: 20, // Thêm khoảng cách cho nút
+    marginBottom: 20,
   },
   loadingText: {
     fontSize: 16,
@@ -339,61 +335,24 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginVertical: 12,
   },
-  retryButton: {
-    backgroundColor: '#2196F3',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    marginTop: 16,
-    elevation: 2,
-  },
-  retryButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  refreshButton: {
+  createPlanButton: {
+    position: 'absolute',
+    bottom: 20,
+    right: 20,
     backgroundColor: '#4CAF50',
-    paddingVertical: 12,
-    paddingHorizontal: 24,
-    borderRadius: 24,
-    marginVertical: 16,
-    elevation: 2,
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderRadius: 30,
+    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
   },
-  refreshButtonText: {
+  createPlanButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
-  },
-  refreshButtonTop: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#4CAF50',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 24,
-    marginBottom: 16,
-    elevation: 2,
-  },
-  refreshIcon: {
-    width: 20,
-    height: 20,
-    tintColor: '#FFFFFF',
-    marginRight: 8,
-  },
-  refreshButtonText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  listContainer: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-  },
-  flatListContent: {
-    paddingBottom: 20,
+    fontWeight: '700',
   },
 });
 

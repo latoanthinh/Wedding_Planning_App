@@ -613,7 +613,7 @@ const EditPlan = ({ navigation, route }) => {
             <Text style={styles.bottomBarPriceLabel}>Chênh lệch:</Text>
             <View style={styles.differenceContainer}>
               <Icon 
-                name={priceDifference >= 0 ? "arrow-up-bold" : "arrow-down-bold"} 
+                name={priceDifference >= 0 ? "arrow-down-bold" : "arrow-up-bold"} 
                 size={13} 
                 color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'} 
                 style={{marginRight: 4}}
