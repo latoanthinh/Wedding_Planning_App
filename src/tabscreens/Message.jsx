@@ -17,6 +17,8 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import { fetchChatHistory, setUnreadCount } from '../redux/ChatSlice';
 import socketService from '../utils/socketService';
 import { AppContext } from '../AppContext';
+import UserStatusIndicator from '../components/UserStatusIndicator';
+import { getUserActivityStatus } from '../redux/UserActivitySlice';
 
 const Message = () => {
   const navigation = useNavigation();
@@ -34,6 +36,12 @@ const Message = () => {
     sendError,
   } = useSelector((state) => state.chat);
   
+  // Get admin status from userActivity slice
+  const { onlineUsers } = useSelector((state) => state.userActivity);
+  
+  // Check if admin is online (simplification - in real app you'd get actual admin IDs)
+  const isAdminOnline = onlineUsers.some(user => user.role === 'admin');
+  
   // Log debug info
   console.log('Message screen - Context user:', {
     chatStatus,
@@ -48,6 +56,9 @@ const Message = () => {
       
       // Fetch chat history
       dispatch(fetchChatHistory(user._id));
+      
+      // Fetch online users to see if admin is online
+      dispatch(getUserActivityStatus('admin')); // This assumes admin has ID 'admin', adjust as needed
     } else {
       console.log('Cannot initialize socket in Message screen: No valid user available');
     }
@@ -187,7 +198,13 @@ const Message = () => {
                 <View style={styles.chatItem}>
                   <View style={styles.avatarContainer}>
                     <Icon name="person" size={24} color="#fff" style={styles.avatarIcon} />
-                    <View style={[styles.statusIndicator, socketService.isConnected() ? styles.connected : styles.disconnected]} />
+                    <View style={styles.statusIndicatorWrapper}>
+                      <UserStatusIndicator 
+                        userId="admin"
+                        size="small"
+                        showText={false}
+                      />
+                    </View>
                   </View>
                   
                   <View style={styles.chatInfo}>
@@ -316,21 +333,10 @@ const styles = StyleSheet.create({
   avatarIcon: {
     marginRight: 0,
   },
-  statusIndicator: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+  statusIndicatorWrapper: {
     position: 'absolute',
     bottom: 0,
     right: 0,
-    borderWidth: 2,
-    borderColor: '#fff',
-  },
-  connected: {
-    backgroundColor: '#1FD23C',
-  },
-  disconnected: {
-    backgroundColor: '#FF5858',
   },
   chatInfo: {
     flex: 1,

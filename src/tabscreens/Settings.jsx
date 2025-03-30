@@ -1,11 +1,18 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView } from 'react-native';
-import React, { useContext } from 'react';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import React, { useContext, useState } from 'react';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import UserStatusIndicator from '../components/UserStatusIndicator';
+import { useDispatch } from 'react-redux';
+import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
 
 const Settings = (props) => {
   const { navigation } = props;
   const { user } = useContext(AppContext);
+  const dispatch = useDispatch();
+  
+  // State to track online status toggle
+  const [isOnline, setIsOnline] = useState(true);
 
   // Add console logs to debug avatar data
   console.log('User object in Settings:', user ? {
@@ -17,6 +24,17 @@ const Settings = (props) => {
 
   const handle = (screenName) => {
     navigation.navigate(screenName);
+  };
+  
+  // Handle toggling online status
+  const toggleOnlineStatus = (value) => {
+    setIsOnline(value);
+    if (user && user._id) {
+      dispatch(updateUserOnlineStatus({ 
+        userId: user._id, 
+        isOnline: value 
+      }));
+    }
   };
 
   return (
@@ -53,6 +71,17 @@ const Settings = (props) => {
           <View style={styles.profileTextContainer}>
             <Text style={styles.profileName} numberOfLines={1}>{user.name}</Text>
             <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
+            
+            {/* Add User Status Indicator */}
+            {user && user._id && (
+              <View style={styles.statusContainer}>
+                <UserStatusIndicator 
+                  userId={user._id} 
+                  showText={true} 
+                  size="small"
+                />
+              </View>
+            )}
           </View>
         </View>
 
@@ -62,6 +91,21 @@ const Settings = (props) => {
         </TouchableOpacity>
 
         <View style={styles.divider} />
+        
+        {/* User Status Toggle */}
+        <View style={styles.optionRow}>
+          <View style={styles.optionLeft}>
+            <Image source={require('../Assets/Images/Users.png')} style={styles.optionIcon} />
+            <Text style={styles.optionText}>Trạng thái hoạt động</Text>
+          </View>
+          <Switch
+            trackColor={{ false: "#767577", true: "#4CAF50" }}
+            thumbColor={isOnline ? "#fff" : "#f4f3f4"}
+            ios_backgroundColor="#3e3e3e"
+            onValueChange={toggleOnlineStatus}
+            value={isOnline}
+          />
+        </View>
 
         {/* Options */}
         <TouchableOpacity style={styles.optionRow}>
@@ -173,6 +217,11 @@ const styles = StyleSheet.create({
     color: '#888',
     marginTop: 3,
     fontFamily: 'Playfair_me',
+  },
+  statusContainer: {
+    marginTop: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   editProfileButton: {
     backgroundColor: '#200000',

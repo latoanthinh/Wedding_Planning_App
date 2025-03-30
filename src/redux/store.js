@@ -27,6 +27,7 @@ import  GetAllDecoratesReducer  from './GetAllDecoratesSlice';
 import  GetAllPresentReducer  from './GetAllPresentSlice';
 import  BlogReducer  from './BlogSlice';
 import  ChatReducer  from './ChatSlice';
+import  UserActivityReducer  from './UserActivitySlice';
 
 
 const dummyReducer = (state = {}) => state;
@@ -39,6 +40,7 @@ export const store = configureStore({
     getallcatering:GetAllCateringReducer,
     chitietplan:ChitietPlanReducer,
     user: UserReducer,
+    userActivity: UserActivityReducer,
     khaosat:KhaoSatReducer,
     chitietdiadiem :ChitietDiaDiemReducer,
     chitietgift:ChitietGiftReducer,

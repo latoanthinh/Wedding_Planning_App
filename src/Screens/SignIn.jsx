@@ -4,6 +4,7 @@ import SignInPageStyles from "../Styles/SignInPageStyles";
 import { AppContext } from '../AppContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { DangNhapTaiKhoan } from '../redux/LoginSlice';
+import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
 
 const SignIn = (props) => {
 
@@ -49,12 +50,8 @@ const SignIn = (props) => {
         navigation.navigate('EmailOpt');
     };
 
-
-
     const dispatch = useDispatch();
     const { loginData, loginStatus } = useSelector((state) => state.login);
-
-
 
     useEffect(() => {
         if (loginStatus == "succeeded") {
@@ -73,6 +70,14 @@ const SignIn = (props) => {
                 userData.avatar = `data:image/jpeg;base64,${userData.avatar}`;
             }
             
+            // Set user as online first, then update the context
+            if (userData._id) {
+                dispatch(updateUserOnlineStatus({ 
+                    userId: userData._id, 
+                    isOnline: true 
+                }));
+            }
+            
             setUser(userData);
             ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
         }
@@ -83,7 +88,7 @@ const SignIn = (props) => {
 
     const dangnhap = () => {
         if (validateInputs()) {
-            dispatch(DangNhapTaiKhoan({ email, password, setUser }));
+            dispatch(DangNhapTaiKhoan({ email, password }));
         } else {
             ToastAndroid.show("Vui lòng nhập đúng thông tin!", ToastAndroid.SHORT);
         }

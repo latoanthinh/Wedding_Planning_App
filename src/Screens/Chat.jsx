@@ -19,6 +19,7 @@ import { fetchChatHistory, sendMessage, resetSendStatus } from '../redux/ChatSli
 import socketService from '../utils/socketService';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import UserStatusIndicator from '../components/UserStatusIndicator';
 
 // Utility function to ensure avatar URL is properly formatted
 const formatAvatarUri = (avatar) => {
@@ -401,16 +402,20 @@ const Chat = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Hỗ trợ khách hàng</Text>
-          <Text style={styles.headerSubtitle}>
-            {socketConnected 
-              ? 'Đang trực tuyến' 
-              : 'Ngoại tuyến'}
-          </Text>
+          <View style={styles.statusRow}>
+            <UserStatusIndicator 
+              userId="admin" // Assuming admin has ID 'admin', adjust as needed  
+              size="small"
+              showText={true}
+              style={styles.statusIndicator}
+              textStyle={styles.statusText}
+            />
+          </View>
         </View>
       </View>
       
@@ -745,6 +750,19 @@ const styles = StyleSheet.create({
   },
   spacer: {
     width: 20,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 4,
+  },
+  statusIndicator: {
+    marginTop: 2,
+  },
+  statusText: {
+    fontSize: 11,
+    color: '#666',
   },
 });
 
