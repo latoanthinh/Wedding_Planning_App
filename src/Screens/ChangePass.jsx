@@ -204,13 +204,7 @@ const ChangePass = (props) => {
             </TouchableOpacity>
           </View>
           
-          {/* Forgot Password Button */}
-          <TouchableOpacity 
-            style={styles.forgotPasswordButton}
-            onPress={navigateToForgotPassword}
-          >
-            <Text style={styles.forgotPasswordText}>Quên mật khẩu?</Text>
-          </TouchableOpacity>
+         
 
           <View style={styles.buttonContainer}>
             <TouchableOpacity style={styles.cancelButton} onPress={handleCancel}>
