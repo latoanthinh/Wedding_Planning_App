@@ -5,13 +5,14 @@ import { AppContext } from '../AppContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { DangNhapTaiKhoan } from '../redux/LoginSlice';
 import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SignIn = (props) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const { navigation } = props;
-    const [email, setEmail] = useState('lmao2@gmail.com');
-    const [password, setPassword] = useState('123456');
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
     const { user, setUser } = useContext(AppContext);
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');

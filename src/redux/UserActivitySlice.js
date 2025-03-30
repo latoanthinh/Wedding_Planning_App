@@ -28,11 +28,11 @@ const handleResponseError = async (response) => {
     } else {
       // If not JSON, get text for better debugging
       const text = await response.text();
-      console.error('Non-JSON response:', text.substring(0, 200) + '...');
+      // console.error('Non-JSON response:', text.substring(0, 200) + '...');
       return { message: `Server responded with ${response.status}: ${response.statusText}` };
     }
   } catch (error) {
-    console.error('Error parsing response:', error);
+    // console.error('Error parsing response:', error);
     return { message: 'Error parsing server response' };
   }
 };
@@ -42,17 +42,17 @@ export const updateUserOnlineStatus = createAsyncThunk(
   'userActivity/updateOnlineStatus',
   async ({ userId, isOnline }, { rejectWithValue }) => {
     try {
-      console.log(`Updating user ${userId} status to ${isOnline ? 'online' : 'offline'}`);
+      // console.log(`Updating user ${userId} status to ${isOnline ? 'online' : 'offline'}`);
       
       // Validate user ID
       if (!userId) {
-        console.error('Invalid user ID:', userId);
+        // console.error('Invalid user ID:', userId);
         return rejectWithValue('ID người dùng không hợp lệ');
       }
       
       // Make API call to update status
       const endpoint = isOnline ? 'online' : 'offline';
-      console.log(`API request URL: ${BASE_URL}/users/status/${endpoint}/${userId}`);
+      // console.log(`API request URL: ${BASE_URL}/users/status/${endpoint}/${userId}`);
       
       const response = await fetch(`${BASE_URL}/users/status/${endpoint}/${userId}`, {
         method: 'PATCH',
@@ -62,11 +62,11 @@ export const updateUserOnlineStatus = createAsyncThunk(
         }
       });
       
-      console.log(`Status update response: ${response.status}`);
+      // console.log(`Status update response: ${response.status}`);
       
       if (!response.ok) {
         const errorData = await handleResponseError(response);
-        console.error('Status update failed:', errorData);
+        // console.error('Status update failed:', errorData);
         return rejectWithValue(errorData.message || 'Cập nhật trạng thái thất bại');
       }
       
@@ -74,7 +74,7 @@ export const updateUserOnlineStatus = createAsyncThunk(
       return result.data;
       
     } catch (error) {
-      console.error('Error updating user status:', error);
+      // console.error('Error updating user status:', error);
       // Return a more readable error for debugging
       const errorMessage = error.toString ? error.toString() : 'Unknown error';
       return rejectWithValue(errorMessage);
@@ -88,11 +88,11 @@ export const updateUserActivity = createAsyncThunk(
   async (userId, { rejectWithValue }) => {
     try {
       if (!userId) {
-        console.error('Invalid user ID for activity update:', userId);
+        // console.error('Invalid user ID for activity update:', userId);
         return rejectWithValue('ID người dùng không hợp lệ');
       }
       
-      console.log(`API request URL: ${BASE_URL}/users/status/active/${userId}`);
+      // console.log(`API request URL: ${BASE_URL}/users/status/active/${userId}`);
       
       const response = await fetch(`${BASE_URL}/users/status/active/${userId}`, {
         method: 'PATCH',
@@ -102,11 +102,11 @@ export const updateUserActivity = createAsyncThunk(
         }
       });
       
-      console.log(`Activity update response: ${response.status}`);
+      // console.log(`Activity update response: ${response.status}`);
       
       if (!response.ok) {
         const errorData = await handleResponseError(response);
-        console.error('Activity update failed:', errorData);
+        // console.error('Activity update failed:', errorData);
         return rejectWithValue(errorData.message || 'Cập nhật hoạt động thất bại');
       }
       
@@ -114,7 +114,7 @@ export const updateUserActivity = createAsyncThunk(
       return result.data;
       
     } catch (error) {
-      console.error('Error updating user activity:', error);
+      // console.error('Error updating user activity:', error);
       const errorMessage = error.toString ? error.toString() : 'Unknown error';
       return rejectWithValue(errorMessage);
     }
@@ -127,22 +127,22 @@ export const getUserActivityStatus = createAsyncThunk(
   async (userId, { rejectWithValue }) => {
     try {
       if (!userId) {
-        console.error('Invalid user ID for status check:', userId);
+        // console.error('Invalid user ID for status check:', userId);
         return rejectWithValue('ID người dùng không hợp lệ');
       }
       
-      console.log(`API request URL: ${BASE_URL}/users/status/${userId}`);
+      // console.log(`API request URL: ${BASE_URL}/users/status/${userId}`);
       
       const response = await fetch(`${BASE_URL}/users/status/${userId}`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });
       
-      console.log(`Status check response: ${response.status}`);
+      // console.log(`Status check response: ${response.status}`);
       
       if (!response.ok) {
         const errorData = await handleResponseError(response);
-        console.error('Status check failed:', errorData);
+        // console.error('Status check failed:', errorData);
         return rejectWithValue(errorData.message || 'Kiểm tra trạng thái thất bại');
       }
       
@@ -150,7 +150,7 @@ export const getUserActivityStatus = createAsyncThunk(
       return result.data;
       
     } catch (error) {
-      console.error('Error checking user status:', error);
+      // console.error('Error checking user status:', error);
       const errorMessage = error.toString ? error.toString() : 'Unknown error';
       return rejectWithValue(errorMessage);
     }
@@ -162,18 +162,18 @@ export const getOnlineUsers = createAsyncThunk(
   'userActivity/getOnlineUsers',
   async (_, { rejectWithValue }) => {
     try {
-      console.log(`API request URL: ${BASE_URL}/users/online/all`);
+      // console.log(`API request URL: ${BASE_URL}/users/online/all`);
       
       const response = await fetch(`${BASE_URL}/users/online/all`, {
         method: 'GET',
         headers: { 'Accept': 'application/json' }
       });
       
-      console.log(`Online users fetch response: ${response.status}`);
+      // console.log(`Online users fetch response: ${response.status}`);
       
       if (!response.ok) {
         const errorData = await handleResponseError(response);
-        console.error('Online users fetch failed:', errorData);
+        // console.error('Online users fetch failed:', errorData);
         return rejectWithValue(errorData.message || 'Lấy danh sách người dùng online thất bại');
       }
       
@@ -181,7 +181,7 @@ export const getOnlineUsers = createAsyncThunk(
       return result.data;
       
     } catch (error) {
-      console.error('Error fetching online users:', error);
+      // console.error('Error fetching online users:', error);
       const errorMessage = error.toString ? error.toString() : 'Unknown error';
       return rejectWithValue(errorMessage);
     }
@@ -235,7 +235,7 @@ export const UserActivitySlice = createSlice({
       }
       
       state.lastActivityUpdate = new Date().toISOString();
-      console.log('Updated current user status locally:', state.currentUserStatus);
+      // console.log('Updated current user status locally:', state.currentUserStatus);
     }
   },
   extraReducers: (builder) => {

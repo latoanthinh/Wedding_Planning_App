@@ -21,7 +21,7 @@ const AppInit = () => {
   // Handle app initialization
   useEffect(() => {
     const initializeApp = async () => {
-      console.log('Initializing app...');
+      // console.log('Initializing app...');
       
       // Set app as loaded after initialization
       if (!appLoaded) {
@@ -33,7 +33,7 @@ const AppInit = () => {
     
     if (!initAttempted) {
       initializeApp().catch(error => {
-        console.error('Error initializing app:', error);
+        // console.error('Error initializing app:', error);
       });
     }
   }, [appLoaded, initAttempted]);
@@ -43,7 +43,7 @@ const AppInit = () => {
     const setUserOnline = async () => {
       if (userId) {
         try {
-          console.log('Setting user online on app init:', userId);
+          // console.log('Setting user online on app init:', userId);
           
           // Always update UI optimistically
           dispatch(setCurrentUserStatus({ isOnline: true }));
@@ -56,7 +56,7 @@ const AppInit = () => {
             })).unwrap();
           }
         } catch (error) {
-          console.error('Error setting user online on app init:', error);
+          // console.error('Error setting user online on app init:', error);
           setErrorCount(prev => prev + 1);
         }
       }
@@ -70,7 +70,7 @@ const AppInit = () => {
     return () => {
       if (userId) {
         try {
-          console.log('Setting user offline on app exit');
+          // console.log('Setting user offline on app exit');
           dispatch(setCurrentUserStatus({ isOnline: false }));
           
           // This may not always execute reliably on app termination
@@ -79,7 +79,7 @@ const AppInit = () => {
             isOnline: false 
           }));
         } catch (error) {
-          console.error('Error setting user offline on app exit:', error);
+          // console.error('Error setting user offline on app exit:', error);
         }
       }
     };
@@ -93,7 +93,7 @@ const AppInit = () => {
       if (nextAppState === 'active') {
         // App came to foreground
         try {
-          console.log('App active, setting user online');
+          // console.log('App active, setting user online');
           
           // Always update UI optimistically
           dispatch(setCurrentUserStatus({ isOnline: true }));
@@ -111,7 +111,7 @@ const AppInit = () => {
             }
           }
         } catch (error) {
-          console.error('Error setting user online on app active:', error);
+          // console.error('Error setting user online on app active:', error);
           setErrorCount(prev => prev + 1);
         }
       } else if (nextAppState === 'background' || nextAppState === 'inactive') {
@@ -130,7 +130,7 @@ const AppInit = () => {
             })).unwrap();
           }
         } catch (error) {
-          console.error('Error setting user offline on app inactive:', error);
+          // console.error('Error setting user offline on app inactive:', error);
           setErrorCount(prev => prev + 1);
         }
       }

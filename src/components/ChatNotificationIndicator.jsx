@@ -11,11 +11,11 @@ const ChatNotificationIndicator = () => {
   const { user } = useContext(AppContext);
   
   // Debug log
-  console.log('ChatNotificationIndicator - Context user:', {
-    unreadCount,
-    socketConnected,
-    contextUser: user ? `Found (ID: ${user._id})` : 'Not found'
-  });
+  // console.log('ChatNotificationIndicator - Context user:', {
+  //   unreadCount,
+  //   socketConnected,
+  //   contextUser: user ? `Found (ID: ${user._id})` : 'Not found'
+  // });
 
   // Initialize socket for receiving notifications when component mounts
   useEffect(() => {
@@ -23,17 +23,17 @@ const ChatNotificationIndicator = () => {
       // Initialize socket with user (if not already initialized)
       if (!socketConnected) {
         try {
-          console.log('Initializing socket from ChatNotificationIndicator with user ID:', user._id);
+          // console.log('Initializing socket from ChatNotificationIndicator with user ID:', user._id);
           socketService.init(user);
           
           // Fetch chat history to count unread messages
           dispatch(fetchChatHistory(user._id));
         } catch (err) {
-          console.error('Error initializing socket in ChatNotificationIndicator:', err);
+          // console.error('Error initializing socket in ChatNotificationIndicator:', err);
         }
       }
     } else {
-      console.log('Cannot initialize socket in ChatNotificationIndicator: No valid user available');
+      // console.log('Cannot initialize socket in ChatNotificationIndicator: No valid user available');
     }
   }, [user, socketConnected, dispatch]);
 
