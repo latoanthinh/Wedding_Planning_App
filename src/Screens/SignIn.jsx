@@ -10,8 +10,8 @@ const SignIn = (props) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const { navigation } = props;
-    const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
+    const [email, setEmail] = useState('lmao2@gmail.com');
+    const [password, setPassword] = useState('123456');
     const { user, setUser } = useContext(AppContext);
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
@@ -71,29 +71,19 @@ const SignIn = (props) => {
     const { loginData, loginStatus } = useSelector((state) => state.login);
 
     useEffect(() => {
-        if (loginStatus === "succeeded") {
-            const saveCredentials = async () => {
-                try {
-                    if (isChecked) {
-                        await AsyncStorage.setItem('savedEmail', email);
-                        await AsyncStorage.setItem('savedPassword', password);
-                        await AsyncStorage.setItem('rememberMe', 'true');
-                    } else {
-                        await AsyncStorage.removeItem('savedEmail');
-                        await AsyncStorage.removeItem('savedPassword');
-                        await AsyncStorage.setItem('rememberMe', 'false');
-                    }
-                } catch (error) {
-                    console.log('Error saving credentials:', error);
-                }
-            };
+        if (loginStatus == "succeeded") {
+            console.log('Login successful, user data:', JSON.stringify({
+                ...loginData.user,
+                avatar: loginData.user.avatar ? 'AVATAR_DATA_PRESENT' : null
+            }));
             
-            saveCredentials();
-            
+            // Ensure avatar has proper format
             const userData = {...loginData.user};
+            
             if (userData.avatar && typeof userData.avatar === 'string' && 
                 !userData.avatar.startsWith('data:') && 
                 !userData.avatar.startsWith('http')) {
+                console.log('Fixing avatar format during login');
                 userData.avatar = `data:image/jpeg;base64,${userData.avatar}`;
             }
             
@@ -107,10 +97,11 @@ const SignIn = (props) => {
             
             setUser(userData);
             ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
-        } else if (loginStatus === 'failed') {
+        }
+        else if (loginStatus === 'failed') {
             ToastAndroid.show('Đăng nhập thất bại!', ToastAndroid.SHORT);
         }
-    }, [loginStatus, loginData, setUser, isChecked, email, password]);
+    }, [loginStatus, loginData, setUser])
 
     const dangnhap = () => {
         if (validateInputs()) {
@@ -130,10 +121,6 @@ const SignIn = (props) => {
 
     const handleSignUpPress = () => {
         navigation.navigate('SignUp');
-    };
-
-    const handleForgotPasswordPress = () => {
-        navigation.navigate('EmailOpt');
     };
 
     return (
