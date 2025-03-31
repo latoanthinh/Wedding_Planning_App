@@ -21,6 +21,7 @@ const EditProfile = (props) => {
   const [avatar, setAvatar] = useState(null);
   const [hasImagePermission, setHasImagePermission] = useState(false);
   const [hasCameraPermission, setHasCameraPermission] = useState(false);
+  const [isSaving, setIsSaving] = useState(false); // Thêm trạng thái để kiểm soát nút "Lưu"
 
   // Kiểm tra trạng thái API khi component mount
   useEffect(() => {
@@ -369,19 +370,19 @@ const EditProfile = (props) => {
 
   // Function to check API before saving
   const checkApiAndSave = () => {
-    // Kiểm tra API trước khi lưu
+    if (isSaving) return; // Ngăn nhấn liên tục khi đang lưu
+    setIsSaving(true); // Vô hiệu hóa nút khi bắt đầu xử lý
+
     dispatch(checkApiStatus())
       .unwrap()
       .then(() => {
-        // API online, tiến hành lưu
         saveChanges();
       })
       .catch(() => {
-        // API offline, hiển thị thông báo
         Alert.alert(
           'Lỗi kết nối',
           'Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối mạng và thử lại sau.',
-          [{ text: 'OK' }]
+          [{ text: 'OK', onPress: () => setIsSaving(false) }]
         );
       });
   };
