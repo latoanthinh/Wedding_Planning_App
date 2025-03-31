@@ -179,6 +179,11 @@ export const RegisterSlice = createSlice({
       state.otpVerifyStatus = 'idle';
       state.otpData = null;
       state.error = null;
+    },
+    resetRegisterStatus: (state) => {
+      state.registerStatus = 'idle';
+      state.registerData = {};
+      state.error = null;
     }
   },
   extraReducers: builder => {
@@ -227,5 +232,5 @@ export const RegisterSlice = createSlice({
   },
 });
 
-export const { resetOtpStatus } = RegisterSlice.actions;
+export const { resetOtpStatus, resetRegisterStatus } = RegisterSlice.actions;
 export default RegisterSlice.reducer;

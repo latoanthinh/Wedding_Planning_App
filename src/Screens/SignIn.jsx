@@ -117,7 +117,7 @@ const SignIn = (props) => {
     };
 
     const handleSignUpPress = () => {
-        navigation.navigate('SignUp');
+        navigation.navigate('SignUp', { resetForm: true });
     };
 
     const handleForgotPasswordPress = () => {

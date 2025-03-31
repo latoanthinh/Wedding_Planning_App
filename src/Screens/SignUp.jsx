@@ -13,21 +13,25 @@ import {
     StyleSheet,
 } from "react-native";
 import SignInPageStyles from "../Styles/SignInPageStyles";
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
     DangKyTaiKhoan, 
     requestRegisterOTP, 
     verifyRegisterOTP, 
-    resetOtpStatus 
+    resetOtpStatus,
+    resetRegisterStatus
 } from '../redux/RegisterSlice';
 
 const { width } = Dimensions.get('window');
 
-const SignUp = () => {
+const SignUp = ({ route }) => {
     const [isPasswordVisible, setIsPasswordVisible] = useState(false);
     const [isChecked, setIsChecked] = useState(false);
     const navigation = useNavigation();
+    
+    // Check if we need to reset the form (from navigation params)
+    const shouldResetForm = route?.params?.resetForm || false;
     
     // OTP states
     const [showOtpInput, setShowOtpInput] = useState(false);
@@ -50,7 +54,7 @@ const SignUp = () => {
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
     const [policyError, setPolicyError] = useState('');
 
-    // Animation states
+    // Animation states - initialize with 0 to show registration form initially
     const slideAnim = React.useRef(new Animated.Value(0)).current;
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
 
@@ -64,12 +68,63 @@ const SignUp = () => {
         error 
     } = useSelector((state) => state.register);
 
+    // Reset component state and Redux OTP state when component mounts
     useEffect(() => {
+        // Reset all form fields if coming from SignIn
+        if (shouldResetForm) {
+            resetForm();
+        }
+        
+        // Reset OTP status in Redux
         dispatch(resetOtpStatus());
+        
+        // Reset register status as well
+        dispatch(resetRegisterStatus());
+        
         return () => {
+            // Clean up on unmount
             dispatch(resetOtpStatus());
+            dispatch(resetRegisterStatus());
         };
-    }, []);
+    }, [shouldResetForm]);
+
+    // Reset form function to clean all states
+    const resetForm = () => {
+        setShowOtpInput(false);
+        setOtp(['', '', '', '']);
+        setTimer(60);
+        setCanResend(false);
+        setOtpError('');
+        setEmail('');
+        setPassword('');
+        setName('');
+        setConfirmPassword('');
+        setNameError('');
+        setEmailError('');
+        setPasswordError('');
+        setConfirmPasswordError('');
+        setPolicyError('');
+        setIsChecked(false);
+        
+        // Reset animation values
+        slideAnim.setValue(0);
+        fadeAnim.setValue(0);
+        
+        // Reset Redux state
+        dispatch(resetOtpStatus());
+        dispatch(resetRegisterStatus());
+    };
+
+    // Use React Navigation's useFocusEffect to reset form when screen comes into focus
+    React.useEffect(() => {
+        const unsubscribe = navigation.addListener('focus', () => {
+            resetForm();
+            // Ensure register status is reset when screen is focused
+            dispatch(resetRegisterStatus());
+        });
+        
+        return unsubscribe;
+    }, [navigation]);
 
     useEffect(() => {
         if (showOtpInput) {
@@ -85,6 +140,10 @@ const SignUp = () => {
                     useNativeDriver: true,
                 }),
             ]).start();
+        } else {
+            // Reset animation when not showing OTP
+            slideAnim.setValue(0);
+            fadeAnim.setValue(0);
         }
     }, [showOtpInput]);
 
@@ -122,6 +181,8 @@ const SignUp = () => {
                 ToastAndroid.SHORT
             );
           
+            // Reset form before navigating
+            resetForm();
             navigation.navigate('SignIn');
         } else if (otpVerifyStatus === 'failed') {
             ToastAndroid.show(
@@ -217,7 +278,15 @@ const SignUp = () => {
             return;
         }
         setOtpError('');
-        dispatch(verifyRegisterOTP({ email, otp: fullOtp }));
+        dispatch(verifyRegisterOTP({ email, otp: fullOtp }))
+            .unwrap()
+            .then(() => {
+                // Explicit reset of form here as an additional safety measure
+                resetForm();
+            })
+            .catch(() => {
+                // Error handling is already done in the useEffect
+            });
     };
 
     const handleOtpChange = (text, index) => {
@@ -261,6 +330,10 @@ const SignUp = () => {
     };
 
     const handleSignInPress = () => {
+        // Reset form state before navigating back to SignIn
+        resetForm();
+        // Explicitly reset register status
+        dispatch(resetRegisterStatus());
         navigation.navigate('SignIn');
     };
 
