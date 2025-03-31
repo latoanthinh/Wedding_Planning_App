@@ -12,8 +12,7 @@ const Favorites = ({ navigation }) => {
     const userId = user?._id;
 
     
-    console.log('Data from Redux:', JSON.stringify(data, null, 2));
-    console.log('Grouped Data:', JSON.stringify(groupedData, null, 2));
+    
     useEffect(() => {
         if (!userId) {
             
@@ -144,9 +143,7 @@ const Favorites = ({ navigation }) => {
                             {item.name || 'Không có tên'}
                         </Text>
                         <View style={styles.itemDetails}>
-                            <Text style={styles.itemCategory}>
-                                {item.category || 'Chưa phân loại'}
-                            </Text>
+                            
                             <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
                         </View>
                     </View>

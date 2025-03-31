@@ -108,21 +108,9 @@ const Settings = (props) => {
         </View>
 
         {/* Options */}
-        <TouchableOpacity style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <Image source={require('../Assets/Images/Users.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Loại tài khoản</Text>
-          </View>
-          <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
-        </TouchableOpacity>
+        
 
-        <TouchableOpacity style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <Image source={require('../Assets/Images/addfolder.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Thêm giới hạn ngân sách</Text>
-          </View>
-          <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
-        </TouchableOpacity>
+        
 
         <TouchableOpacity style={styles.optionRow} onPress={() => navigation.navigate("AllPlan")}>
           <View style={styles.optionLeft}>
@@ -132,14 +120,9 @@ const Settings = (props) => {
           <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionRow}>
-          <View style={styles.optionLeft}>
-            <Image source={require('../Assets/Images/setting.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Cài đặt</Text>
-          </View>
-        </TouchableOpacity>
+        
 
-        <TouchableOpacity style={styles.optionRow}>
+        <TouchableOpacity style={styles.optionRow} onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })}>
           <View style={styles.optionLeft}>
             <Image source={require('../Assets/Images/question.png')} style={styles.optionIcon} />
             <Text style={styles.optionText}>Trợ giúp & Phản hồi</Text>
