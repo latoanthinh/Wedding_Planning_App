@@ -4,7 +4,6 @@ import SignInPageStyles from "../Styles/SignInPageStyles";
 import { AppContext } from '../AppContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { DangNhapTaiKhoan } from '../redux/LoginSlice';
-import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const SignIn = (props) => {
@@ -64,49 +63,46 @@ const SignIn = (props) => {
         return valid;
     };
 
-    const handleForgotPasswordPress = () => {
-        navigation.navigate('EmailOpt');
-    };
-
     const dispatch = useDispatch();
     const { loginData, loginStatus } = useSelector((state) => state.login);
 
     useEffect(() => {
-        if (loginStatus == "succeeded") {
-            console.log('Login successful, user data:', JSON.stringify({
-                ...loginData.user,
-                avatar: loginData.user.avatar ? 'AVATAR_DATA_PRESENT' : null
-            }));
+        if (loginStatus === "succeeded") {
+            const saveCredentials = async () => {
+                try {
+                    if (isChecked) {
+                        await AsyncStorage.setItem('savedEmail', email);
+                        await AsyncStorage.setItem('savedPassword', password);
+                        await AsyncStorage.setItem('rememberMe', 'true');
+                    } else {
+                        await AsyncStorage.removeItem('savedEmail');
+                        await AsyncStorage.removeItem('savedPassword');
+                        await AsyncStorage.setItem('rememberMe', 'false');
+                    }
+                } catch (error) {
+                    console.log('Error saving credentials:', error);
+                }
+            };
             
-            // Ensure avatar has proper format
+            saveCredentials();
+            
             const userData = {...loginData.user};
-            
             if (userData.avatar && typeof userData.avatar === 'string' && 
                 !userData.avatar.startsWith('data:') && 
                 !userData.avatar.startsWith('http')) {
-                console.log('Fixing avatar format during login');
                 userData.avatar = `data:image/jpeg;base64,${userData.avatar}`;
-            }
-            
-            // Set user as online first, then update the context
-            if (userData._id) {
-                dispatch(updateUserOnlineStatus({ 
-                    userId: userData._id, 
-                    isOnline: true 
-                }));
             }
             
             setUser(userData);
             ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
-        }
-        else if (loginStatus === 'failed') {
+        } else if (loginStatus === 'failed') {
             ToastAndroid.show('Đăng nhập thất bại!', ToastAndroid.SHORT);
         }
-    }, [loginStatus, loginData, setUser])
+    }, [loginStatus, loginData, setUser, isChecked, email, password]);
 
     const dangnhap = () => {
         if (validateInputs()) {
-            dispatch(DangNhapTaiKhoan({ email, password }));
+            dispatch(DangNhapTaiKhoan({ email, password, setUser }));
         } else {
             ToastAndroid.show("Vui lòng nhập đúng thông tin!", ToastAndroid.SHORT);
         }
@@ -122,6 +118,10 @@ const SignIn = (props) => {
 
     const handleSignUpPress = () => {
         navigation.navigate('SignUp');
+    };
+
+    const handleForgotPasswordPress = () => {
+        navigation.navigate('EmailOpt');
     };
 
     return (
