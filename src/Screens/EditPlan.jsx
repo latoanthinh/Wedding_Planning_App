@@ -104,9 +104,9 @@ const EditPlan = ({ navigation, route }) => {
           caterings: cateringsList.map(item => item._id).filter(Boolean),
           decorates: decoratesList.map(item => item._id).filter(Boolean),
           presents: presentsList.map(item => ({
-            _id: item._id,
+            id: item._id,
             quantity: item.quantity || 1
-          })).filter(item => item._id),
+          })).filter(item => item.id),
           isCopy: planData.isCopy || false,
           originalPlanId: planData.originalPlanId || planId,
         };
