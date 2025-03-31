@@ -216,8 +216,8 @@ const FoodDetailScreen = (props) => {
             <Text style={styles.allergyText}>Có thể chứa: gluten, trứng</Text>
           </View>
         </ScrollView>
-        <TouchableOpacity style={styles.addButton}>
-          <Text style={styles.addButtonText}>Thêm vào thực đơn</Text>
+        <TouchableOpacity style={styles.addButton} onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })}>
+          <Text style={styles.addButtonText}>Liên Hệ</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

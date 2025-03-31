@@ -179,10 +179,7 @@ const HallWeddings = ({ route }) => {
                         <View style={styles.tagItem}><Text style={styles.tagText}>Sang trọng</Text></View>
                         <View style={styles.tagItem}><Text style={styles.tagText}>Cao cấp</Text></View>
                     </View>
-                    <Animated.View style={{ opacity: descAnim, transform: [{ translateY: descAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }}>
-                        <Text style={styles.sectionTitle}>Mô tả</Text>
-                        <Text style={styles.descriptionText}>{displayData.description || 'Không có mô tả'}</Text>
-                    </Animated.View>
+                    
                     <View style={styles.divider} />
                     <View style={styles.featuresSection}>
                         <Text style={styles.sectionTitle}>Đặc điểm</Text>
@@ -210,14 +207,11 @@ const HallWeddings = ({ route }) => {
                     </View>
                 </ScrollView>
                 <View style={styles.actionButtons}>
-                    <TouchableOpacity style={styles.contactButton}>
+                    <TouchableOpacity style={styles.contactButton} onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })}>
                         <Icon name="phone" size={20} color="#A67C52" />
                         <Text style={styles.contactButtonText}>Liên hệ</Text>
                     </TouchableOpacity>
-                    <TouchableOpacity style={styles.addToCartButton}>
-                        <Icon name="cart-plus" size={20} color="#FFFFFF" />
-                        <Text style={styles.addToCartText}>Thêm vào kế hoạch</Text>
-                    </TouchableOpacity>
+                   
                 </View>
             </View>
         </SafeAreaView>
@@ -426,7 +420,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#A67C52',
         borderRadius: 10,
-        marginRight: 10,
+       
     },
     contactButtonText: {
         marginLeft: 8,

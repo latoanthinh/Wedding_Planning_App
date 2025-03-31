@@ -222,29 +222,14 @@ const DecorDetail = (props) => {
             <Icon name="information-outline" size={22} color="#A67C52" />
             <Text style={styles.noteText}>Giá có thể thay đổi tùy theo mùa và số lượng hoa</Text>
           </View>
-          <View style={styles.relatedSection}>
-            <Text style={styles.sectionTitle}>Sản phẩm liên quan</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.relatedScroll}>
-              {[1, 2, 3].map((i) => (
-                <TouchableOpacity key={i} style={styles.relatedItem}>
-                  <Image source={{ uri: 'https://hoatuoidatviet.vn/upload/sanpham/cong-hoa-cuoi-dep-dv2-7308.jpg' }} style={styles.relatedImage} />
-                  <View style={styles.relatedImageOverlay} />
-                  <Text style={styles.relatedName}>Cổng hoa {i + 1}</Text>
-                  <Text style={styles.relatedPrice}>{(displayData.price * 0.8).toLocaleString('vi-VN')} đ</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
+          
         </ScrollView>
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.contactButton}>
+          <TouchableOpacity style={styles.contactButton} onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })}>
             <Icon name="phone" size={20} color="#A67C52" />
             <Text style={styles.contactButtonText}>Liên hệ</Text>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.addToCartButton}>
-            <Icon name="cart-plus" size={20} color="#FFFFFF" />
-            <Text style={styles.addToCartText}>Thêm vào kế hoạch</Text>
-          </TouchableOpacity>
+          
         </View>
       </View>
     </SafeAreaView>
@@ -494,7 +479,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#A67C52',
     borderRadius: 10,
-    marginRight: 10,
   },
   contactButtonText: {
     marginLeft: 8,
