@@ -4,12 +4,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Plan } from '../redux/GetAllPlanSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../AppContext';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 const AllPlan = ({ navigation }) => {
   const dispatch = useDispatch();
   const { AllPlanData, AllPlanStatus, error } = useSelector((state) => state.plan);
   const { user } = useContext(AppContext);
   const userId = user._id;
+
+  useBackHandler(navigation, 'TabNavigation', { screen: 'Setting' });
 
   useEffect(() => {
     if (userId) {

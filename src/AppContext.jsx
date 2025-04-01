@@ -91,6 +91,8 @@ export const AppContextProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
+      console.log('Bắt đầu quá trình đăng xuất...');
+      
       // Try to set user status to offline, but don't wait for it
       if (user && user._id) {
         try {
@@ -114,12 +116,21 @@ export const AppContextProvider = ({ children }) => {
         }
       }
       
-      // Clear storage and state
+      // Thứ tự quan trọng: Đặt user = null trước, sau đó mới xóa dữ liệu
+      // Điều này đảm bảo AppNavigation sẽ render GuestStackNavigation ngay lập tức
+      console.log('Đặt user state thành null...');
+      setUser(null);
+      
+      // Sau đó mới xóa dữ liệu trong AsyncStorage
+      console.log('Xóa token và dữ liệu người dùng từ AsyncStorage...');
       await AsyncStorage.removeItem('token');
       await AsyncStorage.removeItem('userData');
-      setUser(null);
+      
+      console.log('Đăng xuất hoàn tất');
+      return true;
     } catch (error) {
       console.error('Error logging out:', error);
+      return false;
     }
   };
 

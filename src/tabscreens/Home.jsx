@@ -56,10 +56,26 @@ const ScreenHome = ({ navigation }) => {
 
   useEffect(() => {
     const timer = setInterval(() => {
-      flatListRef.current?.scrollToIndex({
-        index: (currentIndex + 1) % slides.length,
-        animated: true,
-      });
+      if (flatListRef.current) {
+        const nextIndex = (currentIndex + 1) % slides.length;
+        try {
+          flatListRef.current.scrollToIndex({
+            index: nextIndex,
+            animated: true,
+          });
+        } catch (error) {
+          // If direct scrolling fails, use a timeout
+          const wait = new Promise(resolve => setTimeout(resolve, 500));
+          wait.then(() => {
+            if (flatListRef.current) {
+              flatListRef.current.scrollToIndex({
+                index: nextIndex,
+                animated: true
+              });
+            }
+          });
+        }
+      }
     }, 5000);
 
     return () => clearInterval(timer);
@@ -134,6 +150,17 @@ const ScreenHome = ({ navigation }) => {
               renderItem={renderCarouselItem}
               snapToInterval={width}
               decelerationRate="fast"
+              onScrollToIndexFailed={(info) => {
+                const wait = new Promise(resolve => setTimeout(resolve, 500));
+                wait.then(() => {
+                  if (flatListRef.current) {
+                    flatListRef.current.scrollToIndex({
+                      index: info.index,
+                      animated: true
+                    });
+                  }
+                });
+              }}
               onScroll={Animated.event(
                 [{ nativeEvent: { contentOffset: { x: scrollX } } }],
                 { useNativeDriver: false }
@@ -172,7 +199,22 @@ const ScreenHome = ({ navigation }) => {
                 });
 
                 return (
-                  <TouchableOpacity key={index} onPress={() => flatListRef.current?.scrollToIndex({ index, animated: true })}>
+                  <TouchableOpacity key={index} onPress={() => {
+                    try {
+                      flatListRef.current?.scrollToIndex({ index, animated: true });
+                    } catch (error) {
+                      // If direct scrolling fails, use a timeout
+                      const wait = new Promise(resolve => setTimeout(resolve, 500));
+                      wait.then(() => {
+                        if (flatListRef.current) {
+                          flatListRef.current.scrollToIndex({
+                            index,
+                            animated: true
+                          });
+                        }
+                      });
+                    }
+                  }}>
                     <Animated.View
                       style={[styles.dot, {
                         opacity: dotOpacity,

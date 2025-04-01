@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Switch } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Switch, Alert, Platform } from 'react-native';
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,7 +8,7 @@ import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
 
 const Settings = (props) => {
   const { navigation } = props;
-  const { user } = useContext(AppContext);
+  const { user, logout } = useContext(AppContext);
   const dispatch = useDispatch();
   
   // State to track online status toggle
@@ -35,6 +35,52 @@ const Settings = (props) => {
         isOnline: value 
       }));
     }
+  };
+
+  // Handle logout process
+  const handleLogout = () => {
+    Alert.alert(
+      "Đăng xuất",
+      "Bạn có chắc chắn muốn đăng xuất?",
+      [
+        {
+          text: "Hủy",
+          style: "cancel"
+        },
+        { 
+          text: "Đăng xuất", 
+          onPress: async () => {
+            try {
+              // Call the logout function from AppContext
+              const success = await logout();
+              
+              if (success) {
+                console.log("Đã đăng xuất thành công, đang chuyển về màn hình đăng nhập...");
+                
+                // Sau 1 giây mà vẫn không thấy chuyển màn hình, force reload app
+                setTimeout(() => {
+                  try {
+                    const { DevSettings } = require('react-native');
+                    if (DevSettings && DevSettings.reload) {
+                      console.log('Force reload app sau khi đăng xuất...');
+                      DevSettings.reload();
+                    }
+                  } catch (error) {
+                    console.error('Không thể reload app:', error);
+                  }
+                }, 1000);
+              } else {
+                Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại sau.");
+              }
+            } catch (error) {
+              console.error("Lỗi khi đăng xuất:", error);
+              Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại sau.");
+            }
+          },
+          style: "destructive"
+        }
+      ]
+    );
   };
 
   return (
@@ -129,10 +175,10 @@ const Settings = (props) => {
           </View>
         </TouchableOpacity>
 
-        <TouchableOpacity style={styles.optionRow}>
+        <TouchableOpacity style={styles.optionRow} onPress={handleLogout}>
           <View style={styles.optionLeft}>
-            <Image source={require('../Assets/Images/question.png')} style={styles.optionIcon} />
-            <Text style={styles.optionText}>Đăng Xuất</Text>
+            <Image source={require('../Assets/Images/question.png')} style={[styles.optionIcon, { tintColor: '#E74C3C' }]} />
+            <Text style={[styles.optionText, { color: '#E74C3C' }]}>Đăng Xuất</Text>
           </View>
         </TouchableOpacity>
       </ScrollView>

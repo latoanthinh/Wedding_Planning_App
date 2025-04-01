@@ -32,9 +32,28 @@ import BlogDetail from '../Screens/BlogDetail'
 import Payos from '../Screens/Payos'
 import Chat from '../Screens/Chat'
 
+// Import back handler HOC
+import withBackHandler from '../hoc/withBackHandler'
 
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createSharedElementStackNavigator } from 'react-navigation-shared-element';
+
+// Apply back handler to screens that need to navigate back to TabNavigation
+const EnhancedDetailClothes = withBackHandler(DetailClothes)
+const EnhancedDress = withBackHandler(Dress)
+const EnhancedFlowersScreen = withBackHandler(FlowersScreen)
+const EnhancedDetailFlowers = withBackHandler(DetailFlowers)
+const EnhancedHallWeddings = withBackHandler(HallWeddings)
+const EnhancedAllPlan = withBackHandler(AllPlan)
+const EnhancedGift_Screen = withBackHandler(Gift_Screen)
+const EnhancedAllLobyy = withBackHandler(AllLobyy)
+const EnhancedDiaDiem_Screen = withBackHandler(DiaDiem_Screen)
+const EnhancedFoodDetail = withBackHandler(FoodDetail)
+const EnhancedGiftDetail = withBackHandler(GiftDetail)
+const EnhancedBlog = withBackHandler(Blog)
+const EnhancedBlogDetail = withBackHandler(BlogDetail, { 
+  routeName: 'Blog', // Navigate back to Blog screen instead of TabNavigation
+})
 
 // START: dành cho user chưa đăng nhập
 const GuestStack = createNativeStackNavigator();
@@ -63,10 +82,10 @@ const SharedElementStack = createSharedElementStackNavigator();
 const BlogStack = () => {
   return (
     <SharedElementStack.Navigator screenOptions={{ headerShown: false }}>
-      <SharedElementStack.Screen name="BlogScreen" component={Blog} />
+      <SharedElementStack.Screen name="BlogScreen" component={EnhancedBlog} />
       <SharedElementStack.Screen 
         name="BlogDetailScreen" 
-        component={BlogDetail} 
+        component={EnhancedBlogDetail} 
         sharedElements={(route) => {
           const { slug } = route.params;
           return [`blog.${slug}.image`];
@@ -94,34 +113,34 @@ const StackNavigation = () => {
   return (
     <Stack.Navigator screenOptions={{ headerShown: false}}>
       <Stack.Screen name="TabNavigation" component={TabNavigation} />
-      <Stack.Screen name="Dress" component={Dress} />
-      <Stack.Screen name="DetailClothes" component={DetailClothes} />
-      <Stack.Screen name="FlowersScreen" component={FlowersScreen} />
-      <Stack.Screen name="DetailFlowers" component={DetailFlowers} />
+      <Stack.Screen name="Dress" component={EnhancedDress} />
+      <Stack.Screen name="DetailClothes" component={EnhancedDetailClothes} />
+      <Stack.Screen name="FlowersScreen" component={EnhancedFlowersScreen} />
+      <Stack.Screen name="DetailFlowers" component={EnhancedDetailFlowers} />
       <Stack.Screen name="Thongtincoban" component={Thongtincoban} />
       <Stack.Screen name="GenPlan" component={GenPlan} />
-      <Stack.Screen name="HallWeddings" component={HallWeddings} />
+      <Stack.Screen name="HallWeddings" component={EnhancedHallWeddings} />
       <Stack.Screen name="EditProfile" component={EditProfile} />
       <Stack.Screen name="ChangePass" component={ChangePass} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
-      <Stack.Screen name="AllPlan" component={AllPlan} />
-      <Stack.Screen name="Gift_Screen" component={Gift_Screen} />
+      <Stack.Screen name="AllPlan" component={EnhancedAllPlan} />
+      <Stack.Screen name="Gift_Screen" component={EnhancedGift_Screen} />
       <Stack.Screen name="ComboDetail" component={ComboDetail} />
-      <Stack.Screen name="AllLobyy" component={AllLobyy} />
-      <Stack.Screen name="DiaDiem_Screen" component={DiaDiem_Screen} />
+      <Stack.Screen name="AllLobyy" component={EnhancedAllLobyy} />
+      <Stack.Screen name="DiaDiem_Screen" component={EnhancedDiaDiem_Screen} />
       <Stack.Screen name="TransitionLoading" component={TransitionLoading} />
-      <Stack.Screen name="FoodDetail" component={FoodDetail} />
-      <Stack.Screen name="GiftDetail" component={GiftDetail} />
+      <Stack.Screen name="FoodDetail" component={EnhancedFoodDetail} />
+      <Stack.Screen name="GiftDetail" component={EnhancedGiftDetail} />
       <Stack.Screen name="DetailPlan" component={DetailPlan} />
       <Stack.Screen name="DecorDetail" component={DecorDetail} />
       <Stack.Screen name="EditPlan" component={EditPlan} />
       <Stack.Screen name="PanoramaView" component={PanoramaView} />
-      <Stack.Screen name="Blog" component={Blog} />
+      <Stack.Screen name="Blog" component={EnhancedBlog} />
       <Stack.Screen name="Payos" component={Payos} />
       <Stack.Screen name="Chat" component={Chat} />
       <Stack.Screen 
         name="BlogDetail" 
-        component={BlogDetail}
+        component={EnhancedBlogDetail}
         options={{
           gestureEnabled: false,
           cardStyleInterpolator: ({ current: { progress } }) => {

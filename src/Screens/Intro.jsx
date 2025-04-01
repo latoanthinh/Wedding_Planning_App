@@ -43,7 +43,20 @@ const Intro = () => {
     const handleButtonPress = () => {
         if (currentIndex < slides.length - 1) {
             // Go to next slide
-            flatListRef.current.scrollToIndex({ index: currentIndex + 1, animated: true });
+            try {
+                flatListRef.current.scrollToIndex({ index: currentIndex + 1, animated: true });
+            } catch (error) {
+                // If direct scrolling fails, use a timeout
+                const wait = new Promise(resolve => setTimeout(resolve, 500));
+                wait.then(() => {
+                    if (flatListRef.current) {
+                        flatListRef.current.scrollToIndex({
+                            index: currentIndex + 1,
+                            animated: true
+                        });
+                    }
+                });
+            }
         } else {
             // Go to login screen on last slide
             navigation.navigate('SignIn');
@@ -61,6 +74,17 @@ const Intro = () => {
                 showsHorizontalScrollIndicator={false}
                 onScroll={handleScroll}
                 onMomentumScrollEnd={updateIndex}
+                onScrollToIndexFailed={(info) => {
+                    const wait = new Promise(resolve => setTimeout(resolve, 500));
+                    wait.then(() => {
+                        if (flatListRef.current) {
+                            flatListRef.current.scrollToIndex({
+                                index: info.index,
+                                animated: true
+                            });
+                        }
+                    });
+                }}
                 renderItem={({ item }) => (
                     <View style={styles.slide}>
                         <Image source={item.image} style={styles.image} />
@@ -78,7 +102,22 @@ const Intro = () => {
             {/* Dots Indicator */}
             <View style={styles.indicatorContainer}>
                 {slides.map((_, index) => (
-                    <TouchableOpacity key={index} onPress={() => flatListRef.current.scrollToIndex({ index, animated: true })}>
+                    <TouchableOpacity key={index} onPress={() => {
+                        try {
+                            flatListRef.current.scrollToIndex({ index, animated: true });
+                        } catch (error) {
+                            // If direct scrolling fails, use a timeout
+                            const wait = new Promise(resolve => setTimeout(resolve, 500));
+                            wait.then(() => {
+                                if (flatListRef.current) {
+                                    flatListRef.current.scrollToIndex({
+                                        index,
+                                        animated: true
+                                    });
+                                }
+                            });
+                        }
+                    }}>
                         <View style={[styles.dot, currentIndex === index && styles.activeDot]} />
                     </TouchableOpacity>
                 ))}

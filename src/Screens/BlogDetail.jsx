@@ -28,6 +28,7 @@ import 'moment/locale/vi';
 import {SharedElement} from 'react-navigation-shared-element';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import RenderHTML from 'react-native-render-html';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 // Suppress specific warnings related to react-native-render-html's defaultProps deprecation
 LogBox.ignoreLogs([
@@ -45,6 +46,10 @@ const BlogDetail = ({route}) => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { width: windowWidth } = useWindowDimensions();
+
+  // Use the back handler hook to handle hardware back button presses
+  // This will navigate back to the Blog screen when the hardware back button is pressed
+  useBackHandler(navigation, 'Blog');
 
   // Get state from Redux store
   const {selectedBlog, relatedBlogs, detailStatus, relatedStatus, detailError} =

@@ -112,8 +112,84 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - React Navigation Shared Element requires specific configuration for animations between screens
 - Đảm bảo tên state trong redux slice phải nhất quán và tuân theo quy ước chung trong toàn ứng dụng
 - Sử dụng status dạng chuỗi ('idle', 'loading', 'succeeded', 'failed') để theo dõi trạng thái của request thay vì biến boolean
+- Xử lý nút back phần cứng trên thiết bị Android bằng cách tạo custom hook (useBackHandler) để điều hướng về màn hình chính thay vì sử dụng navigation.goBack() mặc định
+- Sử dụng HOC (Higher-Order Component) hoặc wrapper component để đóng gói logic xử lý back button vào các màn hình mà không cần chỉnh sửa trực tiếp component gốc
+- Implement "double tap to exit" pattern cho việc thoát ứng dụng khi ở màn hình gốc (root screen) để tránh việc thoát ứng dụng một cách vô tình
+- Khi sử dụng scrollToIndex với FlatList, luôn phải cung cấp onScrollToIndexFailed handler hoặc getItemLayout để tránh lỗi "Invariant Violation: scrollToIndex should be used in conjunction with getItemLayout or onScrollToIndexFailed"
+- Bọc các lệnh scrollToIndex trong try-catch và thêm timeout để xử lý các trường hợp có thể gây ra lỗi khi gọi trực tiếp
+- Luôn kiểm tra flatListRef.current tồn tại trước khi gọi các phương thức của nó
 
 # Scratchpad
+
+## Xử lý lỗi scrollToIndex trong FlatList
+
+[X] Tìm các component sử dụng scrollToIndex mà không có xử lý lỗi phù hợp
+[X] Thêm onScrollToIndexFailed handler vào các FlatList trong Home.jsx và Intro.jsx
+[X] Cập nhật các hàm gọi trực tiếp scrollToIndex để sử dụng try-catch và kiểm tra ref
+[X] Tạo giải pháp chờ timeout nếu scrollToIndex thất bại
+[X] Cập nhật các sự kiện nhấn nút để sử dụng xử lý lỗi
+[X] Cập nhật .cursorrules với bài học rút ra
+
+### Giải pháp
+
+1. **Thêm onScrollToIndexFailed handler vào các FlatList**:
+   - Xử lý trường hợp FlatList không thể cuộn đến index cụ thể
+   - Sử dụng setTimeout để thử lại sau một khoảng thời gian
+
+2. **Sử dụng try-catch cho các lệnh scrollToIndex trực tiếp**:
+   - Bao bọc tất cả các lệnh gọi scrollToIndex trong try-catch
+   - Nếu có lỗi, sử dụng setTimeout để thử lại
+
+3. **Kiểm tra ref trước khi sử dụng**:
+   - Luôn kiểm tra flatListRef.current tồn tại trước khi gọi các phương thức
+   - Sử dụng optional chaining (?.) khi thích hợp
+
+4. **Cải thiện sự kiện nhấp vào dots indicator**:
+   - Cập nhật các TouchableOpacity để xử lý lỗi khi người dùng nhấn vào chỉ báo
+
+5. **Cập nhật timer tự động cuộn**:
+   - Cải thiện đáng kể timer trong useEffect để xử lý lỗi
+   - Thêm kiểm tra và xử lý lỗi toàn diện
+
+Tất cả những thay đổi này sẽ giúp loại bỏ thông báo lỗi "Invariant Violation: scrollToIndex should be used in conjunction with getItemLayout or onScrollToIndexFailed" mà người dùng đang gặp phải, mang lại trải nghiệm người dùng tốt hơn mà không có thông báo lỗi gây phiền nhiễu.
+
+## Xử lý nút Back phần cứng của thiết bị
+
+[X] Phân tích cấu trúc navigation hiện tại, tìm hiểu vấn đề với hardware back button
+[X] Tạo custom hook useBackHandler để xử lý nút back phần cứng
+[X] Tạo component BackHandlerWrapper để bọc các màn hình cần xử lý back button
+[X] Tạo HOC withBackHandler để dễ dàng áp dụng cho nhiều màn hình
+[X] Cập nhật StackNavigation.jsx để sử dụng các component đã được bọc
+[X] Cập nhật một số màn hình trực tiếp với useBackHandler hook
+[X] Cập nhật AppNavigation để xử lý back button ở mức app (double tap to exit)
+[X] Thêm thông tin về giải pháp vào file .cursorrules
+
+### Giải pháp
+
+1. **Custom hook useBackHandler**: 
+   - Sử dụng BackHandler từ React Native để lắng nghe sự kiện nút back phần cứng
+   - Kiểm tra trạng thái navigation hiện tại và điều hướng về TabNavigation nếu cần
+
+2. **BackHandlerWrapper component**:
+   - Component bao bọc có thể được sử dụng để bọc các màn hình cần xử lý back button
+   - Nhận các props để cấu hình điểm đến khi nhấn back (routeName, screen)
+
+3. **Higher-Order Component (HOC)**:
+   - withBackHandler HOC được tạo ra để dễ dàng áp dụng cho nhiều màn hình
+   - Cho phép chúng ta không phải sửa đổi các component gốc
+
+4. **Cập nhật StackNavigation**:
+   - Bọc các màn hình cần xử lý back button bằng HOC
+   - Cấu hình các tùy chọn như màn hình đích và tab cụ thể
+
+5. **Trực tiếp sử dụng hook trong một số component**:
+   - Thêm hook vào BlogDetail, Dress, AllPlan để chứng minh cách sử dụng trực tiếp
+
+6. **Xử lý back button ở root level**:
+   - Trong AppNavigation, thêm logic "nhấn back hai lần để thoát"
+   - Hiển thị thông báo toast khi người dùng nhấn back lần đầu
+
+Tất cả những thay đổi này giúp ứng dụng có trải nghiệm điều hướng tốt hơn trên thiết bị thật, đặc biệt khi người dùng sử dụng nút back phần cứng. Người dùng sẽ được điều hướng về màn hình TabNavigation khi nhấn back button, thay vì hành vi mặc định của React Navigation.
 
 ## Cấu trúc lại BlogSlice
 
@@ -192,24 +268,6 @@ Notes:
 - Đã thêm phần Blog vào Home screen để dễ dàng truy cập
 - Đã cập nhật BlogSlice để quản lý relatedBlogs riêng biệt
 - Đã tạo component IconButton để sử dụng lại trong ứng dụng
-
-## Cursor learned
-
-- For search results, ensure proper handling of different character encodings (UTF-8) for international queries
-- Add debug information to stderr while keeping the main output clean in stdout for better pipeline integration
-- When using seaborn styles in matplotlib, use 'seaborn-v0_8' instead of 'seaborn' as the style name due to recent seaborn version changes
-- Use 'gpt-4o' as the model name for OpenAI's GPT-4 with vision capabilities
-- In React Native Redux apps, ensure the component is destructuring the correct state properties that match the property names in the Redux slice
-- Never use localhost URLs in mobile apps - always use actual IP addresses or domain names
-- Add detailed error handling with proper try/catch blocks and rejectWithValue in Redux async thunks for better debugging
-- Include helpful empty states and retry buttons when fetching data in React Native apps
-- Use Platform.OS to conditionally set different configurations for iOS and Android
-- For Android emulator, use 10.0.2.2 to refer to the host machine's localhost
-- Always use axios params object instead of manually constructing query strings
-- Improve error logging by capturing error.code, error.message, and error.response details
-- React Navigation Shared Element requires specific configuration for animations between screens
-- Đảm bảo tên state trong redux slice phải nhất quán và tuân theo quy ước chung trong toàn ứng dụng
-- Sử dụng status dạng chuỗi ('idle', 'loading', 'succeeded', 'failed') để theo dõi trạng thái của request thay vì biến boolean
 
 ## Cập nhật chức năng chat để sử dụng tài khoản người dùng đang đăng nhập
 
