@@ -2,21 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { WebView } from 'react-native-webview';
 import Lottie from 'lottie-react-native';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 const StreetView = () => {
     const [loading, setLoading] = useState(true);
     const streetViewUrl = 'https://www.google.com/maps/@?api=1&map_action=pano&viewpoint=36.1215,-115.1695';
 
     const renderLoading = () => (
-        <View style={styles.loadingContainer}>
-            <Lottie
-                source={require('../Assets/Animations/blackloading.json')}
-                autoPlay
-                loop
-                style={styles.loadingAnimation}
-            />
-            <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-        </View>
+        <LoadingIndicator text="Đang tải dữ liệu..." type="overlay" />
     );
 
     return (

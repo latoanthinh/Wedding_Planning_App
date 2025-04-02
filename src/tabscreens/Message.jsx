@@ -19,6 +19,7 @@ import socketService from '../utils/socketService';
 import { AppContext } from '../AppContext';
 import UserStatusIndicator from '../components/UserStatusIndicator';
 import { getUserActivityStatus } from '../redux/UserActivitySlice';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 const Message = () => {
   const navigation = useNavigation();
@@ -42,12 +43,6 @@ const Message = () => {
   // Check if admin is online (simplification - in real app you'd get actual admin IDs)
   const isAdminOnline = onlineUsers.some(user => user.role === 'admin');
   
-  // Log debug info
-  console.log('Message screen - Context user:', {
-    chatStatus,
-    contextUser: user ? `Found (ID: ${user._id})` : 'Not found'
-  });
-
   // Initialize socket when component mounts
   useEffect(() => {
     if (user && user._id) {
@@ -59,8 +54,6 @@ const Message = () => {
       
       // Fetch online users to see if admin is online
       dispatch(getUserActivityStatus('admin')); // This assumes admin has ID 'admin', adjust as needed
-    } else {
-      console.log('Cannot initialize socket in Message screen: No valid user available');
     }
     
     // Don't disconnect the socket when leaving the screen
@@ -127,17 +120,6 @@ const Message = () => {
   const lastMessageTime = lastMessage ? formatLastMessageTime(lastMessage.timestamp) : '';
   const isLastMessageFromAdmin = lastMessage && lastMessage.sender === 'admin';
 
-  // Log thông tin người dùng để debug
-  useEffect(() => {
-    console.log('Message component - Context user info:', {
-      hasUser: !!user,
-      userId: user?._id,
-      chatHistoryLength: chatHistory?.length || 0,
-      chatStatus,
-      socketConnected: socketService.isConnected()
-    });
-  }, [user, chatHistory, chatStatus]);
-
   // Nếu không tìm thấy user, hiển thị thông báo đăng nhập
   if (!user) {
     return (
@@ -176,10 +158,7 @@ const Message = () => {
         <Text style={styles.title}>Tin nhắn</Text>
         
         {chatStatus === 'loading' && !refreshing ? (
-          <View style={styles.centerContent}>
-            <ActivityIndicator size="large" color="#7A60FF" />
-            <Text style={styles.loadingText}>Đang tải...</Text>
-          </View>
+          <LoadingIndicator type="inline" text="Đang tải..." color="#7A60FF" useLottie={false} />
         ) : chatStatus === 'failed' ? (
           <View style={styles.centerContent}>
             <Icon name="alert-circle-outline" size={50} color="#FF5858" />

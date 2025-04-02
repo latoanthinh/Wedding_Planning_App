@@ -5,7 +5,6 @@ import {
     TextInput, 
     TouchableOpacity, 
     Image, 
-    Alert, 
     ActivityIndicator,
     Animated,
     Dimensions,
@@ -22,6 +21,7 @@ import {
     resetOtpStatus,
     resetRegisterStatus
 } from '../redux/RegisterSlice';
+import ButtonLoading from '../components/ButtonLoading';
 
 const { width } = Dimensions.get('window');
 
@@ -54,9 +54,17 @@ const SignUp = ({ route }) => {
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
     const [policyError, setPolicyError] = useState('');
 
+    // Status notification state
+    const [statusMessage, setStatusMessage] = useState('');
+    const [statusType, setStatusType] = useState(''); // 'success', 'error', 'info'
+
     // Animation states - initialize with 0 to show registration form initially
     const slideAnim = React.useRef(new Animated.Value(0)).current;
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
+    const notificationAnim = React.useRef(new Animated.Value(0)).current;
+
+    // Add shake animation for OTP inputs
+    const shakeAnimation = React.useRef(new Animated.Value(0)).current;
 
     const dispatch = useDispatch();
     const { 
@@ -90,6 +98,12 @@ const SignUp = ({ route }) => {
 
     // Reset form function to clean all states
     const resetForm = () => {
+        // First reset animation values immediately
+        slideAnim.setValue(0);
+        fadeAnim.setValue(0);
+        notificationAnim.setValue(0);
+        
+        // Then reset other state values
         setShowOtpInput(false);
         setOtp(['', '', '', '']);
         setTimer(60);
@@ -105,14 +119,35 @@ const SignUp = ({ route }) => {
         setConfirmPasswordError('');
         setPolicyError('');
         setIsChecked(false);
-        
-        // Reset animation values
-        slideAnim.setValue(0);
-        fadeAnim.setValue(0);
+        setStatusMessage('');
+        setStatusType('');
         
         // Reset Redux state
         dispatch(resetOtpStatus());
         dispatch(resetRegisterStatus());
+    };
+
+    // Show notification with animation
+    const showNotification = (message, type) => {
+        setStatusMessage(message);
+        setStatusType(type);
+        
+        // Animate notification display
+        Animated.sequence([
+            Animated.timing(notificationAnim, {
+                toValue: 1,
+                duration: 300,
+                useNativeDriver: true,
+            }),
+            Animated.delay(4000), // Show for 4 seconds
+            Animated.timing(notificationAnim, {
+                toValue: 0,
+                duration: 300,
+                useNativeDriver: true,
+            })
+        ]).start(() => {
+            setStatusMessage('');
+        });
     };
 
     // Use React Navigation's useFocusEffect to reset form when screen comes into focus
@@ -128,6 +163,7 @@ const SignUp = ({ route }) => {
 
     useEffect(() => {
         if (showOtpInput) {
+            // When showing OTP screen, animate forward
             Animated.parallel([
                 Animated.timing(slideAnim, {
                     toValue: 1,
@@ -140,11 +176,9 @@ const SignUp = ({ route }) => {
                     useNativeDriver: true,
                 }),
             ]).start();
-        } else {
-            // Reset animation when not showing OTP
-            slideAnim.setValue(0);
-            fadeAnim.setValue(0);
         }
+        // Note: We don't handle the else case here anymore
+        // as it's now managed by the handleBackToRegistration function
     }, [showOtpInput]);
 
     useEffect(() => {
@@ -161,62 +195,50 @@ const SignUp = ({ route }) => {
 
     useEffect(() => {
         if (otpRequestStatus === 'succeeded') {
-            Alert.alert(
-                "Thành công",
-                otpData?.message || 'Mã OTP đã được gửi đến email của bạn',
-                [{ text: "OK" }]
-            );
+            showNotification(otpData?.message || 'Mã OTP đã được gửi đến email của bạn', 'success');
         } else if (otpRequestStatus === 'failed') {
-            Alert.alert(
-                "Lỗi",
-                error || 'Lỗi khi gửi mã OTP',
-                [{ text: "OK" }]
-            );
+            showNotification(error || 'Lỗi khi gửi mã OTP', 'error');
             setShowOtpInput(false);
         }
     }, [otpRequestStatus, otpData, error]);
 
     useEffect(() => {
         if (otpVerifyStatus === 'succeeded') {
-            Alert.alert(
-                "Xác thực thành công",
-                otpData?.message || 'Xác thực OTP thành công',
-                [
-                    { 
-                        text: "OK", 
-                        onPress: () => {
-                            // Reset form before navigating
-                            resetForm();
-                            navigation.navigate('SignIn');
-                        }
-                    }
-                ]
-            );
+            showNotification(otpData?.message || 'Xác thực OTP thành công', 'success');
+            
+            // Set a short timeout to show the success message before navigating
+            setTimeout(() => {
+                // Reset animations first
+                slideAnim.setValue(0);
+                fadeAnim.setValue(0);
+                
+                // Then reset form and navigate
+                resetForm();
+                navigation.navigate('SignIn');
+            }, 1500);
         } else if (otpVerifyStatus === 'failed') {
-            Alert.alert(
-                "Xác thực thất bại",
-                error || 'Mã OTP không hợp lệ',
-                [{ text: "OK" }]
-            );
+            showNotification(error || 'Mã OTP không hợp lệ', 'error');
+            
+            // Clear OTP fields
+            setOtp(['', '', '', '']);
+            
+            // Focus first input field
+            otpInputRefs[0]?.current?.focus();
+            
+            // Shake animation for feedback
+            shakeOtpInputs();
         }
     }, [otpVerifyStatus, otpData, error]);
 
     useEffect(() => {
         if (registerStatus === 'succeeded') {
-            Alert.alert(
-                "Đăng ký thành công",
-                registerData?.message || 'Đăng ký tài khoản thành công! Vui lòng nhập mã OTP để kích hoạt tài khoản.',
-                [{ text: "OK" }]
-            );
+            showNotification(registerData?.message || 'Đăng ký tài khoản thành công! Vui lòng nhập mã OTP để kích hoạt tài khoản.', 'success');
             
             setShowOtpInput(true);
             setTimer(60);
             setCanResend(false);
         } else if (registerStatus === 'failed') {
-            Alert.alert(
-                "Đăng ký thất bại", 
-                error || "Có lỗi xảy ra, vui lòng thử lại!"
-            );
+            showNotification(error || "Có lỗi xảy ra, vui lòng thử lại!", 'error');
         }
     }, [registerStatus, registerData, error]);
 
@@ -289,19 +311,11 @@ const SignUp = ({ route }) => {
         return { valid, errorMessage };
     };
 
-    const handleSendOtp = () => {
-     
-    };
-
     const handleVerifyOtp = () => {
         const fullOtp = otp.join('');
         if (fullOtp.length !== 4) {
             setOtpError('Vui lòng nhập đủ 4 chữ số OTP');
-            Alert.alert(
-                "Lỗi xác thực",
-                "Vui lòng nhập đủ 4 chữ số OTP",
-                [{ text: "OK" }]
-            );
+            showNotification('Vui lòng nhập đủ 4 chữ số OTP', 'error');
             return;
         }
         setOtpError('');
@@ -309,7 +323,7 @@ const SignUp = ({ route }) => {
             .unwrap()
             .then(() => {
                 // Explicit reset of form here as an additional safety measure
-                resetForm();
+                // Navigation will happen in the useEffect
             })
             .catch(() => {
                 // Error handling is already done in the useEffect
@@ -348,11 +362,7 @@ const SignUp = ({ route }) => {
         if (valid) {
             dispatch(DangKyTaiKhoan({ email, password, name }));
         } else if (errorMessage) {
-            Alert.alert(
-                "Thông tin không hợp lệ",
-                errorMessage,
-                [{ text: "OK" }]
-            );
+            showNotification(errorMessage, 'error');
         }
     };
 
@@ -365,16 +375,73 @@ const SignUp = ({ route }) => {
     };
 
     const handleSignInPress = () => {
+        // Reset animations first
+        slideAnim.setValue(0);
+        fadeAnim.setValue(0);
+        
         // Reset form state before navigating back to SignIn
         resetForm();
+        
         // Explicitly reset register status
         dispatch(resetRegisterStatus());
+        
+        // Navigate to sign in
         navigation.navigate('SignIn');
+    };
+
+    const shakeOtpInputs = () => {
+        Animated.sequence([
+            Animated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
+            Animated.timing(shakeAnimation, { toValue: -10, duration: 50, useNativeDriver: true }),
+            Animated.timing(shakeAnimation, { toValue: 10, duration: 50, useNativeDriver: true }),
+            Animated.timing(shakeAnimation, { toValue: 0, duration: 50, useNativeDriver: true })
+        ]).start();
+    };
+
+    const handleBackToRegistration = () => {
+        // Animate back to registration form first
+        Animated.parallel([
+            Animated.timing(slideAnim, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+            Animated.timing(fadeAnim, {
+                toValue: 0,
+                duration: 500,
+                useNativeDriver: true,
+            }),
+        ]).start(() => {
+            // After animation completes, reset OTP fields
+            setShowOtpInput(false);
+            setOtp(['', '', '', '']);
+            setOtpError('');
+        });
     };
 
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={SignInPageStyles.container}>
+                {/* Animated Notification */}
+                {statusMessage ? (
+                    <Animated.View style={[
+                        styles.notification, 
+                        statusType === 'success' ? styles.successNotification : 
+                        statusType === 'error' ? styles.errorNotification : styles.infoNotification,
+                        {
+                            opacity: notificationAnim,
+                            transform: [{
+                                translateY: notificationAnim.interpolate({
+                                    inputRange: [0, 1],
+                                    outputRange: [-50, 0]
+                                })
+                            }]
+                        }
+                    ]}>
+                        <Text style={styles.notificationText}>{statusMessage}</Text>
+                    </Animated.View>
+                ) : null}
+
                 {/* Sign Up Form */}
                 <Animated.View style={{
                     transform: [{
@@ -481,16 +548,14 @@ const SignUp = ({ route }) => {
                     </View>
                     {policyError ? <Text style={styles.errorTextCenter}>{policyError}</Text> : null}
                     
-                    <TouchableOpacity 
-                        style={SignInPageStyles.signInButton} 
+                    <ButtonLoading
+                        text="Đăng ký"
+                        loading={otpRequestStatus === 'loading' && !showOtpInput}
+                        disabled={otpRequestStatus === 'loading'}
                         onPress={dangky}
-                        disabled={otpRequestStatus === 'loading'}>
-                        {otpRequestStatus === 'loading' && !showOtpInput ? (
-                            <ActivityIndicator color="#fff" size="small" />
-                        ) : (
-                            <Text style={SignInPageStyles.signInButtonText}>Đăng ký</Text>
-                        )}
-                    </TouchableOpacity>
+                        style={SignInPageStyles.signInButton}
+                        textStyle={SignInPageStyles.signInButtonText}
+                    />
                     
                     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 15 }} >
                         <Text style={SignInPageStyles.signUpPrompt}>
@@ -529,17 +594,24 @@ const SignUp = ({ route }) => {
                         {otpError ? <Text style={styles.errorTextCenter}>{otpError}</Text> : null}
                         <View style={styles.otpInputContainer}>
                             {otp.map((digit, index) => (
-                                <TextInput
-                                    key={index}
-                                    ref={otpInputRefs[index]}
-                                    style={[styles.otpInput, otpError ? styles.otpInputError : null]}
-                                    keyboardType="number-pad"
-                                    maxLength={1}
-                                    value={digit}
-                                    onChangeText={text => handleOtpChange(text, index)}
-                                    onKeyPress={e => handleOtpKeyPress(e, index)}
-                                    selectTextOnFocus
-                                />
+                                <Animated.View
+                                    key={`container-${index}`}
+                                    style={{
+                                        transform: [{ translateX: shakeAnimation }]
+                                    }}
+                                >
+                                    <TextInput
+                                        key={index}
+                                        ref={otpInputRefs[index]}
+                                        style={[styles.otpInput, otpError ? styles.otpInputError : null]}
+                                        keyboardType="number-pad"
+                                        maxLength={1}
+                                        value={digit}
+                                        onChangeText={text => handleOtpChange(text, index)}
+                                        onKeyPress={e => handleOtpKeyPress(e, index)}
+                                        selectTextOnFocus
+                                    />
+                                </Animated.View>
                             ))}
                         </View>
                         
@@ -556,16 +628,30 @@ const SignUp = ({ route }) => {
                             </TouchableOpacity>
                         </View>
 
-                        <TouchableOpacity 
-                            style={styles.verifyButton}
+                        <ButtonLoading
+                            text="Xác nhận"
+                            loading={otpVerifyStatus === 'loading' || registerStatus === 'loading'}
+                            disabled={otpVerifyStatus === 'loading' || registerStatus === 'loading'}
                             onPress={handleVerifyOtp}
-                            disabled={otpVerifyStatus === 'loading' || registerStatus === 'loading'}>
-                            {otpVerifyStatus === 'loading' || registerStatus === 'loading' ? (
-                                <ActivityIndicator color="#fff" size="small" />
-                            ) : (
-                                <Text style={styles.verifyButtonText}>Xác nhận</Text>
-                            )}
+                            style={styles.verifyButton}
+                            textStyle={styles.verifyButtonText}
+                        />
+                        
+                        <TouchableOpacity 
+                            style={styles.backButton}
+                            onPress={handleBackToRegistration}>
+                            <Text style={styles.backButtonText}>Quay lại đăng ký</Text>
                         </TouchableOpacity>
+                        
+                        {otpVerifyStatus === 'failed' && (
+                            <View style={styles.otpErrorContainer}>
+                                <Image 
+                                    source={require('../Assets/Images/error.png')} 
+                                    style={styles.errorIcon}
+                                />
+                                <Text style={styles.otpErrorText}>{error || 'Mã OTP không đúng. Vui lòng kiểm tra lại.'}</Text>
+                            </View>
+                        )}
                     </View>
                 </Animated.View>
             </View>
@@ -574,6 +660,40 @@ const SignUp = ({ route }) => {
 };
 
 const styles = StyleSheet.create({
+    notification: {
+        position: 'absolute',
+        top: 10,
+        left: 20,
+        right: 20,
+        padding: 15,
+        borderRadius: 8,
+        zIndex: 10,
+        elevation: 5,
+        shadowColor: '#000',
+        shadowOffset: {width: 0, height: 2},
+        shadowOpacity: 0.3,
+        shadowRadius: 3,
+    },
+    successNotification: {
+        backgroundColor: '#E7F3EB',
+        borderLeftWidth: 4,
+        borderLeftColor: '#4CAF50',
+    },
+    errorNotification: {
+        backgroundColor: '#FDEDED',
+        borderLeftWidth: 4,
+        borderLeftColor: '#F44336',
+    },
+    infoNotification: {
+        backgroundColor: '#E6F4FF',
+        borderLeftWidth: 4,
+        borderLeftColor: '#2196F3',
+    },
+    notificationText: {
+        fontFamily: 'Playfair_me',
+        fontSize: 14,
+        color: '#444444',
+    },
     otpContainer: {
         flex: 1,
         alignItems: 'center',
@@ -669,6 +789,43 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontFamily: 'Playfair_me',
         fontWeight: '500',
+    },
+    backButton: {
+        backgroundColor: 'transparent',
+        paddingVertical: 15,
+        borderRadius: 30,
+        width: '90%',
+        alignItems: 'center',
+        marginTop: 15,
+        borderWidth: 1,
+        borderColor: '#ccc',
+    },
+    backButtonText: {
+        color: '#666',
+        fontSize: 16,
+        fontFamily: 'Playfair_me',
+        fontWeight: '500',
+    },
+    otpErrorContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginTop: 20,
+        backgroundColor: '#FFEBEE',
+        padding: 10,
+        borderRadius: 8,
+        width: '90%',
+    },
+    errorIcon: {
+        width: 18,
+        height: 18,
+        marginRight: 10,
+        tintColor: '#F44336',
+    },
+    otpErrorText: {
+        color: '#D32F2F',
+        fontSize: 14,
+        fontFamily: 'Playfair_me',
+        flex: 1,
     },
 });
 

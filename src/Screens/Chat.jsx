@@ -20,6 +20,7 @@ import socketService from '../utils/socketService';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import UserStatusIndicator from '../components/UserStatusIndicator';
+import { useBackHandler } from '../hooks/useBackHandler';
 
 // Utility function to ensure avatar URL is properly formatted
 const formatAvatarUri = (avatar) => {
@@ -39,6 +40,9 @@ const Chat = ({ navigation }) => {
   const flatListRef = useRef(null);
   const { user } = useContext(AppContext);
   
+  // Add back button handler to navigate to Message tab when hardware back button is pressed
+  useBackHandler(navigation, 'TabNavigation', { screen: 'Message' });
+  
   // States
   const [messageText, setMessageText] = useState('');
   
@@ -47,37 +51,21 @@ const Chat = ({ navigation }) => {
   
   // Debug logging for avatar
   useEffect(() => {
-    if (user) {
-      console.log('Chat user data:', {
-        hasAvatar: !!user.avatar,
-        avatarType: user.avatar ? typeof user.avatar : 'none',
-        avatarLength: user.avatar ? user.avatar.length : 0,
-        avatarStartsWith: user.avatar ? user.avatar.substring(0, 20) + '...' : 'none',
-        formattedAvatar: formattedAvatar ? 'Formatted' : 'Not available',
-        userName: user.fullname || user.name || 'Unknown'
-      });
-    } else {
-      console.log('No user data available in Chat component');
-    }
+    // Đã loại bỏ console.log
   }, [user, formattedAvatar]);
   
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(state => state.chat);
   
   // Debug info
-  // console.log('Chat component rendering, context user:', {
-  //   contextUser: user ? `Found (ID: ${user._id})` : 'Not found',
-  //   chatStatus,
-  //   sendStatus,
-  //   hasMessages: chatHistory && chatHistory.length > 0
-  // });
+  // Đã loại bỏ console.log
   
   // Nếu không tìm thấy user, hiển thị thông báo đăng nhập
   if (!user) {
     return (
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+          <TouchableOpacity onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color="#333" />
           </TouchableOpacity>
           <View style={styles.headerTitleContainer}>
@@ -101,24 +89,24 @@ const Chat = ({ navigation }) => {
   
   // Initialize socket and fetch chat history
   useEffect(() => {
-    // console.log('Chat component mounted, context user:', user);
+    // Đã loại bỏ console.log
     
     try {
       if (user && user._id) {
         // Initialize socket service if not already initialized
         if (!socketService.socket || !socketService.isConnected()) {
-          // console.log('Initializing socket with user:', user._id);
+          // Đã loại bỏ console.log
           socketService.init(user);
         }
         
         // Fetch chat history
-        // console.log('Fetching chat history for user:', user._id);
+        // Đã loại bỏ console.log
         dispatch(fetchChatHistory(user._id));
       } else {
-        // console.error('Invalid user data, cannot initialize chat');
+        // Đã loại bỏ console.log
       }
     } catch (err) {
-      // console.error('Error initializing chat:', err);
+      // Đã loại bỏ console.log
     }
     
     // Clean up
@@ -163,16 +151,15 @@ const Chat = ({ navigation }) => {
 
   // Handle sending messages
   const handleSendMessage = useCallback(() => {
-    // console.log('handleSendMessage called, messageText:', messageText);
-    // console.log('Current context user:', user);
+    // Đã loại bỏ console.log
     
     if (!messageText.trim()) {
-      // console.log('Cannot send empty message');
+      // Đã loại bỏ console.log
       return;
     }
     
     if (!user || !user._id) {
-      // console.error('User not found or invalid user ID');
+      // Đã loại bỏ console.log
       Alert.alert(
         'Lỗi gửi tin nhắn',
         'Bạn cần đăng nhập để gửi tin nhắn.',
@@ -181,7 +168,7 @@ const Chat = ({ navigation }) => {
       return;
     }
     
-    // console.log('Attempting to send message with user:', user._id);
+    // Đã loại bỏ console.log
     
     try {
       // Tạo một tempId độc đáo cho tin nhắn tạm thời
@@ -209,14 +196,12 @@ const Chat = ({ navigation }) => {
       });
       
       // Kiểm tra trạng thái socket
-      console.log('Socket state before sending:', 
-        socketService.isConnected() ? 'Connected' : 'Disconnected'
-      );
+      // Đã loại bỏ console.log
       
       // Try to send via Socket.IO first
       if (socketService.socket && socketService.socket.connected) {
         const socketSent = socketService.sendMessage('admin', messageContent, tempId);
-        console.log('Message sent via socket:', socketSent ? 'Success' : 'Failed');
+        // Đã loại bỏ console.log
         
         if (socketSent) {
           // Nếu socket gửi thành công, không cần gửi qua API
@@ -225,7 +210,7 @@ const Chat = ({ navigation }) => {
       }
       
       // If Socket.IO failed or not available, use API
-      console.log('Socket not available or send failed, using API instead');
+      // Đã loại bỏ console.log
       dispatch(sendMessage({
         senderId: user._id,
         receiverId: 'admin',
@@ -233,15 +218,15 @@ const Chat = ({ navigation }) => {
         senderType: 'user',
         tempId: tempId // Truyền tempId để có thể cập nhật tin nhắn tạm thời
       })).then(result => {
-        console.log('API send message result:', result);
+        // Đã loại bỏ console.log
         if (result.error) {
-          console.error('API send message error:', result.error);
+          // Đã loại bỏ console.log
         }
       }).catch(error => {
-        console.error('API send message exception:', error);
+        // Đã loại bỏ console.log
       });
     } catch (err) {
-      // console.error('Error in handleSendMessage:', err);
+      // Đã loại bỏ console.log
       Alert.alert(
         'Lỗi gửi tin nhắn',
         'Không thể gửi tin nhắn. Vui lòng thử lại sau.',
@@ -402,7 +387,7 @@ const Chat = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#333" />
         </TouchableOpacity>
         <View style={styles.headerTitleContainer}>

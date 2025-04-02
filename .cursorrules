@@ -118,6 +118,11 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Khi sử dụng scrollToIndex với FlatList, luôn phải cung cấp onScrollToIndexFailed handler hoặc getItemLayout để tránh lỗi "Invariant Violation: scrollToIndex should be used in conjunction with getItemLayout or onScrollToIndexFailed"
 - Bọc các lệnh scrollToIndex trong try-catch và thêm timeout để xử lý các trường hợp có thể gây ra lỗi khi gọi trực tiếp
 - Luôn kiểm tra flatListRef.current tồn tại trước khi gọi các phương thức của nó
+- Sử dụng các component loading nhất quán trong toàn ứng dụng: LoadingIndicator cho hiển thị toàn màn hình và ButtonLoading cho nút có trạng thái loading
+- Trong các component hiển thị trạng thái loading, ưu tiên sử dụng LoadingIndicator với các tùy chọn type, text, và useLottie phù hợp
+- Đảm bảo rằng trải nghiệm loading nhất quán trên toàn app bằng cách áp dụng cùng một cơ chế hiển thị loading, thay vì dùng nhiều cách tiếp cận khác nhau
+- Khi điều hướng từ màn hình con về màn hình cha, nếu gặp lỗi "cannot remove", hãy sử dụng navigation.navigate với tham số screen thay vì navigation.goBack() để đảm bảo điều hướng chính xác
+- Đảm bảo thêm useBackHandler hook vào tất cả các màn hình có thể được truy cập từ Tab Navigation để xử lý nút back phần cứng chính xác, tránh hiển thị thông báo "nhấn lần nữa để thoát" khi ứng dụng cần quay lại màn hình trước đó
 
 # Scratchpad
 
@@ -290,3 +295,34 @@ Chức năng chat đã được cập nhật để:
 7. Cài đặt proper error handling và các trạng thái loading
 
 Tất cả những thay đổi này sẽ giúp người dùng có trải nghiệm chat tốt hơn, đặc biệt là đảm bảo rằng tin nhắn được gửi đi với thông tin người dùng chính xác từ tài khoản đang đăng nhập thay vì sử dụng tài khoản test.
+
+## Đồng bộ hóa hiệu ứng loading trong ứng dụng
+
+[X] Phân tích các hiệu ứng loading hiện có trong ứng dụng
+[X] Tạo component LoadingIndicator để chuẩn hóa hiệu ứng loading cho toàn app
+[X] Tạo component ButtonLoading để chuẩn hóa hiệu ứng loading cho các nút
+[X] Cập nhật các file sử dụng loading để sử dụng component mới
+[X] Thêm thông tin về chuẩn hóa loading vào .cursorrules
+
+### Giải pháp
+
+1. **Component LoadingIndicator**:
+   - Tạo component chuẩn hóa cho hiệu ứng loading
+   - Hỗ trợ nhiều loại: fullscreen, inline, overlay
+   - Cho phép tùy chỉnh: text, size, background color
+   - Hỗ trợ cả Lottie animation và ActivityIndicator
+
+2. **Component ButtonLoading**:
+   - Tạo component chuẩn hóa cho nút có trạng thái loading
+   - Hỗ trợ nhiều màu sắc: primary, secondary, danger, success
+   - Hỗ trợ nhiều kích thước: small, medium, large
+   - Tự động hiển thị ActivityIndicator khi đang loading
+
+3. **Cập nhật các màn hình**:
+   - Cập nhật Blog.jsx, BlogDetail.jsx để sử dụng LoadingIndicator
+   - Cập nhật FlowersScreen.jsx, Home.jsx để sử dụng LoadingIndicator
+   - Cập nhật Message.jsx, Favorites.jsx để sử dụng LoadingIndicator
+   - Cập nhật PanoramaView.jsx để sử dụng LoadingIndicator
+   - Cập nhật SignUp.jsx để sử dụng ButtonLoading
+
+Việc chuẩn hóa hiệu ứng loading giúp cải thiện trải nghiệm người dùng, dễ bảo trì code, và tạo sự nhất quán trong toàn bộ ứng dụng. Người dùng sẽ thấy các hiệu ứng loading giống nhau khi chuyển giữa các màn hình khác nhau, tạo cảm giác liền mạch và chuyên nghiệp.

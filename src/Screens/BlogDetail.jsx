@@ -29,6 +29,7 @@ import {SharedElement} from 'react-navigation-shared-element';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import RenderHTML from 'react-native-render-html';
 import { useBackHandler } from '../hooks/useBackHandler';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 // Suppress specific warnings related to react-native-render-html's defaultProps deprecation
 LogBox.ignoreLogs([
@@ -276,15 +277,7 @@ const BlogDetail = ({route}) => {
 
   // Render loading state
   if (detailStatus === 'loading') {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color="#FF6B6B" />
-          <Text style={styles.loadingText}>Đang tải bài viết...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingIndicator text="Đang tải bài viết..." />;
   }
 
   // Render error state
@@ -309,14 +302,7 @@ const BlogDetail = ({route}) => {
 
   // Render empty state
   if (!selectedBlog) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-        <View style={styles.loadingContent}>
-          <Text style={styles.noDataText}>Không tìm thấy bài viết</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingIndicator type="fullscreen" useLottie={false} text="Không tìm thấy bài viết" />;
   }
 
   return (

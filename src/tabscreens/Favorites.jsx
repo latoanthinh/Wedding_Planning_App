@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { fetchUserFavorites, resetFavorites, removeFavoriteItem } from '../redux/FavoriteDeanAddSlice';
 import { AppContext } from '../AppContext';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 const Favorites = ({ navigation }) => {
     const dispatch = useDispatch();
@@ -188,12 +189,7 @@ const Favorites = ({ navigation }) => {
     );
 
     if (status === 'loading') {
-        return (
-            <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#000" />
-                <Text style={styles.loadingText}>Đang tải...</Text>
-            </View>
-        );
+        return <LoadingIndicator text="Đang tải..." useLottie={true} />;
     }
 
     if (status === 'failed') {

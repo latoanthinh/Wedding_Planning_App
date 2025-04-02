@@ -17,6 +17,7 @@ import { Hall } from '../redux/HallSlice';
 import styles from '../Styles/Home_Style';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 const { width } = Dimensions.get('window');
 
@@ -105,10 +106,7 @@ const ScreenHome = ({ navigation }) => {
   );
 
   const renderLoading = () => (
-    <View style={styles.loadingContainer}>
-      <Lottie source={require('../Assets/Animations/blackloading.json')} autoPlay loop style={styles.loadingAnimation} />
-      <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-    </View>
+    <LoadingIndicator text="Đang tải dữ liệu..." />
   );
 
   const renderCarouselItem = ({ item }) => (

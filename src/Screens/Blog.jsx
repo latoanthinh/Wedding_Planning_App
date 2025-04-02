@@ -25,6 +25,7 @@ import moment from 'moment';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import 'moment/locale/vi'; // Import Vietnamese locale
 import RenderHTML from 'react-native-render-html';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 // Bỏ qua các cảnh báo về defaultProps từ react-native-render-html
 LogBox.ignoreLogs([
@@ -290,15 +291,7 @@ const Blog = () => {
 
   // Render loading state
   if (blogStatus === 'loading' && !refreshing) {
-    return (
-      <SafeAreaView style={styles.loadingContainer}>
-        <StatusBar barStyle="dark-content" backgroundColor="#F8F9FA" />
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color="#FF6B6B" />
-          <Text style={styles.loadingText}>Đang tải bài viết...</Text>
-        </View>
-      </SafeAreaView>
-    );
+    return <LoadingIndicator text="Đang tải bài viết..." />;
   }
 
   // Render error state
@@ -375,12 +368,20 @@ const Blog = () => {
       {/* Header */}
       <SafeAreaView style={styles.safeHeader}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('TabNavigation')}>
-            <AntDesign name="arrowleft" size={22} color="#333" />
+          <TouchableOpacity 
+            style={styles.headerButton} 
+            onPress={() => navigation.navigate('TabNavigation')}
+            activeOpacity={0.6}
+          >
+            <AntDesign name="arrowleft" size={24} color="#333" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Wedding Stories</Text>
-          <TouchableOpacity style={styles.headerButton} onPress={() => navigation.navigate('TabNavigation')}>
-            <AntDesign name="home" size={22} color="#333" />
+          <TouchableOpacity 
+            style={styles.headerButton} 
+            onPress={() => navigation.navigate('TabNavigation')}
+            activeOpacity={0.6}
+          >
+            <AntDesign name="home" size={24} color="#333" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -461,6 +462,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 16,
     paddingVertical: Platform.OS === 'ios' ? 12 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EAE3',
   },
   headerTitle: {
     fontSize: 22,
@@ -468,6 +471,8 @@ const styles = StyleSheet.create({
     color: '#333',
     fontFamily: 'Playfair_me',
     letterSpacing: 0.5,
+    textAlign: 'center',
+    flex: 1,
   },
   headerButton: {
     width: 42,
@@ -475,12 +480,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: 21,
-    backgroundColor: '#F6F6F6',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
-    elevation: 2,
   },
   searchContainer: {
     flexDirection: 'row',

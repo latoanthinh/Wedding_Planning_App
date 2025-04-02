@@ -177,7 +177,10 @@ const Settings = (props) => {
 
         <TouchableOpacity style={styles.optionRow} onPress={handleLogout}>
           <View style={styles.optionLeft}>
-            <Image source={require('../Assets/Images/question.png')} style={[styles.optionIcon, { tintColor: '#E74C3C' }]} />
+            <Image 
+              source={require('../Assets/Images/back.png')} 
+              style={[styles.optionIcon, { tintColor: '#E74C3C', transform: [{ rotate: '180deg' }], width: 20, height: 15 }]} 
+            />
             <Text style={[styles.optionText, { color: '#E74C3C' }]}>Đăng Xuất</Text>
           </View>
         </TouchableOpacity>

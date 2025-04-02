@@ -17,6 +17,7 @@ import { FlowersAPI } from "../redux/FlowersSlice";
 import { Cate_catering } from "../redux/Cate_CateringSlice";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Lottie from 'lottie-react-native';
+import LoadingIndicator from '../components/LoadingIndicator';
 
 const { width } = Dimensions.get("window");
 
@@ -25,12 +26,7 @@ const formatPrice = (num) => {
   return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
 };
 
-const renderLoading = () => (
-  <View style={styles.loadingContainer}>
-    <Lottie source={require('../Assets/Animations/blackloading.json')} autoPlay loop style={styles.loadingAnimation} />
-    <Text style={styles.loadingText}>Chờ xíu...</Text>
-  </View>
-);
+const renderLoading = () => <LoadingIndicator text="Chờ xíu..." />;
 
 const FlowersScreen = ({ navigation }) => {
   const dispatch = useDispatch();
