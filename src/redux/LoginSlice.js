@@ -26,7 +26,12 @@ export const LoginSlice = createSlice({
     loginData: {},
     loginStatus: 'idle',
   },
-  reducers: {},
+  reducers: {
+    reset: (state) => {
+      state.loginData = null;
+      state.loginStatus = 'idle';
+  },
+  },
   extraReducers: builder => {
     builder
       .addCase(DangNhapTaiKhoan.pending, (state, action) => {
@@ -45,3 +50,4 @@ export const LoginSlice = createSlice({
 });
 
 export default LoginSlice.reducer;
+export const { reset } = LoginSlice.actions;

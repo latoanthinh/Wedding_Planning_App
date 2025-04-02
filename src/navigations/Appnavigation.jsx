@@ -4,6 +4,7 @@ import { GuestStackNavigation, StackNavigation } from './StackNavigation'
 import { BackHandler, ToastAndroid } from 'react-native'
 import { AppContext } from '../AppContext'
 
+
 const Appnavigation = () => {
   const { user } = useContext(AppContext)
   

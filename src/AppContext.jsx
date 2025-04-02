@@ -19,18 +19,25 @@ export const AppContextProvider = ({ children }) => {
 
   useEffect(() => {
     const checkUser = async () => {
-      try {
-        const userData = await AsyncStorage.getItem('userData');
-        if (userData) {
-          setUser(JSON.parse(userData));
+        try {
+            const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
+            if (isLoggedOut === 'true') {
+                console.log('Vừa đăng xuất, không khôi phục user');
+                return; // Không kiểm tra userData nếu vừa đăng xuất
+            }
+
+            const userData = await AsyncStorage.getItem('userData');
+            if (userData) {
+                console.log('Khôi phục user từ AsyncStorage');
+                setUser(JSON.parse(userData));
+            }
+        } catch (error) {
+            console.error('Error checking user data:', error);
         }
-      } catch (error) {
-        console.error('Error checking user data:', error);
-      }
     };
 
     checkUser();
-  }, []);
+}, []);
 
   // Set up axios interceptors
   useEffect(() => {
@@ -91,49 +98,54 @@ export const AppContextProvider = ({ children }) => {
   // Logout function
   const logout = async () => {
     try {
-      console.log('Bắt đầu quá trình đăng xuất...');
-      
-      // Try to set user status to offline, but don't wait for it
-      if (user && user._id) {
-        try {
-          console.log('Setting user offline on logout');
-          
-          // Use optimistic UI update first
-          store.dispatch(setCurrentUserStatus({
-            isOnline: false,
-            lastActive: new Date().toISOString()
-          }));
-          
-          // Then try the API call
-          store.dispatch(updateUserOnlineStatus({ 
-            userId: user._id, 
-            isOnline: false 
-          })).catch(error => {
-            console.log('Failed to update offline status during logout, but continuing:', error);
-          });
-        } catch (error) {
-          console.error('Error updating status during logout:', error);
+        console.log('Bắt đầu quá trình đăng xuất...');
+        
+        if (user && user._id) {
+            try {
+                console.log('Setting user offline on logout');
+                store.dispatch(setCurrentUserStatus({
+                    isOnline: false,
+                    lastActive: new Date().toISOString()
+                }));
+                await store.dispatch(updateUserOnlineStatus({ 
+                    userId: user._id, 
+                    isOnline: false 
+                })).unwrap();
+                console.log('Updated offline status');
+            } catch (error) {
+                console.error('Error updating status during logout:', error);
+            }
         }
-      }
-      
-      // Thứ tự quan trọng: Đặt user = null trước, sau đó mới xóa dữ liệu
-      // Điều này đảm bảo AppNavigation sẽ render GuestStackNavigation ngay lập tức
-      console.log('Đặt user state thành null...');
-      setUser(null);
-      
-      // Sau đó mới xóa dữ liệu trong AsyncStorage
-      console.log('Xóa token và dữ liệu người dùng từ AsyncStorage...');
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('userData');
-      
-      console.log('Đăng xuất hoàn tất');
-      return true;
+        
+        console.log('Đặt user state thành null...');
+        setUser(null);
+        
+        console.log('Xóa tất cả dữ liệu từ AsyncStorage...');
+        await AsyncStorage.multiRemove([
+            'token',
+            'userData',
+            'savedEmail',
+            'savedPassword',
+            'rememberMe'
+        ]);
+        await AsyncStorage.setItem('isLoggedOut', 'true');
+        
+        console.log('Đăng xuất hoàn tất');
+        return true;
     } catch (error) {
-      console.error('Error logging out:', error);
-      return false;
+        console.error('Error logging out:', error);
+        setUser(null);
+        await AsyncStorage.multiRemove([
+            'token',
+            'userData',
+            'savedEmail',
+            'savedPassword',
+            'rememberMe'
+        ]);
+        await AsyncStorage.setItem('isLoggedOut', 'true');
+        return true;
     }
-  };
-
+};
   // Theme functions
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';

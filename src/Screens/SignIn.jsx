@@ -20,6 +20,12 @@ const SignIn = (props) => {
     useEffect(() => {
         const loadSavedCredentials = async () => {
             try {
+                const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
+                if (isLoggedOut === 'true') {
+                    console.log('Vừa đăng xuất, không tải thông tin cũ');
+                    return; // Bỏ qua nếu vừa đăng xuất
+                }
+    
                 const savedEmail = await AsyncStorage.getItem('savedEmail');
                 const savedPassword = await AsyncStorage.getItem('savedPassword');
                 const rememberMe = await AsyncStorage.getItem('rememberMe');

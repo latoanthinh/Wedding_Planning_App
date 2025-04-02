@@ -4,10 +4,13 @@ import AppNavigation from './navigations/Appnavigation';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import AppInit from './components/AppInit';
 
+
+
+
 function App() {
   return (
     <SafeAreaProvider>
-      <AppContextProvider>
+      <AppContextProvider >
         <AppInit />
         <AppNavigation />
       </AppContextProvider>
@@ -15,3 +18,6 @@ function App() {
   );
 }
 export default App;
+
+
+
