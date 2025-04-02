@@ -23,21 +23,25 @@ export const AppContextProvider = ({ children }) => {
             const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
             if (isLoggedOut === 'true') {
                 console.log('Vừa đăng xuất, không khôi phục user');
-                return; // Không kiểm tra userData nếu vừa đăng xuất
+                setUser(null); // Đảm bảo user là null khi đã đăng xuất
+                return;
             }
 
             const userData = await AsyncStorage.getItem('userData');
             if (userData) {
                 console.log('Khôi phục user từ AsyncStorage');
                 setUser(JSON.parse(userData));
+            } else {
+                setUser(null); // Đặt user thành null nếu không có dữ liệu
             }
         } catch (error) {
             console.error('Error checking user data:', error);
+            setUser(null); // Đặt user thành null nếu có lỗi
         }
     };
 
     checkUser();
-}, []);
+}, []); // Chỉ chạy một lần khi component mount
 
   // Set up axios interceptors
   useEffect(() => {
@@ -118,7 +122,7 @@ export const AppContextProvider = ({ children }) => {
         }
         
         console.log('Đặt user state thành null...');
-        setUser(null);
+        setUser(null); // Đặt user thành null ngay lập tức
         
         console.log('Xóa tất cả dữ liệu từ AsyncStorage...');
         await AsyncStorage.multiRemove([
