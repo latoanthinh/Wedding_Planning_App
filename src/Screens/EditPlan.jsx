@@ -14,6 +14,7 @@ import { Hall, resetHall } from '../redux/HallSlice';
 import { fetchPresents, resetPresent } from '../redux/GetAllPresentSlice';
 import { fetchUserFavorites, resetFavorites } from '../redux/FavoriteDeanAddSlice';
 import { AppContext } from '../AppContext';
+import ButtonLoading from '../components/ButtonLoading';
 
 const { width } = Dimensions.get('window');
 
@@ -82,9 +83,9 @@ const EditPlan = ({ navigation, route }) => {
   const [priceDifference, setPriceDifference] = useState(0);
   const [presentQuantities, setPresentQuantities] = useState({});
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true); // Thêm state để bật/tắt tự động lưu
+  const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
 
-  // Thêm state để lưu tổng tiền từng loại
   const [sanhTotal, setSanhTotal] = useState(0);
   const [cateringTotal, setCateringTotal] = useState(0);
   const [decorateTotal, setDecorateTotal] = useState(0);
@@ -110,7 +111,7 @@ const EditPlan = ({ navigation, route }) => {
           isCopy: planData.isCopy || false,
           originalPlanId: planData.originalPlanId || planId,
         };
-        savePlan(updateData); // Lưu tự động
+        savePlan(updateData);
       }
     });
 
@@ -125,11 +126,9 @@ const EditPlan = ({ navigation, route }) => {
 
   useEffect(() => {
     const calculateTotals = () => {
-      // Tổng tiền sảnh
       const sanhPrice = selectedSanh?.price ? parseFloat(selectedSanh.price) : 0;
       setSanhTotal(sanhPrice);
 
-      // Tổng tiền dịch vụ ăn uống
       const guestCount = parseInt(plansoluongkhach, 10) || 0;
       const cateringTotal = cateringsList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
@@ -137,14 +136,12 @@ const EditPlan = ({ navigation, route }) => {
       }, 0);
       setCateringTotal(cateringTotal);
 
-      // Tổng tiền trang trí
       const decorateTotal = decoratesList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         return sum + price;
       }, 0);
       setDecorateTotal(decorateTotal);
 
-      // Tổng tiền quà tặng
       const presentTotal = presentsList.reduce((sum, item) => {
         const price = item?.price ? parseFloat(item.price) : 0;
         const quantity = item?.quantity ? parseInt(item.quantity, 10) : 1;
@@ -152,11 +149,9 @@ const EditPlan = ({ navigation, route }) => {
       }, 0);
       setPresentTotal(presentTotal);
 
-      // Tổng tiền tất cả
       const total = sanhPrice + cateringTotal + decorateTotal + presentTotal;
       setTotalPrice(total);
 
-      // Chênh lệch ngân sách
       const budget = parseFloat(planprice) || 0;
       const difference = budget - total;
       setPriceDifference(difference);
@@ -326,9 +321,9 @@ const EditPlan = ({ navigation, route }) => {
       caterings: cateringsList.map(item => item._id).filter(Boolean),
       decorates: decoratesList.map(item => item._id).filter(Boolean),
       presents: presentsList.map(item => ({
-        id: item._id, // Thay _id thành id để khớp với API
+        id: item._id,
         quantity: item.quantity || 1
-      })).filter(item => item.id), // Đảm bảo chỉ gửi các item có id
+      })).filter(item => item.id),
       isCopy: planData.isCopy || false,
       originalPlanId: planData.originalPlanId || planId,
     };
@@ -341,6 +336,7 @@ const EditPlan = ({ navigation, route }) => {
   };
 
   const savePlan = (updateData) => {
+    setIsSaving(true);
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
       .then((updatedPlan) => {
@@ -364,9 +360,11 @@ const EditPlan = ({ navigation, route }) => {
           isCopy: updateData.isCopy,
           originalPlanId: updateData.originalPlanId,
         };
+        setIsSaving(false);
         navigation.navigate('DetailPlan', { planId, planData: combinedPlanData });
       })
       .catch((err) => {
+        setIsSaving(false);
         ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || err}`, ToastAndroid.SHORT);
       });
   };
@@ -704,13 +702,16 @@ const EditPlan = ({ navigation, route }) => {
             </View>
           </View>
         </View>
-        <TouchableOpacity
-          style={styles.saveBottomBarButton}
+        <ButtonLoading
+          text="Lưu thay đổi"
+          loading={isSaving}
+          disabled={isSaving}
           onPress={handleSave}
-        >
-          <Icon name="content-save" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
-          <Text style={styles.bottomBarButtonText}>Lưu thay đổi</Text>
-        </TouchableOpacity>
+          style={styles.saveBottomBarButton}
+          textStyle={styles.bottomBarButtonText}
+          color="primary"
+          size="medium"
+        />
       </View>
 
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
@@ -846,8 +847,12 @@ const EditPlan = ({ navigation, route }) => {
               >
                 <Text style={styles.confirmButtonText}>Không</Text>
               </TouchableOpacity>
-              <TouchableOpacity
+              <ButtonLoading
+                text="Đồng ý"
+                loading={isSaving}
+                disabled={isSaving}
                 style={[styles.confirmButton, styles.confirmSaveButton]}
+                textStyle={styles.confirmButtonText}
                 onPress={() => {
                   setConfirmModalVisible(false);
                   savePlan({
@@ -861,16 +866,14 @@ const EditPlan = ({ navigation, route }) => {
                     caterings: cateringsList.map(item => item._id).filter(Boolean),
                     decorates: decoratesList.map(item => item._id).filter(Boolean),
                     presents: presentsList.map(item => ({
-                      id: item._id, // Thay _id thành id để khớp với API
+                      id: item._id,
                       quantity: item.quantity || 1
                     })).filter(item => item.id),
                     isCopy: planData.isCopy || false,
                     originalPlanId: planData.originalPlanId || planId,
                   });
                 }}
-              >
-                <Text style={styles.confirmButtonText}>Có</Text>
-              </TouchableOpacity>
+              />
             </View>
           </View>
         </View>
@@ -1273,7 +1276,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   saveBottomBarButton: {
-    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 12,
     paddingHorizontal: 20,
@@ -1285,6 +1287,9 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 2,
+    backgroundColor: '#000000',
+    flex: 1,
+    maxWidth: 140,
   },
   bottomBarButtonIcon: {
     marginRight: 8,

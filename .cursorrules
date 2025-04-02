@@ -123,6 +123,7 @@ If needed, you can further use the `web_scraper.py` file to scrape the web page 
 - Đảm bảo rằng trải nghiệm loading nhất quán trên toàn app bằng cách áp dụng cùng một cơ chế hiển thị loading, thay vì dùng nhiều cách tiếp cận khác nhau
 - Khi điều hướng từ màn hình con về màn hình cha, nếu gặp lỗi "cannot remove", hãy sử dụng navigation.navigate với tham số screen thay vì navigation.goBack() để đảm bảo điều hướng chính xác
 - Đảm bảo thêm useBackHandler hook vào tất cả các màn hình có thể được truy cập từ Tab Navigation để xử lý nút back phần cứng chính xác, tránh hiển thị thông báo "nhấn lần nữa để thoát" khi ứng dụng cần quay lại màn hình trước đó
+- Khi hiển thị trạng thái loading trên nút bấm, nên sử dụng ButtonLoading component để hiển thị hiệu ứng loading thay vì vô hiệu hóa nút hoặc thay đổi text, giúp người dùng biết rằng hệ thống đang xử lý hành động của họ
 
 # Scratchpad
 
