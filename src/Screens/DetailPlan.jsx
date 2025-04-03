@@ -307,11 +307,17 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show('Không thể đặt cọc: Thiếu planId', ToastAndroid.SHORT);
       return;
     }
-    navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice || planData.totalPrice });
+    if (planData.status === 'active') {
+      ToastAndroid.show('Kế hoạch đã được kích hoạt, không thể đặt cọc!', ToastAndroid.SHORT);
+    } else if (planData.status === 'pending') {
+      ToastAndroid.show('Kế hoạch đang chờ xử lý, không thể đặt cọc!', ToastAndroid.SHORT);
+    } else {
+      navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice || planData.totalPrice });
+    }
   };
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
-  const isDepositDisabled = planData.status === 'active';
+  const isDepositDisabled = planData.status === 'active' || planData.status === 'pending';
 
   // Tính giá tiền đặt cọc (10% tổng tiền)
   const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
@@ -468,12 +474,22 @@ const DetailPlan = ({ navigation, route }) => {
         >
           <View style={styles.depositButtonContent}>
             <View style={styles.depositTextContainer}>
-              <Text style={styles.bottomBarButtonText}>Đặt cọc</Text>
+              <Text style={styles.bottomBarButtonText}>
+                {planData.status === 'active' ? 'Đã kích hoạt' : planData.status === 'pending' ? 'Đang chờ' : 'Đặt cọc'}
+              </Text>
               <Text style={styles.depositPriceText}>
                 {depositPrice.toLocaleString('vi-VN')} VNĐ
               </Text>
             </View>
-            <Icon name="cash-plus" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
+            <Icon
+              name={
+                planData.status === 'active' ? 'check-circle' :
+                  planData.status === 'pending' ? 'clock-outline' : 'cash-plus'
+              }
+              size={22}
+              color="#FFF"
+              style={styles.bottomBarButtonIcon}
+            />
           </View>
         </TouchableOpacity>
       </View>

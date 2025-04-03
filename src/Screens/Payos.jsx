@@ -5,9 +5,8 @@ import WebView from 'react-native-webview';
 import CryptoJS from 'crypto-js';
 import { AppContext } from '../AppContext';
 
-
-const Payos = ({ route, navigation }) => { // Thêm route và navigation vào tham số
-  const { planId } = route.params || {}; // Lấy planId từ route.params
+const Payos = ({ route, navigation }) => {
+  const { planId } = route.params || {};
   const clientID = 'd851a1c7-f29f-43fd-a51f-cabc526edab2';
   const apiKey = '4c732585-b003-45f0-a686-127b794c3a5e';
   const checkSum = 'd31e918a6c1be81129af70962f6478884b694c1ad3a4c60d2c0f196134d962d9';
@@ -19,7 +18,7 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
   const [transactionSaved, setTransactionSaved] = useState(false);
 
   useEffect(() => {
-    console.log('Route params trong Payos:', route.params); // Log để kiểm tra
+    console.log('Route params trong Payos:', route.params);
     if (!planId) {
       console.log('Lỗi: planId không được truyền vào Payos.');
     }
@@ -30,7 +29,7 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
 
   const Payment = async () => {
     const amount = 5000;
-    const cancelUrl = 'https://abc123.ngrok.io/cancel'; // Thay bằng URL thực tế
+    const cancelUrl = 'https://abc123.ngrok.io/cancel';
     const description = 'Đơn hàng của Bikerrrr nè';
     const newOrderCode = Date.now();
     const returnUrl = 'https://abc123.ngrok.io/success';
@@ -71,8 +70,7 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
   const saveTransaction = async (depositAmount) => {
     if (!userId || !planId) {
       Alert.alert('Lỗi', 'Thiếu userId hoặc planId.');
-     
-      return;
+      throw new Error('Thiếu userId hoặc planId');
     }
 
     const transactionData = { planId, userId, depositAmount };
@@ -81,7 +79,7 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
     try {
       const response = await axios.post('https://apidatn.onrender.com/users/transactions', transactionData);
       console.log('Giao dịch đã được lưu:', response.data);
-      
+      return response.data;
     } catch (error) {
       console.error('Lỗi khi lưu giao dịch:', error.response ? error.response.data : error.message);
       if (error.response?.status === 500) {
@@ -91,18 +89,28 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
       } else {
         Alert.alert('Lỗi', `Không thể lưu giao dịch: ${error.message}`);
       }
+      throw error;
     }
   };
 
   const handleNavigationChange = (navState) => {
     const { url } = navState;
     console.log('URL hiện tại:', url);
-    
+
     if (url.includes('/success') && !transactionSaved) {
-      setTransactionSaved(true); // Đánh dấu đã gửi giao dịch
-      Alert.alert('Thành công', 'Bạn đã thanh toán thành công', [
-        { text: 'OK', onPress: () => saveTransaction(5000) },
-      ]);
+      setTransactionSaved(true);
+      saveTransaction(5000)
+        .then(() => {
+          Alert.alert('Thành công', 'Bạn đã thanh toán thành công!', [
+            {
+              text: 'OK',
+              onPress: () => navigation.navigate('AllPlan'),
+            },
+          ]);
+        })
+        .catch((error) => {
+          Alert.alert('Lỗi', `Thanh toán thành công nhưng không thể lưu giao dịch: ${error.message}`);
+        });
     } else if (url.includes('/cancel')) {
       Alert.alert('Thất bại', 'Đã hủy thanh toán.');
       setPaymentLink('');
@@ -112,7 +120,7 @@ const Payos = ({ route, navigation }) => { // Thêm route và navigation vào th
   const handleGoBack = () => {
     setPaymentLink('');
     setOrderCode(null);
-    navigation.goBack(); // Quay lại màn hình trước (DetailPlan)
+    navigation.goBack();
   };
 
   return (
