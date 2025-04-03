@@ -11,41 +11,38 @@ export const AppContext = createContext();
 
 export const AppContextProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false); 
+  const [isLoading, setIsLoading] = useState(false);
   const [appLoaded, setAppLoaded] = useState(false);
   const [theme, setTheme] = useState('light');
   const [appState, setAppState] = useState(AppState.currentState);
-  // Other app-wide state here
 
   useEffect(() => {
     const checkUser = async () => {
-        try {
-            const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
-            if (isLoggedOut === 'true') {
-                console.log('Vừa đăng xuất, không khôi phục user');
-                setUser(null); // Đảm bảo user là null khi đã đăng xuất
-                return;
-            }
-
-            const userData = await AsyncStorage.getItem('userData');
-            if (userData) {
-                console.log('Khôi phục user từ AsyncStorage');
-                setUser(JSON.parse(userData));
-            } else {
-                setUser(null); // Đặt user thành null nếu không có dữ liệu
-            }
-        } catch (error) {
-            console.error('Error checking user data:', error);
-            setUser(null); // Đặt user thành null nếu có lỗi
+      try {
+        const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
+        if (isLoggedOut === 'true') {
+          console.log('Vừa đăng xuất, không khôi phục user');
+          setUser(null);
+          return;
         }
+
+        const userData = await AsyncStorage.getItem('userData');
+        if (userData) {
+          console.log('Khôi phục user từ AsyncStorage');
+          setUser(JSON.parse(userData));
+        } else {
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Error checking user data:', error);
+        setUser(null);
+      }
     };
 
     checkUser();
-}, []); // Chỉ chạy một lần khi component mount
+  }, []);
 
-  // Set up axios interceptors
   useEffect(() => {
-    // Add request interceptor to include token
     const requestInterceptor = axios.interceptors.request.use(
       async (config) => {
         try {
@@ -58,17 +55,13 @@ export const AppContextProvider = ({ children }) => {
         }
         return config;
       },
-      (error) => {
-        return Promise.reject(error);
-      }
+      (error) => Promise.reject(error)
     );
 
-    // Add response interceptor to handle errors
     const responseInterceptor = axios.interceptors.response.use(
       (response) => response,
       async (error) => {
         if (error.response && error.response.status === 401) {
-          // Token expired or invalid
           await AsyncStorage.removeItem('token');
           await AsyncStorage.removeItem('userData');
           setUser(null);
@@ -78,20 +71,15 @@ export const AppContextProvider = ({ children }) => {
     );
 
     return () => {
-      // Clean up interceptors when component unmounts
       axios.interceptors.request.eject(requestInterceptor);
       axios.interceptors.response.eject(responseInterceptor);
     };
   }, []);
 
-  // Login function
   const login = async (userData, token) => {
     try {
-      // Save user data and token to AsyncStorage
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
       await AsyncStorage.setItem('token', token);
-      
-      // Update context state
       setUser(userData);
     } catch (error) {
       console.error('Error logging in:', error);
@@ -99,65 +87,69 @@ export const AppContextProvider = ({ children }) => {
     }
   };
 
-  // Logout function
   const logout = async () => {
     try {
-        console.log('Bắt đầu quá trình đăng xuất...');
-        
-        if (user && user._id) {
-            try {
-                console.log('Setting user offline on logout');
-                store.dispatch(setCurrentUserStatus({
-                    isOnline: false,
-                    lastActive: new Date().toISOString()
-                }));
-                await store.dispatch(updateUserOnlineStatus({ 
-                    userId: user._id, 
-                    isOnline: false 
-                })).unwrap();
-                console.log('Updated offline status');
-            } catch (error) {
-                console.error('Error updating status during logout:', error);
-            }
+      console.log('Bắt đầu quá trình đăng xuất...');
+
+      if (user && user._id) {
+        try {
+          console.log('Setting user offline on logout');
+          store.dispatch(setCurrentUserStatus({
+            isOnline: false,
+            lastActive: new Date().toISOString()
+          }));
+          await store.dispatch(updateUserOnlineStatus({ 
+            userId: user._id, 
+            isOnline: false 
+          })).unwrap();
+          console.log('Updated offline status');
+        } catch (error) {
+          console.error('Error updating status during logout:', error);
         }
-        
-        console.log('Đặt user state thành null...');
-        setUser(null); // Đặt user thành null ngay lập tức
-        
-        console.log('Xóa tất cả dữ liệu từ AsyncStorage...');
-        await AsyncStorage.multiRemove([
-            'token',
-            'userData',
-            'savedEmail',
-            'savedPassword',
-            'rememberMe'
-        ]);
-        await AsyncStorage.setItem('isLoggedOut', 'true');
-        
-        console.log('Đăng xuất hoàn tất');
-        return true;
+      }
+
+      // Kiểm tra trạng thái "Ghi nhớ"
+      const rememberMe = await AsyncStorage.getItem('rememberMe');
+      console.log('Trạng thái rememberMe:', rememberMe);
+
+      // Danh sách các key sẽ xóa
+      const keysToRemove = ['token', 'userData'];
+
+      // Nếu không chọn "Ghi nhớ", xóa thêm thông tin tài khoản
+      if (rememberMe !== 'true') {
+        keysToRemove.push('savedEmail', 'savedPassword', 'rememberMe');
+      }
+
+      console.log('Xóa các key từ AsyncStorage:', keysToRemove);
+      await AsyncStorage.multiRemove(keysToRemove);
+      await AsyncStorage.setItem('isLoggedOut', 'true');
+
+      console.log('Đặt user state thành null...');
+      setUser(null);
+
+      console.log('Đăng xuất hoàn tất');
+      return true;
     } catch (error) {
-        console.error('Error logging out:', error);
-        setUser(null);
-        await AsyncStorage.multiRemove([
-            'token',
-            'userData',
-            'savedEmail',
-            'savedPassword',
-            'rememberMe'
-        ]);
-        await AsyncStorage.setItem('isLoggedOut', 'true');
-        return true;
+      console.error('Error logging out:', error);
+      // Xử lý lỗi: vẫn đảm bảo xóa dữ liệu cần thiết
+      const rememberMe = await AsyncStorage.getItem('rememberMe');
+      const keysToRemove = ['token', 'userData'];
+      if (rememberMe !== 'true') {
+        keysToRemove.push('savedEmail', 'savedPassword', 'rememberMe');
+      }
+      await AsyncStorage.multiRemove(keysToRemove);
+      await AsyncStorage.setItem('isLoggedOut', 'true');
+      setUser(null);
+      return true;
     }
-};
-  // Theme functions
+  };
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
     AsyncStorage.setItem('theme', newTheme);
   };
 
-  // Load saved theme
   useEffect(() => {
     const loadTheme = async () => {
       try {
@@ -173,7 +165,6 @@ export const AppContextProvider = ({ children }) => {
     loadTheme();
   }, []);
 
-  // Handle app state changes
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       setAppState(nextAppState);
@@ -206,4 +197,3 @@ export const AppContextProvider = ({ children }) => {
     </AppContext.Provider>
   );
 };
-

@@ -20,20 +20,16 @@ const SignIn = (props) => {
     useEffect(() => {
         const loadSavedCredentials = async () => {
             try {
-                const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
-                if (isLoggedOut === 'true') {
-                    console.log('Vừa đăng xuất, không tải thông tin cũ');
-                    return; // Bỏ qua nếu vừa đăng xuất
-                }
-    
                 const savedEmail = await AsyncStorage.getItem('savedEmail');
                 const savedPassword = await AsyncStorage.getItem('savedPassword');
                 const rememberMe = await AsyncStorage.getItem('rememberMe');
-                
+
                 if (savedEmail && savedPassword && rememberMe === 'true') {
                     setEmail(savedEmail);
                     setPassword(savedPassword);
                     setIsChecked(true);
+                    // Xóa cờ isLoggedOut sau khi load thông tin để không ảnh hưởng lần sau
+                    await AsyncStorage.removeItem('isLoggedOut');
                 }
             } catch (error) {
                 console.log('Error loading saved credentials:', error);
@@ -85,6 +81,8 @@ const SignIn = (props) => {
                         await AsyncStorage.removeItem('savedPassword');
                         await AsyncStorage.setItem('rememberMe', 'false');
                     }
+                    // Xóa cờ isLoggedOut khi đăng nhập thành công
+                    await AsyncStorage.removeItem('isLoggedOut');
                 } catch (error) {
                     console.log('Error saving credentials:', error);
                 }
@@ -101,10 +99,11 @@ const SignIn = (props) => {
             
             setUser(userData);
             ToastAndroid.show(loginData.message, ToastAndroid.SHORT);
+            // navigation.navigate('TabNavigation'); // Chuyển hướng sau khi đăng nhập thành công
         } else if (loginStatus === 'failed') {
             ToastAndroid.show('Đăng nhập thất bại!', ToastAndroid.SHORT);
         }
-    }, [loginStatus, loginData, setUser, isChecked, email, password]);
+    }, [loginStatus, loginData, setUser, isChecked, email, password, navigation]);
 
     const dangnhap = () => {
         if (validateInputs()) {
