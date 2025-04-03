@@ -4,6 +4,7 @@ import { AppContext } from '../AppContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUser, resetUpdateStatus, checkApiStatus } from '../redux/UserSlice';
 import { launchImageLibrary, launchCamera } from 'react-native-image-picker';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const EditProfile = (props) => {
   const { navigation } = props;
@@ -487,13 +488,13 @@ const EditProfile = (props) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
           <Image source={require('../Assets/Images/back.png')} style={styles.backIcon} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
+        <Text style={styles.headerTitle}>Chỉnh Sửa Hồ Sơ</Text>
         <View style={styles.headerRight} />
       </View>
 
@@ -564,7 +565,7 @@ const EditProfile = (props) => {
           </View>
         </View>
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -584,7 +585,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 15,
+   
     borderBottomWidth: 0.5,
     borderBottomColor: '#ddd',
   },

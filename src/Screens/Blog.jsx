@@ -27,6 +27,7 @@ import 'moment/locale/vi'; // Import Vietnamese locale
 import RenderHTML from 'react-native-render-html';
 import LoadingIndicator from '../components/LoadingIndicator';
 
+
 // Bỏ qua các cảnh báo về defaultProps từ react-native-render-html
 LogBox.ignoreLogs([
   'Support for defaultProps will be removed from function components in a future major release',
@@ -375,13 +376,13 @@ const Blog = () => {
           >
             <AntDesign name="arrowleft" size={24} color="#333" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Wedding Stories</Text>
+          <Text style={styles.headerTitle}>Blog Và Xu Hướng</Text>
           <TouchableOpacity 
             style={styles.headerButton} 
             onPress={() => navigation.navigate('TabNavigation')}
             activeOpacity={0.6}
           >
-            <AntDesign name="home" size={24} color="#333" />
+           <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
@@ -440,6 +441,10 @@ const Blog = () => {
 };
 
 const styles = StyleSheet.create({
+  icon: {
+    width: 24,
+    height: 24,
+  },
   container: {
     flex: 1,
     backgroundColor: '#FBF9F6',
