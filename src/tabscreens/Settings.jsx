@@ -1,4 +1,4 @@
-import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Switch, Alert, ActivityIndicator } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Switch, Alert, ActivityIndicator, Modal } from 'react-native';
 import React, { useContext, useState } from 'react';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -15,6 +15,7 @@ const Settings = (props) => {
 
     const [isOnline, setIsOnline] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
+    const [showLogoutModal, setShowLogoutModal] = useState(false);
 
     console.log('User object in Settings:', user ? {
         hasAvatar: !!user.avatar,
@@ -40,6 +41,7 @@ const Settings = (props) => {
     const performLogout = async () => {
         try {
             setIsLoggingOut(true);
+            setShowLogoutModal(false);
             console.log('Người dùng xác nhận đăng xuất');
 
             // Gọi hàm logout từ context, đã xử lý logic "Ghi nhớ"
@@ -68,25 +70,49 @@ const Settings = (props) => {
 
     const onLogout = () => {
         if (isLoggingOut) return;
-
         console.log('Gọi logout từ Settings...');
-        Alert.alert(
-            "Xác nhận đăng xuất",
-            "Bạn có chắc chắn muốn đăng xuất không?",
-            [
-                {
-                    text: "Hủy",
-                    style: "cancel",
-                    onPress: () => console.log('Đăng xuất bị hủy'),
-                },
-                {
-                    text: "Đồng ý",
-                    onPress: performLogout,
-                },
-            ],
-            { cancelable: false }
-        );
+        setShowLogoutModal(true);
     };
+
+    const LogoutModal = () => (
+        <Modal
+            visible={showLogoutModal}
+            transparent={true}
+            animationType="fade"
+        >
+            <View style={styles.modalOverlay}>
+                <View style={styles.modalContainer}>
+                    <Image 
+                        source={require('../Assets/Images/logout.png')} 
+                        style={styles.logoutIcon}
+                        defaultSource={require('../Assets/Images/logout.png')} // Fallback nếu không có hình logout_icon
+                    />
+                    
+                    <Text style={styles.modalTitle}>Xác nhận đăng xuất</Text>
+                    <Text style={styles.modalMessage}>Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?</Text>
+                    
+                    <View style={styles.modalButtons}>
+                        <TouchableOpacity 
+                            style={[styles.modalButton, styles.cancelButton]}
+                            onPress={() => {
+                                setShowLogoutModal(false);
+                                console.log('Đăng xuất bị hủy');
+                            }}
+                        >
+                            <Text style={styles.cancelButtonText}>Hủy</Text>
+                        </TouchableOpacity>
+                        
+                        <TouchableOpacity 
+                            style={[styles.modalButton, styles.logoutButton]}
+                            onPress={performLogout}
+                        >
+                            <Text style={styles.logoutButtonText}>Đăng xuất</Text>
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </View>
+        </Modal>
+    );
 
     return (
         <SafeAreaView style={styles.container}>
@@ -96,6 +122,8 @@ const Settings = (props) => {
                     <Text style={styles.loadingText}>Đang đăng xuất...</Text>
                 </View>
             )}
+            
+            <LogoutModal />
             
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Hồ sơ</Text>
@@ -176,8 +204,8 @@ const Settings = (props) => {
                 >
                     <View style={styles.optionLeft}>
                         <Image
-                            source={require('../Assets/Images/back.png')}
-                            style={[styles.optionIcon, { tintColor: '#E74C3C', transform: [{ rotate: '180deg' }], width: 20, height: 15 }]}
+                            source={require('../Assets/Images/logout.png')}
+                            style={[styles.optionIcon, { tintColor: '#E74C3C',width: 25, height: 25 }]}
                         />
                         <Text style={[styles.optionText, { color: '#E74C3C' }]}>Đăng Xuất</Text>
                     </View>
@@ -319,6 +347,80 @@ const styles = StyleSheet.create({
         marginTop: 10,
         fontSize: 16,
         color: '#333',
+        fontFamily: 'Playfair_me',
+    },
+    
+    // Styles cho Modal đăng xuất
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        width: '80%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        alignItems: 'center',
+        shadowColor: "#000",
+        shadowOffset: {
+            width: 0,
+            height: 2
+        },
+        shadowOpacity: 0.25,
+        shadowRadius: 4,
+        elevation: 5
+    },
+    logoutIcon: {
+        width: 60,
+        height: 60,
+        marginBottom: 15,
+        tintColor: '#E74C3C',
+    },
+    modalTitle: {
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#333',
+        marginBottom: 10,
+        fontFamily: 'Playfair_me',
+    },
+    modalMessage: {
+        fontSize: 16,
+        color: '#666',
+        textAlign: 'center',
+        marginBottom: 20,
+        fontFamily: 'Playfair_me',
+    },
+    modalButtons: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        width: '100%',
+    },
+    modalButton: {
+        flex: 1,
+        paddingVertical: 12,
+        borderRadius: 10,
+        marginHorizontal: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    cancelButton: {
+        backgroundColor: '#F2F2F2',
+    },
+    logoutButton: {
+        backgroundColor: '#E74C3C',
+    },
+    cancelButtonText: {
+        color: '#333',
+        fontSize: 16,
+        fontWeight: '600',
+        fontFamily: 'Playfair_me',
+    },
+    logoutButtonText: {
+        color: '#FFF',
+        fontSize: 16,
+        fontWeight: '600',
         fontFamily: 'Playfair_me',
     }
 });
