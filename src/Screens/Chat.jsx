@@ -10,9 +10,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   Image,
-  
   Alert,
 } from 'react-native';
+import { launchImageLibrary } from 'react-native-image-picker';
 import { useSelector, useDispatch } from 'react-redux';
 import Ionicons from 'react-native-vector-icons/Ionicons';
 import { fetchChatHistory, sendMessage, resetSendStatus } from '../redux/ChatSlice';
@@ -45,20 +45,13 @@ const Chat = ({ navigation }) => {
   
   // States
   const [messageText, setMessageText] = useState('');
+  const [imageData, setImageData] = useState(null); // Add state for selected image
   
   // Format user avatar if exists
   const formattedAvatar = user?.avatar ? formatAvatarUri(user.avatar) : null;
   
-  // Debug logging for avatar
-  useEffect(() => {
-    // Đã loại bỏ console.log
-  }, [user, formattedAvatar]);
-  
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(state => state.chat);
-  
-  // Debug info
-  // Đã loại bỏ console.log
   
   // Nếu không tìm thấy user, hiển thị thông báo đăng nhập
   if (!user) {
@@ -89,24 +82,18 @@ const Chat = ({ navigation }) => {
   
   // Initialize socket and fetch chat history
   useEffect(() => {
-    // Đã loại bỏ console.log
-    
     try {
       if (user && user._id) {
         // Initialize socket service if not already initialized
         if (!socketService.socket || !socketService.isConnected()) {
-          // Đã loại bỏ console.log
           socketService.init(user);
         }
         
         // Fetch chat history
-        // Đã loại bỏ console.log
         dispatch(fetchChatHistory(user._id));
-      } else {
-        // Đã loại bỏ console.log
       }
     } catch (err) {
-      // Đã loại bỏ console.log
+      console.error('Error initializing chat:', err);
     }
     
     // Clean up
@@ -149,17 +136,60 @@ const Chat = ({ navigation }) => {
     }
   };
 
+  // Handle picking image
+  const pickImage = async () => {
+    try {
+      const options = {
+        mediaType: 'photo',
+        includeBase64: true,
+        maxHeight: 1200,
+        maxWidth: 1200,
+        quality: 0.8,
+      };
+      
+      const result = await launchImageLibrary(options);
+      
+      if (result.didCancel) {
+        return;
+      }
+      
+      if (result.errorCode) {
+        Alert.alert('Lỗi', `Không thể chọn ảnh: ${result.errorMessage}`);
+        return;
+      }
+      
+      if (result.assets && result.assets[0]) {
+        const asset = result.assets[0];
+        
+        // Check file size (limit to 5MB)
+        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
+          Alert.alert('Kích thước ảnh quá lớn', 'Vui lòng chọn ảnh có kích thước nhỏ hơn 5MB.');
+          return;
+        }
+        
+        const imageType = asset.type.split('/')[1] || 'jpeg';
+        const formattedBase64 = `data:image/${imageType};base64,${asset.base64}`;
+        
+        // Save the image data to state
+        setImageData(formattedBase64);
+        
+        // Clear text message when an image is selected
+        setMessageText('');
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert('Lỗi', 'Không thể chọn ảnh. Vui lòng thử lại sau.');
+    }
+  };
+  
+  // Cancel image upload
+  const cancelImage = () => {
+    setImageData(null);
+  };
+  
   // Handle sending messages
   const handleSendMessage = useCallback(() => {
-    // Đã loại bỏ console.log
-    
-    if (!messageText.trim()) {
-      // Đã loại bỏ console.log
-      return;
-    }
-    
     if (!user || !user._id) {
-      // Đã loại bỏ console.log
       Alert.alert(
         'Lỗi gửi tin nhắn',
         'Bạn cần đăng nhập để gửi tin nhắn.',
@@ -168,25 +198,35 @@ const Chat = ({ navigation }) => {
       return;
     }
     
-    // Đã loại bỏ console.log
+    // Check if we're sending a text message or an image
+    const isImageMessage = !!imageData;
+    const messageContent = isImageMessage ? imageData : messageText.trim();
+    
+    if (!messageContent) {
+      return;
+    }
     
     try {
-      // Tạo một tempId độc đáo cho tin nhắn tạm thời
+      // Create a tempId for the message
       const tempId = `temp-${Date.now()}`;
-      const messageContent = messageText.trim();
       
-      // Xóa input ngay lập tức để UX tốt hơn
-      setMessageText('');
+      // Clear input
+      if (isImageMessage) {
+        setImageData(null);
+      } else {
+        setMessageText('');
+      }
       
       // Create a temporary message for optimistic UI update
       const tempMessage = {
         _id: tempId,
-        tempId: tempId,  // Thêm tempId để có thể xác định tin nhắn này sau này
+        tempId: tempId,
         userId: user._id,
         receiverId: 'admin',
         content: messageContent,
         sender: 'user',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        messageType: isImageMessage ? 'image' : 'text' // Add messageType field
       };
       
       // Add temporary message to UI immediately
@@ -195,46 +235,46 @@ const Chat = ({ navigation }) => {
         payload: tempMessage 
       });
       
-      // Kiểm tra trạng thái socket
-      // Đã loại bỏ console.log
-      
       // Try to send via Socket.IO first
       if (socketService.socket && socketService.socket.connected) {
-        const socketSent = socketService.sendMessage('admin', messageContent, tempId);
-        // Đã loại bỏ console.log
+        const socketSent = socketService.sendMessage(
+          'admin', 
+          messageContent, 
+          tempId, 
+          isImageMessage ? 'image' : 'text'
+        );
         
         if (socketSent) {
-          // Nếu socket gửi thành công, không cần gửi qua API
+          // If socket sent successfully, no need to use API
           return;
         }
       }
       
       // If Socket.IO failed or not available, use API
-      // Đã loại bỏ console.log
       dispatch(sendMessage({
         senderId: user._id,
         receiverId: 'admin',
         message: messageContent,
         senderType: 'user',
-        tempId: tempId // Truyền tempId để có thể cập nhật tin nhắn tạm thời
+        messageType: isImageMessage ? 'image' : 'text',
+        tempId: tempId
       })).then(result => {
-        // Đã loại bỏ console.log
         if (result.error) {
-          // Đã loại bỏ console.log
+          console.error('Error sending message via API:', result.error);
         }
       }).catch(error => {
-        // Đã loại bỏ console.log
+        console.error('Exception sending message:', error);
       });
     } catch (err) {
-      // Đã loại bỏ console.log
+      console.error('Error in handleSendMessage:', err);
       Alert.alert(
         'Lỗi gửi tin nhắn',
         'Không thể gửi tin nhắn. Vui lòng thử lại sau.',
         [{ text: 'OK' }]
       );
     }
-  }, [messageText, user, dispatch]);
-
+  }, [messageText, imageData, user, dispatch]);
+  
   // Retry loading chat history
   const handleRetryLoadHistory = useCallback(() => {
     if (user && user._id) {
@@ -247,11 +287,12 @@ const Chat = ({ navigation }) => {
       );
     }
   }, [user, dispatch]);
-
+  
   // Render message bubble
   const renderMessage = useCallback(({ item }) => {
     const isUser = item.sender === 'user';
-    // Lấy tên người gửi
+    const isImage = item.messageType === 'image';
+    // Get sender name
     const senderName = isUser 
       ? (user?.fullname || user?.name || 'Bạn') 
       : 'Hỗ trợ khách hàng';
@@ -273,10 +314,27 @@ const Chat = ({ navigation }) => {
           )}
           
           {/* Message bubble */}
-          <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.adminBubble]}>
-            <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
-              {item.content}
-            </Text>
+          <View style={[styles.messageBubble, isUser ? styles.userBubble : styles.adminBubble, 
+                        isImage && (isUser ? styles.userImageBubble : styles.adminImageBubble)]}>
+            {isImage ? (
+              <TouchableOpacity onPress={() => 
+                Alert.alert('Hình ảnh', '', [
+                  { text: 'Đóng', style: 'cancel' },
+                  { text: 'Xem đầy đủ', onPress: () => navigation.navigate('ImageViewer', { imageUri: item.content }) }
+                ])
+              }>
+                <Image 
+                  source={{ uri: item.content }} 
+                  style={styles.messageImage}
+                  resizeMode="cover"
+                  onError={(error) => console.log('Error loading message image:', error.nativeEvent.error)}
+                />
+              </TouchableOpacity>
+            ) : (
+              <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
+                {item.content}
+              </Text>
+            )}
           </View>
           
           {/* User avatar */}
@@ -286,7 +344,6 @@ const Chat = ({ navigation }) => {
                 <Image 
                   source={{ uri: formattedAvatar }} 
                   style={styles.userAvatarImage}
-                  defaultSource={require('../Assets/Images/mask.png')}
                   onError={(error) => console.log('Error loading user avatar:', error.nativeEvent.error)}
                 />
               ) : (
@@ -306,8 +363,8 @@ const Chat = ({ navigation }) => {
         </View>
       </View>
     );
-  }, [user, formattedAvatar, formatMessageTime]);
-
+  }, [user, formattedAvatar, formatMessageTime, navigation]);
+  
   // Render message status indicators
   const renderSendingIndicator = useCallback(() => {
     if (sendStatus === 'loading') {
@@ -321,69 +378,70 @@ const Chat = ({ navigation }) => {
     return null;
   }, [sendStatus]);
 
-  // Scroll to bottom when new messages are added or when chat history is initially loaded
+  // Scroll to bottom when new messages are added
   useEffect(() => {
     if (chatHistory.length > 0 && flatListRef.current) {
-      // Sử dụng thời gian ngắn hơn cho việc cuộn khi có tin nhắn mới
+      // Use shorter timeout for scrolling when new messages arrive
       setTimeout(() => {
-        flatListRef.current.scrollToEnd({ animated: true });
+        try {
+          flatListRef.current.scrollToEnd({ animated: true });
+        } catch (error) {
+          console.log('Error scrolling to end:', error);
+        }
       }, 50);
     }
   }, [chatHistory]);
   
-  // Scroll to bottom when component mounts and chat status is ready
-  useEffect(() => {
-    let scrollTimer;
-    if (chatStatus === 'succeeded' && chatHistory.length > 0 && flatListRef.current) {
-      // Sử dụng một loạt các timer để đảm bảo sẽ cuộn được trong mọi trường hợp
-      scrollTimer = setTimeout(() => {
-        flatListRef.current.scrollToEnd({ animated: false });
-        
-        // Thêm cuộn thứ hai sau đó để đảm bảo cuộn hoạt động
-        setTimeout(() => {
-          if (flatListRef.current) {
-            flatListRef.current.scrollToEnd({ animated: false });
-          }
-        }, 100);
-      }, 200);
-    }
-    return () => {
-      if (scrollTimer) clearTimeout(scrollTimer);
-    };
-  }, [chatStatus, chatHistory]);
+  // Render appropriate content based on chat status
+  let content;
+  if (chatStatus === 'loading') {
+    content = (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#7A60FF" />
+        <Text style={styles.loadingText}>Đang tải tin nhắn...</Text>
+      </View>
+    );
+  } else if (chatStatus === 'failed') {
+    content = (
+      <View style={styles.errorContainer}>
+        <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
+        <Text style={styles.errorText}>{error || 'Không thể tải lịch sử chat'}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={handleRetryLoadHistory}
+        >
+          <Text style={styles.retryText}>Thử lại</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  } else if (chatHistory.length === 0) {
+    content = (
+      <View style={styles.emptyContainer}>
+        <Ionicons name="chatbubble-ellipses-outline" size={64} color="#7A60FF" />
+        <Text style={styles.emptyText}>Chưa có tin nhắn nào</Text>
+        <Text style={styles.emptySubText}>Bắt đầu cuộc trò chuyện với đội hỗ trợ của chúng tôi ngay bây giờ!</Text>
+      </View>
+    );
+  } else {
+    content = (
+      <FlatList
+        ref={flatListRef}
+        data={chatHistory}
+        renderItem={renderMessage}
+        keyExtractor={(item) => item._id}
+        contentContainerStyle={styles.messagesList}
+        initialNumToRender={15}
+        maxToRenderPerBatch={10}
+        windowSize={10} // Window size optimization
+        removeClippedSubviews={Platform.OS === 'android'} // Perf improvement on Android
+        maintainVisibleContentPosition={{
+          minIndexForVisible: 0,
+          autoscrollToTopThreshold: 10
+        }}
+      />
+    );
+  }
   
-  // Auto scroll to bottom on content size change và ưu tiên cao nhất 
-  const onContentSizeChange = useCallback(() => {
-    if (flatListRef.current && chatHistory.length > 0) {
-      // Không dùng timeout để tránh độ trễ khi nội dung thay đổi
-      flatListRef.current.scrollToEnd({ animated: false });
-    }
-  }, [chatHistory]);
-  
-  // Optimized layout handler for first render
-  const onLayout = useCallback(() => {
-    if (flatListRef.current && chatHistory.length > 0) {
-      // Sử dụng một sequence các lần cuộn để đảm bảo nó hoạt động mượt mà
-      setTimeout(() => {
-        flatListRef.current.scrollToEnd({ animated: false });
-      }, 10);
-      
-      setTimeout(() => {
-        flatListRef.current.scrollToEnd({ animated: false });
-      }, 50);
-      
-      setTimeout(() => {
-        flatListRef.current.scrollToEnd({ animated: false });
-      }, 100);
-    }
-  }, [chatHistory]);
-
-  // Keyextractor for FlatList
-  const keyExtractor = useCallback((item) => item._id || `msg-${Date.now()}-${Math.random()}`, []);
-
-  // Tối ưu hiệu suất renderItem với memo
-  const memoizedRenderMessage = useCallback(renderMessage, [user, formattedAvatar, formatMessageTime]);
-
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -393,86 +451,64 @@ const Chat = ({ navigation }) => {
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>Hỗ trợ khách hàng</Text>
           <View style={styles.statusRow}>
-            <UserStatusIndicator 
-              userId="admin" // Assuming admin has ID 'admin', adjust as needed  
-              size="small"
-              showText={true}
-              style={styles.statusIndicator}
-              textStyle={styles.statusText}
-            />
+            <UserStatusIndicator style={styles.statusIndicator} isOnline={true} />
+            <Text style={styles.headerSubtitle}>Đang hoạt động</Text>
           </View>
         </View>
       </View>
       
-      {chatHistory.length === 0 && chatStatus === 'loading' ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#7A60FF" />
-          <Text style={styles.loadingText}>Đang tải tin nhắn...</Text>
-        </View>
-      ) : chatStatus === 'failed' ? (
-        <View style={styles.errorContainer}>
-          <Ionicons name="alert-circle-outline" size={48} color="#FF6B6B" />
-          <Text style={styles.errorText}>{error || 'Không thể tải tin nhắn'}</Text>
-          <TouchableOpacity 
-            style={styles.retryButton}
-            onPress={handleRetryLoadHistory}
-          >
-            <Text style={styles.retryText}>Thử lại</Text>
-          </TouchableOpacity>
-        </View>
-      ) : chatHistory.length === 0 ? (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="chatbubble-ellipses-outline" size={64} color="#7A60FF" />
-          <Text style={styles.emptyText}>Chưa có tin nhắn nào</Text>
-          <Text style={styles.emptySubText}>Hãy bắt đầu cuộc trò chuyện với admin</Text>
-        </View>
-      ) : (
-        <FlatList
-          ref={flatListRef}
-          data={chatHistory}
-          renderItem={memoizedRenderMessage}
-          keyExtractor={keyExtractor}
-          contentContainerStyle={styles.messagesList}
-          onContentSizeChange={onContentSizeChange}
-          onLayout={onLayout}
-          initialNumToRender={15} // Chỉ render số lượng vừa đủ lúc đầu
-          maxToRenderPerBatch={10} // Giới hạn số lượng render mỗi batch
-          windowSize={10} // Window size tối ưu
-          removeClippedSubviews={Platform.OS === 'android'} // Tăng hiệu suất trên Android
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-            autoscrollToTopThreshold: 10
-          }}
-        />
-      )}
+      {content}
       
       {renderSendingIndicator()}
+      
+      {/* Add image preview when an image is selected */}
+      {imageData && (
+        <View style={styles.imagePreviewContainer}>
+          <View style={styles.imagePreviewContent}>
+            <Image source={{ uri: imageData }} style={styles.imagePreview} />
+            <TouchableOpacity style={styles.cancelImageButton} onPress={cancelImage}>
+              <Ionicons name="close-circle" size={24} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+          <Text style={styles.imagePreviewText}>Hình ảnh đã sẵn sàng để gửi</Text>
+        </View>
+      )}
       
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 90 : 0}
         style={styles.inputContainer}
       >
+        <TouchableOpacity 
+          style={styles.imageButton} 
+          onPress={pickImage}
+          disabled={!!imageData}
+        >
+          <Ionicons name="image-outline" size={24} color={imageData ? "#CCC" : "#7A60FF"} />
+        </TouchableOpacity>
+        
         <TextInput
           style={styles.input}
           value={messageText}
           onChangeText={setMessageText}
-          placeholder="Nhập tin nhắn..."
+          placeholder={imageData ? "Ấn nút gửi để gửi ảnh..." : "Nhập tin nhắn..."}
           placeholderTextColor="#999"
           multiline
+          editable={!imageData}
         />
+        
         <TouchableOpacity 
           style={[
             styles.sendButton,
-            !messageText.trim() ? styles.sendButtonDisabled : {}
+            (!messageText.trim() && !imageData) ? styles.sendButtonDisabled : {}
           ]}
           onPress={handleSendMessage}
-          disabled={!messageText.trim()}
+          disabled={!messageText.trim() && !imageData}
         >
           <Ionicons 
             name="send" 
             size={20} 
-            color={!messageText.trim() ? "#CCC" : "#FFF"} 
+            color={(!messageText.trim() && !imageData) ? "#CCC" : "#FFF"} 
           />
         </TouchableOpacity>
       </KeyboardAvoidingView>
@@ -499,7 +535,6 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    // fontWeight: 'bold',
     color: '#333',
     fontFamily: 'Playfair_me',
   },
@@ -671,6 +706,50 @@ const styles = StyleSheet.create({
     color: '#666',
     fontFamily: 'Playfair_me',
   },
+  messageImage: {
+    width: 200,
+    height: 200,
+    borderRadius: 12,
+  },
+  userImageBubble: {
+    padding: 4,
+  },
+  adminImageBubble: {
+    padding: 4,
+  },
+  imagePreviewContainer: {
+    padding: 10,
+    backgroundColor: '#F5F5F5',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+  },
+  imagePreviewContent: {
+    position: 'relative',
+    width: 150,
+    height: 150,
+  },
+  imagePreview: {
+    width: 150,
+    height: 150,
+    borderRadius: 12,
+  },
+  cancelImageButton: {
+    position: 'absolute',
+    top: -10,
+    right: -10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 15,
+  },
+  imagePreviewText: {
+    marginTop: 8,
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'Playfair_me',
+  },
+  imageButton: {
+    padding: 10,
+    marginRight: 5,
+  },
   inputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -733,9 +812,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(0, 0, 0, 0.1)',
   },
-  spacer: {
-    width: 20,
-  },
   statusRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -744,10 +820,7 @@ const styles = StyleSheet.create({
   },
   statusIndicator: {
     marginTop: 2,
-  },
-  statusText: {
-    fontSize: 11,
-    color: '#666',
+    marginRight: 5,
   },
 });
 

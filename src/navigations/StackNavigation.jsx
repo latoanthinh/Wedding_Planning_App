@@ -31,6 +31,7 @@ import Blog from '../Screens/Blog'
 import BlogDetail from '../Screens/BlogDetail'
 import Payos from '../Screens/Payos'
 import Chat from '../Screens/Chat'
+import ImageViewer from '../components/ImageViewer'
 
 // Import back handler HOC
 import withBackHandler from '../hoc/withBackHandler'
@@ -111,7 +112,12 @@ const BlogStack = () => {
 
 const StackNavigation = () => {
   return (
-    <Stack.Navigator screenOptions={{ headerShown: false}}>
+    <Stack.Navigator
+      initialRouteName="TabNavigation"
+      screenOptions={{
+        headerShown: false,
+      }}
+    >
       <Stack.Screen name="TabNavigation" component={TabNavigation} />
       <Stack.Screen name="Dress" component={EnhancedDress} />
       <Stack.Screen name="DetailClothes" component={EnhancedDetailClothes} />
@@ -155,6 +161,33 @@ const StackNavigation = () => {
         sharedElements={(route) => {
           const { slug } = route.params;
           return [`blog.${slug}.image`];
+        }}
+      />
+      <Stack.Screen
+        name="ImageViewer"
+        component={ImageViewer}
+        options={{
+          headerShown: false,
+          gestureEnabled: false,
+          animationEnabled: true,
+          cardStyle: { backgroundColor: 'transparent' },
+          cardOverlayEnabled: true,
+          cardStyleInterpolator: ({ current: { progress } }) => ({
+            cardStyle: {
+              opacity: progress.interpolate({
+                inputRange: [0, 0.5, 0.9, 1],
+                outputRange: [0, 0.25, 0.7, 1],
+              }),
+            },
+            overlayStyle: {
+              opacity: progress.interpolate({
+                inputRange: [0, 1],
+                outputRange: [0, 0.5],
+                extrapolate: 'clamp',
+              }),
+            },
+          }),
+          presentation: 'transparentModal',
         }}
       />
     </Stack.Navigator>

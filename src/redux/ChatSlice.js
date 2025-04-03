@@ -35,21 +35,22 @@ export const fetchChatHistory = createAsyncThunk(
         
         console.log(`Received ${data.data?.length || 0} chat messages`);
         
-        // Chuyển đổi tin nhắn sang định dạng app
+        // Format messages for app display
         const formattedMessages = (data.data || []).map(message => ({
           _id: message._id,
           userId: message.senderId,
           receiverId: message.receiverId,
           content: message.message,
           sender: message.senderType,
-          timestamp: message.createdAt
+          timestamp: message.createdAt,
+          messageType: message.messageType || 'text' // Add messageType field with default
         }));
         
         return formattedMessages;
       } catch (error) {
         console.error('Error fetching chat history:', error);
         
-        // Nếu không thể kết nối đến server, trả về một mảng tin nhắn mẫu
+        // Return mock messages if cannot connect to server
         console.log('Returning mock chat history');
         return [
           {
@@ -58,7 +59,8 @@ export const fetchChatHistory = createAsyncThunk(
             receiverId: userId,
             content: 'Xin chào! Tôi là trợ lý ảo. Tôi có thể giúp gì cho bạn?',
             sender: 'admin',
-            timestamp: new Date(Date.now() - 86400000).toISOString() // 1 ngày trước
+            timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
+            messageType: 'text'
           },
           {
             _id: 'mock-msg-2',
@@ -66,7 +68,8 @@ export const fetchChatHistory = createAsyncThunk(
             receiverId: 'admin',
             content: 'Tôi muốn tìm hiểu về dịch vụ của các bạn',
             sender: 'user',
-            timestamp: new Date(Date.now() - 3600000).toISOString() // 1 giờ trước
+            timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+            messageType: 'text'
           },
           {
             _id: 'mock-msg-3',
@@ -74,7 +77,8 @@ export const fetchChatHistory = createAsyncThunk(
             receiverId: userId,
             content: 'Chúng tôi có nhiều dịch vụ khác nhau. Bạn quan tâm đến dịch vụ nào cụ thể?',
             sender: 'admin',
-            timestamp: new Date(Date.now() - 3540000).toISOString() // 59 phút trước
+            timestamp: new Date(Date.now() - 3540000).toISOString(), // 59 minutes ago
+            messageType: 'text'
           }
         ];
       }
@@ -90,22 +94,26 @@ export const sendMessage = createAsyncThunk(
   'chat/sendMessage',
   async (messageData, { rejectWithValue }) => {
     try {
-      console.log('Sending message via API:', messageData);
+      console.log('Sending message via API:', {
+        ...messageData,
+        message: messageData.messageType === 'image' ? '[Image data]' : messageData.message
+      });
       
-      // Kiểm tra cấu trúc messageData
-      const { senderId, receiverId, message, senderType, tempId } = messageData;
+      // Check messageData structure
+      const { senderId, receiverId, message, senderType, messageType = 'text', tempId } = messageData;
       
       if (!senderId || !message) {
         console.error('Missing required message data', messageData);
         return rejectWithValue('Thiếu thông tin tin nhắn cần thiết');
       }
 
-      // Đảm bảo messageData có định dạng server cần
+      // Ensure messageData has format needed by server
       const serverMessageData = {
         senderId: senderId,
-        receiverId: receiverId || 'admin', // Mặc định gửi cho admin
+        receiverId: receiverId || 'admin', // Default to admin 
         message: message,
-        senderType: senderType || 'user'
+        senderType: senderType || 'user',
+        messageType: messageType // Add messageType field
       };
 
       const url = `${getApiBaseUrl()}/chat/message`;
@@ -118,7 +126,7 @@ export const sendMessage = createAsyncThunk(
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(serverMessageData),
-          timeout: 10000 // 10 giây timeout
+          timeout: 10000 // 10 second timeout
         });
         
         console.log('Send message response status:', response.status);
@@ -131,7 +139,7 @@ export const sendMessage = createAsyncThunk(
           return rejectWithValue(data.message || 'Không thể gửi tin nhắn');
         }
         
-        // Nếu server trả về tin nhắn, chuyển đổi sang định dạng ứng dụng
+        // If server returns message, convert to app format
         if (data.data) {
           const serverMessage = data.data;
           return {
@@ -141,11 +149,12 @@ export const sendMessage = createAsyncThunk(
             content: serverMessage.message,
             sender: serverMessage.senderType,
             timestamp: serverMessage.createdAt || new Date().toISOString(),
-            tempId: tempId // Giữ lại tempId nếu có
+            tempId: tempId, // Keep tempId if present
+            messageType: serverMessage.messageType || 'text' // Add messageType field
           };
         }
         
-        // Nếu không có dữ liệu trả về, dùng dữ liệu gốc
+        // If no data returned, use original data
         return {
           _id: `msg-${Date.now()}`,
           userId: senderId,
@@ -153,12 +162,13 @@ export const sendMessage = createAsyncThunk(
           content: message,
           sender: senderType || 'user',
           timestamp: new Date().toISOString(),
-          tempId: tempId
+          tempId: tempId,
+          messageType: messageType
         };
       } catch (error) {
         console.error('Error sending message via API:', error);
         
-        // Nếu không thể kết nối đến server, trả về một đối tượng tin nhắn mẫu
+        // Return mock message response if cannot connect to server
         console.log('Returning mock message response');
         return {
           _id: `mock-msg-${Date.now()}`,
@@ -167,7 +177,8 @@ export const sendMessage = createAsyncThunk(
           content: message,
           sender: senderType || 'user',
           timestamp: new Date().toISOString(),
-          tempId: tempId
+          tempId: tempId,
+          messageType: messageType
         };
       }
     } catch (error) {
@@ -208,19 +219,22 @@ const chatSlice = createSlice({
       console.log('addSocketMessage được gọi với tin nhắn:', {
         id: newMessage._id,
         tempId: newMessage.tempId,
-        content: newMessage.content?.substring(0, 20) + (newMessage.content?.length > 20 ? '...' : ''),
-        sender: newMessage.sender
+        content: newMessage.messageType === 'image' 
+          ? '[Image data]' 
+          : (newMessage.content?.substring(0, 20) + (newMessage.content?.length > 20 ? '...' : '')),
+        sender: newMessage.sender,
+        messageType: newMessage.messageType
       });
       
-      // Kiểm tra xem tin nhắn đã tồn tại trong state chưa
+      // Check if message already exists in state
       let existingMsgIndex = -1;
       
-      // 1. Kiểm tra theo _id
+      // 1. Check by _id
       if (newMessage._id) {
         existingMsgIndex = state.chatHistory.findIndex(msg => msg._id === newMessage._id);
       }
       
-      // 2. Nếu không tìm thấy theo _id, kiểm tra theo tempId
+      // 2. If not found by _id, check by tempId
       if (existingMsgIndex === -1 && newMessage.tempId) {
         existingMsgIndex = state.chatHistory.findIndex(msg => 
           msg.tempId === newMessage.tempId || 
@@ -229,20 +243,21 @@ const chatSlice = createSlice({
         );
       }
       
-      // 3. Kiểm tra trùng lặp nội dung trong khoảng thời gian gần nhau
+      // 3. Check for duplicate content within recent messages
       if (existingMsgIndex === -1 && newMessage.content && newMessage.timestamp) {
-        // Chỉ kiểm tra 10 tin nhắn gần nhất để tối ưu hiệu suất
+        // Only check 10 most recent messages for performance
         const recentMessages = state.chatHistory.slice(-10);
         
         const duplicate = recentMessages.find(msg => 
           msg.content === newMessage.content && 
           msg.sender === newMessage.sender &&
-          Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 3000 // 3 giây
+          msg.messageType === newMessage.messageType &&
+          Math.abs(new Date(msg.timestamp).getTime() - new Date(newMessage.timestamp).getTime()) < 3000 // 3 seconds
         );
         
         if (duplicate) {
-          console.log('Phát hiện tin nhắn trùng lặp, bỏ qua:', {
-            content: newMessage.content?.substring(0, 20),
+          console.log('Duplicate message detected, skipping:', {
+            content: newMessage.messageType === 'image' ? '[Image data]' : newMessage.content?.substring(0, 20),
             existing: duplicate._id
           });
           return;
@@ -250,19 +265,19 @@ const chatSlice = createSlice({
       }
       
       if (existingMsgIndex >= 0) {
-        // Nếu đã tồn tại, cập nhật tin nhắn
+        // If exists, update message
         console.log('Cập nhật tin nhắn đã tồn tại tại vị trí:', existingMsgIndex);
         
         state.chatHistory[existingMsgIndex] = {
           ...state.chatHistory[existingMsgIndex],
           ...newMessage,
-          // Giữ lại ID gốc nếu tin nhắn mới không có ID
+          // Keep original ID if new message doesn't have ID
           _id: newMessage._id || state.chatHistory[existingMsgIndex]._id,
-          // Giữ lại tempId để đảm bảo khớp trong tương lai
+          // Keep tempId to ensure future match
           tempId: state.chatHistory[existingMsgIndex].tempId || newMessage.tempId
         };
       } else {
-        // Nếu chưa tồn tại, thêm mới
+        // If doesn't exist, add new
         console.log('Thêm tin nhắn mới vào state:', {
           id: newMessage._id,
           content: newMessage.content?.substring(0, 20)
@@ -295,14 +310,14 @@ const chatSlice = createSlice({
       .addCase(fetchChatHistory.fulfilled, (state, action) => {
         state.chatStatus = 'succeeded';
         
-        // Chuyển đổi tin nhắn từ server sang định dạng ứng dụng nếu cần
+        // Convert messages from server to app format if needed
         state.chatHistory = action.payload.map(message => {
-          // Kiểm tra xem tin nhắn đã ở định dạng app chưa
+          // Check if message already in app format
           if (message.content && message.sender) {
             return message;
           }
           
-          // Chuyển đổi từ định dạng server sang định dạng app
+          // Convert from server format to app format
           return {
             _id: message._id,
             userId: message.senderId,
@@ -326,16 +341,16 @@ const chatSlice = createSlice({
       .addCase(sendMessage.fulfilled, (state, action) => {
         state.sendStatus = 'succeeded';
         
-        // Kiểm tra xem tin nhắn có tempId không
+        // Check if message has tempId
         const newMessage = action.payload;
         const tempId = action.meta?.arg?.tempId;
         
         if (tempId) {
-          // Tìm và cập nhật tin nhắn tạm thời thay vì thêm tin nhắn mới
+          // Find and update temporary message instead of adding new message
           const tempMsgIndex = state.chatHistory.findIndex(msg => msg.tempId === tempId);
           
           if (tempMsgIndex >= 0) {
-            // Nếu tìm thấy tin nhắn tạm thời, cập nhật nó
+            // If found temporary message, update it
             state.chatHistory[tempMsgIndex] = {
               ...state.chatHistory[tempMsgIndex],
               ...newMessage,
@@ -345,7 +360,7 @@ const chatSlice = createSlice({
           }
         }
         
-        // Nếu không tìm thấy tin nhắn tạm thời, thêm tin nhắn mới
+        // If no temporary message found, add new message
         state.chatHistory.push(newMessage);
       })
       .addCase(sendMessage.rejected, (state, action) => {

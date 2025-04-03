@@ -126,7 +126,7 @@ class SocketService {
         // Giả lập nhận tin nhắn từ admin sau 2 giây nếu gửi tin nhắn
         if (event === 'sendMessage' && !this.isAdmin) {
           // Tạo unique key để theo dõi tin nhắn đã xử lý
-          const messageKey = `${data.senderId}-${data.message}-${data.tempId || Date.now()}`;
+          const messageKey = `${data.senderId}-${data.messageType}-${data.tempId || Date.now()}`;
           
           // Kiểm tra xem tin nhắn này đã được xử lý chưa
           if (processedMessages.has(messageKey)) {
@@ -138,12 +138,23 @@ class SocketService {
           processedMessages.add(messageKey);
           
           setTimeout(() => {
+            let replyMessage;
+            
+            if (data.messageType === 'image') {
+              // For image messages, create a mock response about the image
+              replyMessage = `Cảm ơn bạn đã gửi hình ảnh. Chúng tôi đã nhận được và sẽ xem xét nhanh nhất có thể.`;
+            } else {
+              // For text messages, use the original mock response
+              replyMessage = `Xin chào! Đây là tin nhắn tự động từ hệ thống. Chúng tôi đã nhận được tin nhắn của bạn: "${data.message}"`;
+            }
+            
             const serverReply = {
               _id: `mock-reply-${Date.now()}`,
               senderId: 'admin',
               receiverId: this.userId,
-              message: `Xin chào! Đây là tin nhắn tự động từ hệ thống. Chúng tôi đã nhận được tin nhắn của bạn: "${data.message}"`,
+              message: replyMessage,
               senderType: 'admin',
+              messageType: 'text',
               createdAt: new Date().toISOString()
             };
             
@@ -154,7 +165,8 @@ class SocketService {
               receiverId: serverReply.receiverId,
               content: serverReply.message,
               sender: serverReply.senderType,
-              timestamp: serverReply.createdAt
+              timestamp: serverReply.createdAt,
+              messageType: serverReply.messageType
             };
             
             console.log('Simulating admin reply (mock):', appMessage);
@@ -219,13 +231,18 @@ class SocketService {
 
     // New message event
     this.socket.on('newMessage', (data) => {
-      console.log('New message received:', data);
+      console.log('New message received:', {
+        ...data,
+        message: data.message?.messageType === 'image' 
+          ? '[Image data]' 
+          : data.message?.message?.substring(0, 30)
+      });
       
       if (data.message) {
-        // Chuyển đổi tin nhắn từ định dạng server sang định dạng ứng dụng
+        // Convert message from server format to app format
         const serverMessage = data.message;
         
-        // Đảm bảo tin nhắn có định dạng đúng cho ứng dụng
+        // Ensure message has correct format for the app
         const formattedMessage = {
           _id: serverMessage._id || `msg-${Date.now()}`,
           content: serverMessage.message || '',
@@ -233,45 +250,47 @@ class SocketService {
           timestamp: serverMessage.createdAt || new Date().toISOString(),
           userId: serverMessage.senderId,
           receiverId: serverMessage.receiverId,
-          tempId: serverMessage.tempId
+          tempId: serverMessage.tempId,
+          messageType: serverMessage.messageType || 'text' // Add messageType field
         };
         
-        console.log('Formatted message for app:', formattedMessage);
+        console.log('Formatted message for app:', {
+          ...formattedMessage,
+          content: formattedMessage.messageType === 'image' 
+            ? '[Image data]' 
+            : formattedMessage.content?.substring(0, 30)
+        });
         
-        // Kiểm tra xem tin nhắn đã tồn tại trong Redux store chưa
+        // Check if message already exists in Redux store
         const state = store.getState();
         const existingMessage = state.chat.chatHistory.find(msg => 
-          // Kiểm tra theo ID
+          // Check by ID
           msg._id === formattedMessage._id ||
-          // Kiểm tra theo tempId
+          // Check by tempId
           (formattedMessage.tempId && msg.tempId === formattedMessage.tempId) ||
-          // Kiểm tra trùng lặp nội dung và thời gian
+          // Check for duplicate content and time
           (msg.content === formattedMessage.content && 
            msg.sender === formattedMessage.sender &&
-           Math.abs(new Date(msg.timestamp) - new Date(formattedMessage.timestamp)) < 3000)
+           msg.messageType === formattedMessage.messageType &&
+           Math.abs(new Date(msg.timestamp).getTime() - new Date(formattedMessage.timestamp).getTime()) < 3000)
         );
         
         if (existingMessage) {
-          console.log('Tin nhắn từ newMessage đã tồn tại, bỏ qua:', {
+          console.log('Message already exists in store, skipping:', {
             id: formattedMessage._id,
-            existingId: existingMessage._id,
-            content: formattedMessage.content?.substring(0, 20)
+            tempId: formattedMessage.tempId
           });
-          // Tin nhắn đã tồn tại, không thêm mới
-        } else {
-          console.log('Thêm tin nhắn mới từ server vào store:', {
-            id: formattedMessage._id,
-            content: formattedMessage.content?.substring(0, 20)
-          });
-          // Add the message to Redux state
-          store.dispatch(addSocketMessage(formattedMessage));
-          
-          // Increment unread count if the message is to the user and not from them
-          if (!this.isAdmin && formattedMessage.sender === 'admin') {
-            const currentCount = store.getState().chat.unreadCount;
-            store.dispatch(setUnreadCount(currentCount + 1));
-          }
+          return;
         }
+        
+        // If the message is not from the current user, increment unread count
+        if (serverMessage.senderId !== this.userId && !this.isAdmin) {
+          const currentUnreadCount = state.chat.unreadCount || 0;
+          store.dispatch(setUnreadCount(currentUnreadCount + 1));
+        }
+        
+        // Add message to chat history
+        store.dispatch(addSocketMessage(formattedMessage));
       }
     });
 
@@ -376,8 +395,14 @@ class SocketService {
   }
 
   // Send a message
-  sendMessage(receiverId, content, tempId = null) {
-    console.log('sendMessage called with:', { receiverId, content, tempId });
+  sendMessage(receiverId, content, tempId = null, messageType = 'text') {
+    console.log('sendMessage called with:', { 
+      receiverId, 
+      messageType,
+      contentLength: content?.length || 0,
+      tempId 
+    });
+    
     console.log('Socket state:', { 
       initialized: !!this.socket, 
       connected: this.socket?.connected, 
@@ -404,30 +429,40 @@ class SocketService {
       return false;
     }
     
-    if (!content || content.trim() === '') {
+    if (!content || (messageType === 'text' && content.trim() === '')) {
       console.error('Message content is empty. Cannot send empty message.');
       return false;
     }
+    
+    // Validate base64 image format
+    if (messageType === 'image' && typeof content === 'string') {
+      const base64Regex = /^data:image\/(png|jpeg|jpg|gif);base64,/;
+      if (!base64Regex.test(content)) {
+        console.error('Invalid image format. Image must be in base64 format with proper mime type.');
+        return false;
+      }
+    }
 
-    // Tạo messageData phù hợp với định dạng của server
+    // Create messageData in the format required by the server
     const messageData = {
       senderId: this.userId,
       receiverId: receiverId,
       message: content,
       senderType: this.isAdmin ? 'admin' : 'user',
+      messageType: messageType, // Add messageType field
       tempId: tempId || `temp-${Date.now()}`
     };
 
-    console.log('Sending message via socket:', messageData);
+    console.log('Sending message via socket:', {
+      ...messageData,
+      message: messageType === 'image' ? '[Image data]' : messageData.message
+    });
 
     try {
       this.socket.emit('sendMessage', messageData, (acknowledgement) => {
         // This is an acknowledgement callback that will be called by the server
         console.log('Message acknowledgement received:', acknowledgement);
       });
-      
-      // Lưu ý: Không thêm tin nhắn vào Redux store ở đây
-      // Việc này đã được thực hiện trong Chat.jsx
       
       return true;
     } catch (error) {
