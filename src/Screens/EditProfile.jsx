@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, PermissionsAndroid, Linking } from 'react-native';
+import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity, ScrollView, Alert, ActivityIndicator, Platform, PermissionsAndroid, Linking,ToastAndroid } from 'react-native';
 import { AppContext } from '../AppContext';
 import { useDispatch, useSelector } from 'react-redux';
 import { updateUser, resetUpdateStatus, checkApiStatus } from '../redux/UserSlice';
@@ -163,7 +163,9 @@ const EditProfile = (props) => {
     if (updateStatus === 'succeeded') {
       console.log('Update successful, server response:', JSON.stringify(serverResponse));
       
-      Alert.alert('Thành công', 'Thông tin cá nhân đã được cập nhật.');
+      // Alert.alert('Thành công', 'Thông tin cá nhân đã được cập nhật.');
+
+      ToastAndroid.show('Thông tin cá nhân đã được cập nhật.', ToastAndroid.SHORT);
       
       // Update local context with the new user data
       if (serverResponse && serverResponse.user) {
@@ -427,11 +429,11 @@ const EditProfile = (props) => {
       });
       console.log('Changes detected:', { isNameChanged, isEmailChanged, isAvatarChanged });
       
-      // If nothing has changed, show a message
-      if (!isNameChanged && !isAvatarChanged) {
-        Alert.alert('Thông báo', 'Không có thông tin nào được thay đổi.');
-        return;
-      }
+      // // If nothing has changed, show a message
+      // if (!isNameChanged && !isAvatarChanged) {
+      //   Alert.alert('Thông báo', 'Không có thông tin nào được thay đổi.');
+      //   return;
+      // }
 
       // Prepare data for API call
       const userData = {};
