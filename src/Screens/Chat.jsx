@@ -187,107 +187,6 @@ const Chat = ({ navigation }) => {
     setImageData(null);
   };
   
-  // Handle sending messages
-  const handleSendMessage = useCallback(() => {
-    if (!user || !user._id) {
-      Alert.alert(
-        'Lỗi gửi tin nhắn',
-        'Bạn cần đăng nhập để gửi tin nhắn.',
-        [{ text: 'OK' }]
-      );
-      return;
-    }
-    
-    // Check if we're sending a text message or an image
-    const isImageMessage = !!imageData;
-    const messageContent = isImageMessage ? imageData : messageText.trim();
-    
-    if (!messageContent) {
-      return;
-    }
-    
-    try {
-      // Create a tempId for the message
-      const tempId = `temp-${Date.now()}`;
-      
-      // Clear input
-      if (isImageMessage) {
-        setImageData(null);
-      } else {
-        setMessageText('');
-      }
-      
-      // Create a temporary message for optimistic UI update
-      const tempMessage = {
-        _id: tempId,
-        tempId: tempId,
-        userId: user._id,
-        receiverId: 'admin',
-        content: messageContent,
-        sender: 'user',
-        timestamp: new Date().toISOString(),
-        messageType: isImageMessage ? 'image' : 'text' // Add messageType field
-      };
-      
-      // Add temporary message to UI immediately
-      dispatch({ 
-        type: 'chat/addSocketMessage', 
-        payload: tempMessage 
-      });
-      
-      // Try to send via Socket.IO first
-      if (socketService.socket && socketService.socket.connected) {
-        const socketSent = socketService.sendMessage(
-          'admin', 
-          messageContent, 
-          tempId, 
-          isImageMessage ? 'image' : 'text'
-        );
-        
-        if (socketSent) {
-          // If socket sent successfully, no need to use API
-          return;
-        }
-      }
-      
-      // If Socket.IO failed or not available, use API
-      dispatch(sendMessage({
-        senderId: user._id,
-        receiverId: 'admin',
-        message: messageContent,
-        senderType: 'user',
-        messageType: isImageMessage ? 'image' : 'text',
-        tempId: tempId
-      })).then(result => {
-        if (result.error) {
-          console.error('Error sending message via API:', result.error);
-        }
-      }).catch(error => {
-        console.error('Exception sending message:', error);
-      });
-    } catch (err) {
-      console.error('Error in handleSendMessage:', err);
-      Alert.alert(
-        'Lỗi gửi tin nhắn',
-        'Không thể gửi tin nhắn. Vui lòng thử lại sau.',
-        [{ text: 'OK' }]
-      );
-    }
-  }, [messageText, imageData, user, dispatch]);
-  
-  // Retry loading chat history
-  const handleRetryLoadHistory = useCallback(() => {
-    if (user && user._id) {
-      dispatch(fetchChatHistory(user._id));
-    } else {
-      Alert.alert(
-        'Lỗi',
-        'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.',
-        [{ text: 'OK' }]
-      );
-    }
-  }, [user, dispatch]);
-  
   // Render message bubble
   const renderMessage = useCallback(({ item }) => {
     const isUser = item.sender === 'user';
@@ -295,7 +194,7 @@ const Chat = ({ navigation }) => {
     // Get sender name
     const senderName = isUser 
       ? (user?.fullname || user?.name || 'Bạn') 
-      : 'Hỗ trợ khách hàng';
+      : (item.userName || 'Hỗ trợ khách hàng');
     
     return (
       <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.adminMessageContainer]}>
@@ -408,7 +307,7 @@ const Chat = ({ navigation }) => {
         <Text style={styles.errorText}>{error || 'Không thể tải lịch sử chat'}</Text>
         <TouchableOpacity 
           style={styles.retryButton}
-          onPress={handleRetryLoadHistory}
+          onPress={() => dispatch(fetchChatHistory(user._id))}
         >
           <Text style={styles.retryText}>Thử lại</Text>
         </TouchableOpacity>
@@ -441,6 +340,112 @@ const Chat = ({ navigation }) => {
       />
     );
   }
+  
+  // Handle sending messages
+  const handleSendMessage = useCallback(() => {
+    if (!user || !user._id) {
+      Alert.alert(
+        'Lỗi gửi tin nhắn',
+        'Bạn cần đăng nhập để gửi tin nhắn.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    // Check if we're sending a text message or an image
+    const isImageMessage = !!imageData;
+    const messageContent = isImageMessage ? imageData : messageText.trim();
+    
+    if (!messageContent) {
+      return;
+    }
+    
+    try {
+      // Create a tempId for the message
+      const tempId = `temp-${Date.now()}`;
+      
+      // Clear input
+      if (isImageMessage) {
+        setImageData(null);
+      } else {
+        setMessageText('');
+      }
+      
+      // Get user name
+      const userName = user?.fullname || user?.name || '';
+      
+      // Create a temporary message for optimistic UI update
+      const tempMessage = {
+        _id: tempId,
+        tempId: tempId,
+        userId: user._id,
+        receiverId: 'admin',
+        content: messageContent,
+        sender: 'user',
+        timestamp: new Date().toISOString(),
+        messageType: isImageMessage ? 'image' : 'text', // Add messageType field
+        userName: userName // Add userName field
+      };
+      
+      // Add temporary message to UI immediately
+      dispatch({ 
+        type: 'chat/addSocketMessage', 
+        payload: tempMessage 
+      });
+      
+      // Try to send via Socket.IO first
+      if (socketService.socket && socketService.socket.connected) {
+        const socketSent = socketService.sendMessage(
+          'admin', 
+          messageContent, 
+          tempId, 
+          isImageMessage ? 'image' : 'text'
+        );
+        
+        if (socketSent) {
+          // If socket sent successfully, no need to use API
+          return;
+        }
+      }
+      
+      // If Socket.IO failed or not available, use API
+      dispatch(sendMessage({
+        senderId: user._id,
+        receiverId: 'admin',
+        message: messageContent,
+        senderType: 'user',
+        messageType: isImageMessage ? 'image' : 'text',
+        tempId: tempId,
+        userName: userName // Add userName field
+      })).then(result => {
+        if (result.error) {
+          console.error('Error sending message via API:', result.error);
+        }
+      }).catch(error => {
+        console.error('Exception sending message:', error);
+      });
+    } catch (err) {
+      console.error('Error in handleSendMessage:', err);
+      Alert.alert(
+        'Lỗi gửi tin nhắn',
+        'Không thể gửi tin nhắn. Vui lòng thử lại sau.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [messageText, imageData, user, dispatch]);
+  
+  // Retry loading chat history
+  const handleRetryLoadHistory = useCallback(() => {
+    if (user && user._id) {
+      dispatch(fetchChatHistory(user._id));
+    } else {
+      Alert.alert(
+        'Lỗi',
+        'Không tìm thấy thông tin người dùng. Vui lòng đăng nhập lại.',
+        [{ text: 'OK' }]
+      );
+    }
+  }, [user, dispatch]);
   
   return (
     <SafeAreaView style={styles.container}>

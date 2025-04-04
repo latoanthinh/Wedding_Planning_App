@@ -1,11 +1,15 @@
 import { io } from 'socket.io-client';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { store } from '../redux/store';
 import { 
   setSocketConnected, 
   addSocketMessage, 
   setUnreadCount 
 } from '../redux/ChatSlice';
+
+// Tham chiếu đến AppContext sẽ được đặt sau khi khởi tạo
+let appContextRef = null;
 
 // Helper to determine the correct Socket.IO server URL
 const getSocketUrl = () => {
@@ -18,6 +22,57 @@ class SocketService {
     this.socket = null;
     this.userId = null;
     this.isAdmin = false;
+    this.userName = ''; // Tên từ AppContext
+  }
+
+  // Thiết lập tham chiếu đến AppContext
+  setAppContext(context) {
+    appContextRef = context;
+    if (context && context.user) {
+      this.updateUserInfoFromContext(context.user);
+    }
+  }
+
+  // Cập nhật thông tin người dùng từ AppContext
+  updateUserInfoFromContext(user) {
+    if (user) {
+      this.userName = user.fullname || user.name || '';
+      console.log('Updated userName from AppContext:', this.userName);
+    }
+  }
+
+  // Helper để lấy tên người dùng từ AppContext hoặc AsyncStorage
+  async getUserName() {
+    // Ưu tiên lấy từ AppContext nếu có
+    if (appContextRef && appContextRef.user) {
+      const userName = appContextRef.user.fullname || appContextRef.user.name || '';
+      if (userName) {
+        this.userName = userName;
+        console.log('Lấy userName từ AppContext:', userName);
+        return userName;
+      }
+    } else {
+      console.log('AppContext không có sẵn hoặc không có user');
+    }
+    
+    // Fallback: đọc từ AsyncStorage nếu không có trong AppContext
+    try {
+      const userDataStr = await AsyncStorage.getItem('userData');
+      if (userDataStr) {
+        const userData = JSON.parse(userDataStr);
+        const userName = userData.fullname || userData.name || '';
+        this.userName = userName;
+        console.log('Fallback: Lấy userName từ AsyncStorage:', userName);
+        return userName;
+      } else {
+        console.log('Không tìm thấy userData trong AsyncStorage');
+      }
+    } catch (error) {
+      console.error('Lỗi khi đọc userName từ AsyncStorage:', error);
+    }
+    
+    console.log('Không tìm thấy userName trong AppContext hoặc AsyncStorage, sử dụng giá trị hiện tại:', this.userName);
+    return this.userName || '';
   }
 
   // Expose socket URL for debugging
@@ -65,12 +120,21 @@ class SocketService {
       if (!userId) {
         console.error('Cannot initialize socket without valid userId. Please check if user is logged in.');
         // Fallback to mock socket if user ID is invalid
-        this.initMockSocket();
+        await this.initMockSocket();
         return;
       }
       
       this.userId = userId;
       this.isAdmin = isAdmin;
+      
+      // Lưu userName từ userData khi khởi tạo
+      if (userData) {
+        this.userName = userData.fullname || userData.name || '';
+        console.log('Saved user name from userData param:', this.userName);
+      }
+
+      // Cập nhật tên từ AppContext nếu có (ưu tiên nhất)
+      await this.getUserName();
       
       // Kết nối socket
       await this.connect();
@@ -90,17 +154,20 @@ class SocketService {
       
       // Fallback to mock socket if real connection fails
       console.log('Falling back to mock socket');
-      this.initMockSocket();
+      await this.initMockSocket();
     }
   }
   
   // Initialize mock socket as fallback
-  initMockSocket() {
+  async initMockSocket() {
     console.log('Khởi tạo mock socket do không thể kết nối đến server thật');
+    
+    // Đảm bảo có tên người dùng từ AsyncStorage
+    await this.getUserName();
     
     // Danh sách các tin nhắn đã được xử lý
     const processedMessages = new Set();
-    
+
     // Giả lập socket được kết nối để UI hoạt động tốt
     this.socket = {
       connected: true,
@@ -112,6 +179,9 @@ class SocketService {
       disconnect: () => {
         console.log('Mock socket disconnect called');
         return true;
+      },
+      on: (event, callback) => {
+        console.log(`Mock socket on [${event}] registered`);
       },
       emit: (event, data, callback) => {
         console.log(`Mock socket emit [${event}]:`, data);
@@ -148,6 +218,10 @@ class SocketService {
               replyMessage = `Xin chào! Đây là tin nhắn tự động từ hệ thống. Chúng tôi đã nhận được tin nhắn của bạn: "${data.message}"`;
             }
             
+            // Lấy userName từ data hoặc từ this.userName đã lưu
+            const userSentName = data.userName || this.userName;
+            console.log(`Mock socket: User sent message with name: ${userSentName}`);
+            
             const serverReply = {
               _id: `mock-reply-${Date.now()}`,
               senderId: 'admin',
@@ -166,7 +240,8 @@ class SocketService {
               content: serverReply.message,
               sender: serverReply.senderType,
               timestamp: serverReply.createdAt,
-              messageType: serverReply.messageType
+              messageType: serverReply.messageType,
+              userName: 'Hỗ trợ khách hàng'
             };
             
             console.log('Simulating admin reply (mock):', appMessage);
@@ -174,10 +249,6 @@ class SocketService {
           }, 2000);
         }
         return true;
-      },
-      on: (event, handler) => {
-        console.log('Mock socket registering event handler for:', event);
-        return this;
       }
     };
     
@@ -251,19 +322,22 @@ class SocketService {
           userId: serverMessage.senderId,
           receiverId: serverMessage.receiverId,
           tempId: serverMessage.tempId,
-          messageType: serverMessage.messageType || 'text' // Add messageType field
+          messageType: serverMessage.messageType || 'text',
+          // Sử dụng userName từ tin nhắn hoặc từ AppContext
+          userName: serverMessage.userName || (serverMessage.senderType === 'user' && serverMessage.senderId === this.userId ? this.userName : 'Hỗ trợ khách hàng')
         };
         
         console.log('Formatted message for app:', {
           ...formattedMessage,
           content: formattedMessage.messageType === 'image' 
             ? '[Image data]' 
-            : formattedMessage.content?.substring(0, 30)
+            : formattedMessage.content?.substring(0, 30),
+          userName: formattedMessage.userName || 'Unknown' 
         });
         
         // Check if message already exists in Redux store
-        const state = store.getState();
-        const existingMessage = state.chat.chatHistory.find(msg => 
+        const storeState = store.getState();
+        const existingMessage = storeState.chat.chatHistory.find(msg => 
           // Check by ID
           msg._id === formattedMessage._id ||
           // Check by tempId
@@ -285,7 +359,7 @@ class SocketService {
         
         // If the message is not from the current user, increment unread count
         if (serverMessage.senderId !== this.userId && !this.isAdmin) {
-          const currentUnreadCount = state.chat.unreadCount || 0;
+          const currentUnreadCount = storeState.chat.unreadCount || 0;
           store.dispatch(setUnreadCount(currentUnreadCount + 1));
         }
         
@@ -310,19 +384,28 @@ class SocketService {
           timestamp: serverMessage.createdAt || new Date().toISOString(),
           userId: serverMessage.senderId,
           receiverId: serverMessage.receiverId,
-          tempId: serverMessage.tempId
+          tempId: serverMessage.tempId,
+          messageType: serverMessage.messageType || 'text',
+          // Sử dụng userName từ tin nhắn hoặc từ AppContext
+          userName: serverMessage.userName || (serverMessage.senderId === this.userId ? this.userName : 'Hỗ trợ khách hàng')
         };
         
-        console.log('Formatted confirmation message for app:', formattedMessage);
+        console.log('Formatted confirmation message for app:', {
+          ...formattedMessage,
+          content: formattedMessage.messageType === 'image' 
+            ? '[Image data]' 
+            : formattedMessage.content?.substring(0, 30),
+          userName: formattedMessage.userName || 'No name available'
+        });
         
         // Kiểm tra xem tin nhắn này có tempId không
         // Nếu có, chúng ta sẽ kiểm tra xem nó đã tồn tại trong store chưa
-        const state = store.getState();
+        const storeState = store.getState();
         let shouldAddMessage = true;
         
         if (formattedMessage.tempId) {
           // Kiểm tra xem có tin nhắn nào có cùng tempId không
-          const existingMessage = state.chat.chatHistory.find(msg => 
+          const existingMessage = storeState.chat.chatHistory.find(msg => 
             msg.tempId === formattedMessage.tempId || 
             msg._id === formattedMessage.tempId
           );
@@ -336,7 +419,7 @@ class SocketService {
         }
         
         // Kiểm tra trùng lặp nội dung
-        const duplicateMessage = state.chat.chatHistory.find(msg => 
+        const duplicateMessage = storeState.chat.chatHistory.find(msg => 
           msg.content === formattedMessage.content && 
           msg.sender === formattedMessage.sender &&
           Math.abs(new Date(msg.timestamp) - new Date(formattedMessage.timestamp)) < 3000 // 3 giây
@@ -395,7 +478,7 @@ class SocketService {
   }
 
   // Send a message
-  sendMessage(receiverId, content, tempId = null, messageType = 'text') {
+  async sendMessage(receiverId, content, tempId = null, messageType = 'text') {
     console.log('sendMessage called with:', { 
       receiverId, 
       messageType,
@@ -406,7 +489,8 @@ class SocketService {
     console.log('Socket state:', { 
       initialized: !!this.socket, 
       connected: this.socket?.connected, 
-      userId: this.userId 
+      userId: this.userId,
+      userName: this.userName 
     });
     
     if (!this.socket) {
@@ -443,19 +527,26 @@ class SocketService {
       }
     }
 
+    // Lấy tên người dùng mới nhất từ AppContext mỗi khi gửi tin nhắn
+    await this.getUserName();
+    const userName = this.userName;
+    console.log('Using userName from AppContext for message:', userName);
+
     // Create messageData in the format required by the server
     const messageData = {
       senderId: this.userId,
       receiverId: receiverId,
       message: content,
       senderType: this.isAdmin ? 'admin' : 'user',
-      messageType: messageType, // Add messageType field
-      tempId: tempId || `temp-${Date.now()}`
+      messageType: messageType,
+      tempId: tempId || `temp-${Date.now()}`,
+      userName: userName // Sử dụng userName từ AppContext
     };
 
     console.log('Sending message via socket:', {
       ...messageData,
-      message: messageType === 'image' ? '[Image data]' : messageData.message
+      message: messageType === 'image' ? '[Image data]' : messageData.message,
+      userName: userName
     });
 
     try {

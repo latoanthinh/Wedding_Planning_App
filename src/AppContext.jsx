@@ -1,10 +1,12 @@
-import React, { createContext, useState, useEffect } from 'react';
+import React, { createContext, useState, useEffect, useRef } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { AppState } from 'react-native';
 import { updateUserOnlineStatus, setCurrentUserStatus } from './redux/UserActivitySlice';
+import { connectSocketToAppContext } from './utils/socketAppContextIntegration';
+import socketService from './utils/socketService';
 
 // Create Context
 export const AppContext = createContext();
@@ -15,6 +17,30 @@ export const AppContextProvider = ({ children }) => {
   const [appLoaded, setAppLoaded] = useState(false);
   const [theme, setTheme] = useState('light');
   const [appState, setAppState] = useState(AppState.currentState);
+  const contextValueRef = useRef(null);
+
+  // Effect để cập nhật contextValueRef khi user hoặc các giá trị khác thay đổi
+  useEffect(() => {
+    // Cập nhật giá trị context
+    contextValueRef.current = {
+      user,
+      setUser,
+      isLoading,
+      setIsLoading,
+      login,
+      logout,
+      theme,
+      toggleTheme,
+      appLoaded,
+      setAppLoaded,
+      appState
+    };
+    
+    // Kết nối SocketService với AppContext khi user thay đổi
+    if (contextValueRef.current) {
+      connectSocketToAppContext(contextValueRef.current);
+    }
+  }, [user, isLoading, theme, appLoaded, appState]);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -29,7 +55,11 @@ export const AppContextProvider = ({ children }) => {
         const userData = await AsyncStorage.getItem('userData');
         if (userData) {
           console.log('Khôi phục user từ AsyncStorage');
-          setUser(JSON.parse(userData));
+          const parsedUserData = JSON.parse(userData);
+          setUser(parsedUserData);
+          
+          // Khởi tạo SocketService với thông tin user
+          socketService.init(parsedUserData, false);
         } else {
           setUser(null);
         }
@@ -81,6 +111,9 @@ export const AppContextProvider = ({ children }) => {
       await AsyncStorage.setItem('userData', JSON.stringify(userData));
       await AsyncStorage.setItem('token', token);
       setUser(userData);
+      
+      // Khởi tạo SocketService với thông tin đăng nhập mới
+      socketService.init(userData, false);
     } catch (error) {
       console.error('Error logging in:', error);
       throw new Error('Login failed');
@@ -90,6 +123,9 @@ export const AppContextProvider = ({ children }) => {
   const logout = async () => {
     try {
       console.log('Bắt đầu quá trình đăng xuất...');
+
+      // Ngắt kết nối SocketService
+      socketService.disconnect();
 
       if (user && user._id) {
         try {
@@ -175,6 +211,7 @@ export const AppContextProvider = ({ children }) => {
     };
   }, []);
 
+  // Create context value
   const contextValue = {
     user,
     setUser,

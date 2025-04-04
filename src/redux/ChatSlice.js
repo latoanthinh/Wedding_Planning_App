@@ -43,7 +43,8 @@ export const fetchChatHistory = createAsyncThunk(
           content: message.message,
           sender: message.senderType,
           timestamp: message.createdAt,
-          messageType: message.messageType || 'text' // Add messageType field with default
+          messageType: message.messageType || 'text', // Add messageType field with default
+          userName: message.userName || '' // Add userName field
         }));
         
         return formattedMessages;
@@ -60,7 +61,8 @@ export const fetchChatHistory = createAsyncThunk(
             content: 'Xin chào! Tôi là trợ lý ảo. Tôi có thể giúp gì cho bạn?',
             sender: 'admin',
             timestamp: new Date(Date.now() - 86400000).toISOString(), // 1 day ago
-            messageType: 'text'
+            messageType: 'text',
+            userName: 'Hỗ trợ khách hàng'
           },
           {
             _id: 'mock-msg-2',
@@ -69,7 +71,8 @@ export const fetchChatHistory = createAsyncThunk(
             content: 'Tôi muốn tìm hiểu về dịch vụ của các bạn',
             sender: 'user',
             timestamp: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
-            messageType: 'text'
+            messageType: 'text',
+            userName: ''
           },
           {
             _id: 'mock-msg-3',
@@ -78,7 +81,8 @@ export const fetchChatHistory = createAsyncThunk(
             content: 'Chúng tôi có nhiều dịch vụ khác nhau. Bạn quan tâm đến dịch vụ nào cụ thể?',
             sender: 'admin',
             timestamp: new Date(Date.now() - 3540000).toISOString(), // 59 minutes ago
-            messageType: 'text'
+            messageType: 'text',
+            userName: 'Hỗ trợ khách hàng'
           }
         ];
       }
@@ -100,7 +104,7 @@ export const sendMessage = createAsyncThunk(
       });
       
       // Check messageData structure
-      const { senderId, receiverId, message, senderType, messageType = 'text', tempId } = messageData;
+      const { senderId, receiverId, message, senderType, messageType = 'text', tempId, userName = '' } = messageData;
       
       if (!senderId || !message) {
         console.error('Missing required message data', messageData);
@@ -113,7 +117,8 @@ export const sendMessage = createAsyncThunk(
         receiverId: receiverId || 'admin', // Default to admin 
         message: message,
         senderType: senderType || 'user',
-        messageType: messageType // Add messageType field
+        messageType: messageType, // Add messageType field
+        userName: userName // Add userName field
       };
 
       const url = `${getApiBaseUrl()}/chat/message`;
@@ -150,7 +155,8 @@ export const sendMessage = createAsyncThunk(
             sender: serverMessage.senderType,
             timestamp: serverMessage.createdAt || new Date().toISOString(),
             tempId: tempId, // Keep tempId if present
-            messageType: serverMessage.messageType || 'text' // Add messageType field
+            messageType: serverMessage.messageType || 'text', // Add messageType field
+            userName: serverMessage.userName || userName // Add userName field
           };
         }
         
@@ -163,7 +169,8 @@ export const sendMessage = createAsyncThunk(
           sender: senderType || 'user',
           timestamp: new Date().toISOString(),
           tempId: tempId,
-          messageType: messageType
+          messageType: messageType,
+          userName: userName
         };
       } catch (error) {
         console.error('Error sending message via API:', error);
@@ -178,7 +185,8 @@ export const sendMessage = createAsyncThunk(
           sender: senderType || 'user',
           timestamp: new Date().toISOString(),
           tempId: tempId,
-          messageType: messageType
+          messageType: messageType,
+          userName: userName
         };
       }
     } catch (error) {
