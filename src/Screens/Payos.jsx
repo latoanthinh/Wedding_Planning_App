@@ -1,9 +1,170 @@
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Alert } from 'react-native';
-import React, { useState, useContext, useEffect } from 'react';
+import { StyleSheet, Text, View, ScrollView, TouchableOpacity, Modal, Animated } from 'react-native';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import axios from 'axios';
 import WebView from 'react-native-webview';
 import CryptoJS from 'crypto-js';
 import { AppContext } from '../AppContext';
+
+// Custom Icon Component instead of using libraries
+const CustomIcon = ({ type }) => {
+  const iconStyles = [styles.iconBase];
+  let iconContent = '!'; // Default icon content
+  
+  switch (type) {
+    case 'success':
+      iconStyles.push(styles.successIcon);
+      iconContent = '✓';
+      break;
+    case 'error':
+      iconStyles.push(styles.errorIcon);
+      iconContent = '✕';
+      break;
+    case 'warning':
+      iconStyles.push(styles.warningIcon);
+      iconContent = '!';
+      break;
+    case 'info':
+      iconStyles.push(styles.infoIcon);
+      iconContent = 'i';
+      break;
+    default:
+      iconStyles.push(styles.defaultIcon);
+  }
+  
+  return (
+    <View style={iconStyles}>
+      <Text style={styles.iconText}>{iconContent}</Text>
+    </View>
+  );
+};
+
+// Custom Alert Component
+const CustomAlert = ({ visible, title, message, type, onClose, actions }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+    });
+  };
+
+  // Background color based on alert type
+  const getHeaderColor = () => {
+    switch (type) {
+      case 'success':
+        return '#E8F5E9';
+      case 'error':
+        return '#FFEBEE';
+      case 'warning':
+        return '#FFF8E1';
+      case 'info':
+        return '#E3F2FD';
+      default:
+        return '#F5F5F5';
+    }
+  };
+
+  // Button color based on alert type
+  const getButtonColor = () => {
+    switch (type) {
+      case 'success':
+        return '#4CAF50';
+      case 'error':
+        return '#F44336';
+      case 'warning':
+        return '#FF9800';
+      case 'info':
+        return '#2196F3';
+      default:
+        return '#757575';
+    }
+  };
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={closeModal}
+    >
+      <View style={styles.alertOverlay}>
+        <Animated.View
+          style={[
+            styles.alertContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <View style={[styles.alertHeader, { backgroundColor: getHeaderColor() }]}>
+            <View style={styles.alertIconContainer}>
+              <CustomIcon type={type} />
+            </View>
+          </View>
+
+          <View style={styles.alertContent}>
+            <Text style={styles.alertTitle}>{title}</Text>
+            <Text style={styles.alertMessage}>{message}</Text>
+
+            <View style={styles.alertActions}>
+              {actions ? (
+                actions.map((action, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.alertButton, { backgroundColor: getButtonColor() }]}
+                    onPress={() => {
+                      closeModal();
+                      action.onPress && action.onPress();
+                    }}
+                  >
+                    <Text style={styles.alertButtonText}>{action.text}</Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <TouchableOpacity
+                  style={[styles.alertButton, { backgroundColor: getButtonColor() }]}
+                  onPress={closeModal}
+                >
+                  <Text style={styles.alertButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
 
 const Payos = ({ route, navigation }) => {
   const { planId } = route.params || {};
@@ -16,6 +177,22 @@ const Payos = ({ route, navigation }) => {
   const { user } = useContext(AppContext);
   const userId = user?._id;
   const [transactionSaved, setTransactionSaved] = useState(false);
+  
+  // Add states for custom alert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('info');
+  const [alertActions, setAlertActions] = useState(null);
+
+  // Custom alert function
+  const showAlert = (title, message, type = 'info', actions = null) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertActions(actions);
+    setAlertVisible(true);
+  };
 
   useEffect(() => {
     console.log('Route params trong Payos:', route.params);
@@ -59,17 +236,17 @@ const Payos = ({ route, navigation }) => {
         setOrderCode(newOrderCode);
       } else {
         console.log('Lỗi rùi!! :(');
-        Alert.alert('Lỗi', 'Không thể tạo link thanh toán.');
+        showAlert('Thông báo', 'Không thể tạo link thanh toán.', 'error');
       }
     } catch (error) {
       console.log('Lỗi PayOS:', error.message);
-      Alert.alert('Lỗi', 'Có lỗi xảy ra khi kết nối với PayOS.');
+      showAlert('Thông báo', 'Có lỗi xảy ra khi kết nối với PayOS.', 'error');
     }
   };
 
   const saveTransaction = async (depositAmount) => {
     if (!userId || !planId) {
-      Alert.alert('Lỗi', 'Thiếu userId hoặc planId.');
+      showAlert('Thông báo', 'Thiếu userId hoặc planId.', 'error');
       throw new Error('Thiếu userId hoặc planId');
     }
 
@@ -82,13 +259,17 @@ const Payos = ({ route, navigation }) => {
       return response.data;
     } catch (error) {
       console.error('Lỗi khi lưu giao dịch:', error.response ? error.response.data : error.message);
+      let errorMessage = 'Không thể lưu giao dịch';
+      
       if (error.response?.status === 500) {
-        Alert.alert('Lỗi', 'Server gặp lỗi. Vui lòng kiểm tra backend.');
+        errorMessage = 'Server gặp lỗi. Vui lòng kiểm tra backend.';
       } else if (error.response?.status === 404) {
-        Alert.alert('Lỗi', 'Không tìm thấy endpoint /transactions.');
+        errorMessage = 'Không tìm thấy endpoint /transactions.';
       } else {
-        Alert.alert('Lỗi', `Không thể lưu giao dịch: ${error.message}`);
+        errorMessage = `Không thể lưu giao dịch: ${error.message}`;
       }
+      
+      showAlert('Thông báo', errorMessage, 'error');
       throw error;
     }
   };
@@ -101,18 +282,27 @@ const Payos = ({ route, navigation }) => {
       setTransactionSaved(true);
       saveTransaction(5000)
         .then(() => {
-          Alert.alert('Thành công', 'Bạn đã thanh toán thành công!', [
-            {
-              text: 'OK',
-              onPress: () => navigation.navigate('AllPlan'),
-            },
-          ]);
+          showAlert(
+            'Thành công',
+            'Bạn đã thanh toán thành công!',
+            'success',
+            [
+              {
+                text: 'OK',
+                onPress: () => navigation.navigate('AllPlan'),
+              },
+            ]
+          );
         })
         .catch((error) => {
-          Alert.alert('Lỗi', `Thanh toán thành công nhưng không thể lưu giao dịch: ${error.message}`);
+          showAlert(
+            'Thông báo',
+            `Thanh toán thành công nhưng không thể lưu giao dịch: ${error.message}`,
+            'warning'
+          );
         });
     } else if (url.includes('/cancel')) {
-      Alert.alert('Thất bại', 'Đã hủy thanh toán.');
+      showAlert('Thông báo', 'Đã hủy thanh toán.', 'warning');
       setPaymentLink('');
     }
   };
@@ -149,6 +339,16 @@ const Payos = ({ route, navigation }) => {
           </TouchableOpacity>
         </View>
       )}
+      
+      {/* Custom Alert Component */}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+        actions={alertActions}
+      />
     </View>
   );
 };
@@ -214,5 +414,101 @@ const styles = StyleSheet.create({
   webView: {
     width: '100%',
     height: 600,
+  },
+  // Custom Icon Styles
+  iconBase: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successIcon: {
+    backgroundColor: '#4CAF50',
+  },
+  errorIcon: {
+    backgroundColor: '#F44336',
+  },
+  warningIcon: {
+    backgroundColor: '#FF9800',
+  },
+  infoIcon: {
+    backgroundColor: '#2196F3',
+  },
+  defaultIcon: {
+    backgroundColor: '#757575',
+  },
+  iconText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  // Custom Alert Styles
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertContainer: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  alertHeader: {
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertContent: {
+    padding: 20,
+  },
+  alertTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  alertActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  alertButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    minWidth: 120,
+    marginHorizontal: 5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  alertButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });
