@@ -18,6 +18,7 @@ import { Cate_catering } from "../redux/Cate_CateringSlice";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Lottie from 'lottie-react-native';
 import LoadingIndicator from '../components/LoadingIndicator';
+import AntDesign from 'react-native-vector-icons/AntDesign';
 
 const { width } = Dimensions.get("window");
 
@@ -147,15 +148,22 @@ const FlowersScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
-          <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
-        </TouchableOpacity>
-        <Text style={styles.title}>Đồ Ăn</Text>
-        <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
-          <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-        </TouchableOpacity>
-      </View>
-
+                <TouchableOpacity 
+                  style={styles.headerButton} 
+                  onPress={() => navigation.navigate('TabNavigation')}
+                  activeOpacity={0.6}
+                >
+                  <AntDesign name="arrowleft" size={24} color="#333" />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Đồ Ăn</Text>
+                <TouchableOpacity 
+                  style={styles.headerButton} 
+                  onPress={() => navigation.navigate('TabNavigation')}
+                  activeOpacity={0.6}
+                >
+                 <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+                </TouchableOpacity>
+              </View>
       <View style={styles.categoryWrapper}>
         <FlatList
           horizontal
@@ -224,11 +232,28 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    backgroundColor: '#FFFFFF',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EAE3',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#333',
+    fontFamily: 'Playfair_me',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    flex: 1,
+  },
+  headerButton: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 21,
   },
   title: {
     fontSize: 22,
