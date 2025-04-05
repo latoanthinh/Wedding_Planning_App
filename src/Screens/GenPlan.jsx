@@ -26,7 +26,31 @@ const GenPlan = ({ navigation, route }) => {
   console.log("Params in GenPlan:", params);
   console.log("Plans in GenPlan:", plans);
 
-  const formatPrice = (num) =>
+  const calculateTotalPrice = (plan, guestCount) => {
+    const sanhPrice = plan.SanhId?.price ? parseFloat(plan.SanhId.price) : 0;
+
+    // Tính tổng giá đồ ăn * (số lượng khách / 10)
+    const cateringTotal = plan.caterings?.reduce((sum, item) => {
+      const price = item.price ? parseFloat(item.price) : 0;
+      const multiplier = guestCount ? guestCount / 10 : 0;
+      return sum + (price * multiplier);
+    }, 0) || 0;
+
+    // Tính tổng giá trang trí
+    const decorateTotal = plan.decorates?.reduce((sum, item) => {
+      const price = item.price ? parseFloat(item.price) : 0;
+      return sum + price;
+    }, 0) || 0;
+
+    return sanhPrice + cateringTotal + decorateTotal;
+  };
+
+  const formatPrice = (plan, guestCount) => {
+    const total = calculateTotalPrice(plan, guestCount);
+    return total.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ";
+  };
+
+  const formatSimplePrice = (num) =>
     num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
 
   const renderPlan = ({ item }) => {
@@ -35,8 +59,8 @@ const GenPlan = ({ navigation, route }) => {
       eventDate: params?.eventDate,
       guestCount: params?.guestCount,
       budget: params?.budget,
-      isCopy: item.isCopy || false, // Đảm bảo giữ trạng thái bản sao
-      originalPlanId: item.originalPlanId || item._id, // Lưu ID gốc
+      isCopy: item.isCopy || false,
+      originalPlanId: item.originalPlanId || item._id,
     };
 
     return (
@@ -44,7 +68,7 @@ const GenPlan = ({ navigation, route }) => {
         <View style={styles.planContent}>
           <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
           <View style={styles.priceContainer}>
-            <Text style={styles.planPrice}>{formatPrice(item.totalPrice)}</Text>
+            <Text style={styles.planPrice}>{formatPrice(item, params?.guestCount)}</Text>
           </View>
           <Text style={styles.planText}>
             Số lượng khách: {item.SanhId?.SoLuongKhach || "Không xác định"}
@@ -64,7 +88,6 @@ const GenPlan = ({ navigation, route }) => {
       </View>
     );
   };
-
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -96,7 +119,7 @@ const GenPlan = ({ navigation, route }) => {
           <View style={styles.surveyInfoItem}>
             <Image source={require('../Assets/Images/wallet.png')} style={styles.infoIcon} />
             <Text style={styles.surveyText}>
-              Ngân sách: {params?.budget ? formatPrice(params.budget) : "Chưa nhập"}
+              Ngân sách: {params?.budget ? formatSimplePrice(params.budget) : "Chưa nhập"}
             </Text>
           </View>
         </View>
@@ -106,7 +129,7 @@ const GenPlan = ({ navigation, route }) => {
             <Image source={require('../Assets/Images/list.png')} style={styles.sectionIcon} />
             <Text style={styles.sectionTitle}>Danh sách Combo gợi ý</Text>
           </View>
-          
+
           {plans.length > 0 ? (
             <FlatList
               data={plans}
@@ -114,7 +137,7 @@ const GenPlan = ({ navigation, route }) => {
               keyExtractor={(item) => item._id.toString()}
               style={styles.planList}
               scrollEnabled={false}
-              
+
             />
           ) : (
             <View style={styles.noPlansContainer}>

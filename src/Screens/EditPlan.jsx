@@ -26,10 +26,6 @@ const EditPlan = ({ navigation, route }) => {
   const userId = user._id;
   const flatListRef = useRef(null);
 
-  const scrollToIndex = (index) => {
-    flatListRef.current?.scrollToIndex({ index, animated: true });
-  };
-
   const { caterings, cateringStatus, error: cateringError } = useSelector((state) => state.getallcatering);
   const { decorates, decorateStatus, error: decorateError } = useSelector((state) => state.getalldecorates);
   const { HallData, HallStatus, error: hallError } = useSelector((state) => state.hall);
@@ -64,7 +60,13 @@ const EditPlan = ({ navigation, route }) => {
   const [sanhId, setSanhId] = useState(planData?.SanhId?._id || '');
   const [selectedSanh, setSelectedSanh] = useState(planData?.SanhId || null);
   const [cateringsList, setCateringsList] = useState(planData?.caterings?.filter(item => item && item._id) || []);
-  const [decoratesList, setDecoratesList] = useState(planData?.decorates?.filter(item => item && item._id) || []);
+  // Trong khai báo state
+const [decoratesList, setDecoratesList] = useState(
+  planData?.decorates?.filter(item => item && item._id).map(item => ({
+    ...item,
+    Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Lấy _id hoặc giá trị gốc nếu không phải object
+  })) || []
+);  
   const [presentsList, setPresentsList] = useState(
     planData?.presents?.filter(item => item && item._id).map(item => ({
       ...item,
@@ -91,33 +93,54 @@ const EditPlan = ({ navigation, route }) => {
   const [decorateTotal, setDecorateTotal] = useState(0);
   const [presentTotal, setPresentTotal] = useState(0);
 
-  useEffect(() => {
-    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
-      if (autoSaveEnabled && userId && planId && name.trim() && !isNaN(parseInt(plansoluongkhach, 10)) && !isNaN(parseFloat(planprice))) {
-        const updateData = {
-          UserId: userId,
-          name,
-          plandateevent: plandateevent.toISOString(),
-          plansoluongkhach: parseInt(plansoluongkhach, 10) || undefined,
-          planprice: parseFloat(planprice) || undefined,
-          totalPrice: totalPrice,
-          SanhId: sanhId || undefined,
-          caterings: cateringsList.map(item => item._id).filter(Boolean),
-          decorates: decoratesList.map(item => item._id).filter(Boolean),
-          presents: presentsList.map(item => ({
-            id: item._id,
-            quantity: item.quantity || 1
-          })).filter(item => item.id),
-          isCopy: planData.isCopy || false,
-          originalPlanId: planData.originalPlanId || planId,
-        };
-        savePlan(updateData);
-      }
-    });
+  const DECORATE_CATEGORIES = {
+    "67c52a1d4a00200b0ab1539a": "Cổng hoa",
+    "67c52a274a00200b0ab1539c": "Sân khấu",
+    "67c52a3f4a00200b0ab1539e": "Background",
+    "67c52a564a00200b0ab153a0": "Pháo hoa - khói",
+  };
+  const DECORATE_TYPES = Object.values(DECORATE_CATEGORIES);
 
-    return unsubscribe;
-  }, [cateringsList, decoratesList, presentsList, selectedSanh, plansoluongkhach, planprice, name, plandateevent, sanhId, navigation, autoSaveEnabled]);
+  // Kiểm tra giới hạn và trùng lặp
+const isDecorateLimitReached = () => {
+  const currentCateIds = decoratesList.map(item => item.Cate_decorateId).filter(Boolean);
+  return Object.keys(DECORATE_CATEGORIES).every(cateId => currentCateIds.includes(cateId));
+};
 
+const isDecorateTypeExist = (cateId) => {
+  return decoratesList.some(item => item.Cate_decorateId === cateId);
+};
+
+  // Trong useEffect xử lý availableItems
+useEffect(() => {
+  if (modalVisible) {
+    let items = [];
+    if (showFavorites && favoriteStatus === 'succeeded') {
+      const typeMap = { caterings: 'catering', decorates: 'decorate', presents: 'present' };
+      items = Array.from(
+        new Map(
+          favorites.filter(item => item.type === typeMap[currentType]).map(item => [item._id, item])
+        ).values()
+      );
+    } else if (currentType === 'caterings' && cateringStatus === 'succeeded') {
+      items = Array.from(new Map(caterings.map(item => [item._id, item])).values());
+    } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
+      items = Array.from(
+        new Map(
+          decorates.map(item => [item._id, {
+            ...item,
+            Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
+          }])
+        ).values()
+      );
+    } else if (currentType === 'presents' && presentStatus === 'succeeded') {
+      items = Array.from(new Map(presents.map(item => [item._id, item])).values());
+    }
+    console.log('Available items for', currentType, ':', items);
+    setAvailableItems(items);
+  }
+  // ... (phần còn lại của useEffect giữ nguyên)
+}, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData, sanhModalVisible, showSanhFavorites]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
@@ -156,7 +179,6 @@ const EditPlan = ({ navigation, route }) => {
       const difference = budget - total;
       setPriceDifference(difference);
     };
-
     calculateTotals();
   }, [cateringsList, decoratesList, presentsList, selectedSanh, plansoluongkhach, planprice]);
 
@@ -195,10 +217,14 @@ const EditPlan = ({ navigation, route }) => {
       } else if (currentType === 'caterings' && cateringStatus === 'succeeded') {
         items = Array.from(new Map(caterings.map(item => [item._id, item])).values());
       } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
-        items = Array.from(new Map(decorates.map(item => [item._id, item])).values());
+        items = Array.from(new Map(decorates.map(item => [item._id, {
+          ...item,
+          Cate_decorateId: item.Cate_decorateId || null, // Đảm bảo Cate_decorateId tồn tại
+        }])).values());
       } else if (currentType === 'presents' && presentStatus === 'succeeded') {
         items = Array.from(new Map(presents.map(item => [item._id, item])).values());
       }
+      console.log('Available items for', currentType, ':', items); // Debug dữ liệu
       setAvailableItems(items);
     }
 
@@ -239,24 +265,53 @@ const EditPlan = ({ navigation, route }) => {
     };
   }, [dispatch]);
 
-  const handleSelectItem = (item) => {
-    if (!item) return;
+  // Trong handleSelectItem
+const handleSelectItem = (item) => {
+  if (!item) return;
 
-    const normalizedItem = {
-      _id: item.itemId || item._id,
-      name: item.name || 'Không có tên',
-      price: item.price || 0,
-      imageUrl: item.imageUrl || item.image || null,
-      description: item.description || '',
-      ...(currentType === 'presents' && {
-        quantity: parseInt(presentQuantities[item._id] || '1') || 1
-      }),
-    };
+  const normalizedItem = {
+    _id: item.itemId || item._id,
+    name: item.name || 'Không có tên',
+    price: item.price || 0,
+    imageUrl: item.imageUrl || item.image || null,
+    description: item.description || '',
+    Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
+    ...(currentType === 'presents' && {
+      quantity: parseInt(presentQuantities[item._id] || '1') || 1,
+    }),
+  };
 
-    const updateList = (list, setList) => {
-      const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
+  console.log('Selected item:', normalizedItem);
 
-      if (actionType === 'add') {
+  const updateList = (list, setList) => {
+    const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
+    const cateIndex = list.findIndex((existing) => existing.Cate_decorateId === normalizedItem.Cate_decorateId);
+
+    console.log('Current decoratesList:', list);
+    console.log('Existing index:', existingIndex, 'Cate index:', cateIndex);
+
+    if (actionType === 'add') {
+      if (currentType === 'decorates') {
+        if (!normalizedItem.Cate_decorateId) {
+          ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
+          return;
+        }
+        if (existingIndex !== -1 || cateIndex !== -1) {
+          ToastAndroid.show(
+            `Đã có "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" trong danh sách. Chỉ có thể thay đổi, không thêm mới!`,
+            ToastAndroid.SHORT
+          );
+          return;
+        }
+        if (isDecorateLimitReached()) {
+          ToastAndroid.show(
+            'Đã đủ số lượng trang trí tối đa (Cổng hoa, Sân khấu, Background, Pháo hoa - khói)! Chỉ có thể thay đổi.',
+            ToastAndroid.SHORT
+          );
+          return;
+        }
+        setList([...list, normalizedItem]);
+      } else {
         if (existingIndex !== -1) {
           ToastAndroid.show(
             `Món "${normalizedItem.name}" đã có trong danh sách. Vui lòng chọn món khác!`,
@@ -265,23 +320,42 @@ const EditPlan = ({ navigation, route }) => {
           return;
         }
         setList([...list, normalizedItem]);
-        setModalVisible(false);
-      } else if (actionType === 'replace' && replaceIndex !== null) {
-        const newList = [...list];
-        const existingQuantity = list[replaceIndex]?.quantity || 1;
-        newList[replaceIndex] = { ...normalizedItem, quantity: existingQuantity };
-        setList(newList);
-        setModalVisible(false);
       }
-    };
+      setModalVisible(false);
+    } else if (actionType === 'replace' && replaceIndex !== null) {
+      const newList = [...list];
+      const existingQuantity = list[replaceIndex]?.quantity || 1;
 
-    if (currentType === 'caterings') updateList(cateringsList, setCateringsList);
-    else if (currentType === 'decorates') updateList(decoratesList, setDecoratesList);
-    else if (currentType === 'presents') updateList(presentsList, setPresentsList);
+      if (currentType === 'decorates') {
+        if (!normalizedItem.Cate_decorateId) {
+          ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
+          return;
+        }
+        const isCateDuplicate = newList.some(
+          (existing, idx) => idx !== replaceIndex && existing.Cate_decorateId === normalizedItem.Cate_decorateId
+        );
+        if (isCateDuplicate) {
+          ToastAndroid.show(
+            `Loại "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" đã tồn tại trong danh sách. Không thể thay thế bằng cùng loại!`,
+            ToastAndroid.SHORT
+          );
+          return;
+        }
+      }
 
-    setReplaceIndex(null);
-    setActionType('add');
+      newList[replaceIndex] = { ...normalizedItem, quantity: existingQuantity };
+      setList(newList);
+      setModalVisible(false);
+    }
   };
+
+  if (currentType === 'caterings') updateList(cateringsList, setCateringsList);
+  else if (currentType === 'decorates') updateList(decoratesList, setDecoratesList);
+  else if (currentType === 'presents') updateList(presentsList, setPresentsList);
+
+  setReplaceIndex(null);
+  setActionType('add');
+};
 
   const handleRemoveItem = (type, index) => {
     const updateList = (list, setList) => setList(list.filter((_, i) => i !== index));
@@ -433,11 +507,13 @@ const EditPlan = ({ navigation, route }) => {
         <Text style={styles.totalLabel}>Tổng chi phí {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}:</Text>
         <Text style={styles.totalValue}>{total.toLocaleString('vi-VN')} VNĐ</Text>
       </View>
-      <TouchableOpacity style={styles.changeButton} onPress={() => openChangeModal(type, 'add')}>
-        <Text style={styles.buttonText}>
-          Thêm {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
-        </Text>
-      </TouchableOpacity>
+      {type !== 'decorates' || (type === 'decorates' && items.length < DECORATE_TYPES.length) ? (
+        <TouchableOpacity style={styles.changeButton} onPress={() => openChangeModal(type, 'add')}>
+          <Text style={styles.buttonText}>
+            Thêm {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 
@@ -601,7 +677,21 @@ const EditPlan = ({ navigation, route }) => {
               <TextInput
                 style={styles.input}
                 value={plansoluongkhach}
-                onChangeText={(text) => setPlansoluongkhach(text.replace(/[^0-9]/g, ''))}
+                onChangeText={(text) => {
+                  const cleanedText = text.replace(/[^0-9]/g, '');
+                  const newGuestCount = parseInt(cleanedText, 10) || 0;
+                  const maxCapacity = selectedSanh?.SoLuongKhach ? parseInt(selectedSanh.SoLuongKhach, 10) : Infinity;
+
+                  if (newGuestCount > maxCapacity) {
+                    ToastAndroid.show(
+                      `Số lượng khách không được vượt quá sức chứa của sảnh (${maxCapacity} người)!`,
+                      ToastAndroid.SHORT
+                    );
+                    setPlansoluongkhach(plansoluongkhach || '');
+                  } else {
+                    setPlansoluongkhach(cleanedText);
+                  }
+                }}
                 placeholder="Nhập số lượng khách"
                 keyboardType="numeric"
               />
@@ -642,28 +732,21 @@ const EditPlan = ({ navigation, route }) => {
             </View>
 
             <View style={styles.divider} />
-
             <View style={styles.inputRow}>
               <Text style={styles.label}>Sảnh:</Text>
               {renderSanhSection()}
             </View>
-
             <View style={styles.divider} />
-
             <View style={styles.inputRow}>
               <Text style={styles.label}>Dịch vụ ăn uống:</Text>
               {renderItemList(cateringsList, 'caterings', cateringTotal)}
             </View>
-
             <View style={styles.divider} />
-
             <View style={styles.inputRow}>
               <Text style={styles.label}>Trang trí:</Text>
               {renderItemList(decoratesList, 'decorates', decorateTotal)}
             </View>
-
             <View style={styles.divider} />
-
             <View style={styles.inputRow}>
               <Text style={styles.label}>Quà tặng:</Text>
               {renderItemList(presentsList, 'presents', presentTotal)}
@@ -752,12 +835,6 @@ const EditPlan = ({ navigation, route }) => {
                     renderItem={renderModalItem}
                     keyExtractor={(item, index) => `${currentType}-${item._id || item.itemId || 'item'}-${index}`}
                     style={styles.modalList}
-                    onScrollToIndexFailed={(info) => {
-                      const wait = new Promise((resolve) => setTimeout(resolve, 500));
-                      wait.then(() => {
-                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-                      });
-                    }}
                   />
                 ) : (
                   <Text style={styles.noDataText}>
@@ -806,12 +883,6 @@ const EditPlan = ({ navigation, route }) => {
                     renderItem={renderSanhItem}
                     keyExtractor={(item, index) => `sanh-${item._id || item.itemId || 'sanh'}-${index}`}
                     style={styles.modalList}
-                    onScrollToIndexFailed={(info) => {
-                      const wait = new Promise((resolve) => setTimeout(resolve, 500));
-                      wait.then(() => {
-                        flatListRef.current?.scrollToIndex({ index: info.index, animated: true });
-                      });
-                    }}
                   />
                 ) : (
                   <Text style={styles.noDataText}>
@@ -1290,9 +1361,6 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     flex: 1,
     maxWidth: 140,
-  },
-  bottomBarButtonIcon: {
-    marginRight: 8,
   },
   bottomBarButtonText: {
     color: '#FFFFFF',
