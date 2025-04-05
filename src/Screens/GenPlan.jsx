@@ -7,7 +7,6 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
-  Pressable,
   FlatList,
   StatusBar,
 } from "react-native";
@@ -29,14 +28,12 @@ const GenPlan = ({ navigation, route }) => {
   const calculateTotalPrice = (plan, guestCount) => {
     const sanhPrice = plan.SanhId?.price ? parseFloat(plan.SanhId.price) : 0;
 
-    // Tính tổng giá đồ ăn * (số lượng khách / 10)
     const cateringTotal = plan.caterings?.reduce((sum, item) => {
       const price = item.price ? parseFloat(item.price) : 0;
       const multiplier = guestCount ? guestCount / 10 : 0;
       return sum + (price * multiplier);
     }, 0) || 0;
 
-    // Tính tổng giá trang trí
     const decorateTotal = plan.decorates?.reduce((sum, item) => {
       const price = item.price ? parseFloat(item.price) : 0;
       return sum + price;
@@ -53,6 +50,12 @@ const GenPlan = ({ navigation, route }) => {
   const formatSimplePrice = (num) =>
     num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
 
+  const renderServiceItem = ({ item }) => (
+    <View style={styles.serviceItem}>
+      <Text style={styles.serviceItemText}>• {item}</Text>
+    </View>
+  );
+
   const renderPlan = ({ item }) => {
     const planDataWithParams = {
       ...item,
@@ -63,6 +66,13 @@ const GenPlan = ({ navigation, route }) => {
       originalPlanId: item.originalPlanId || item._id,
     };
 
+    // Gộp tất cả tên của các dịch vụ
+    const allServices = [
+      ...(item.caterings?.map((c) => c.name) || []),
+      ...(item.decorates?.map((d) => d.name) || []),
+      ...(item.presents?.map((p) => p.name) || []),
+    ].filter(Boolean);
+
     return (
       <View style={styles.planCard}>
         <View style={styles.planContent}>
@@ -71,12 +81,20 @@ const GenPlan = ({ navigation, route }) => {
             <Text style={styles.planPrice}>{formatPrice(item, params?.guestCount)}</Text>
           </View>
           <Text style={styles.planText}>
-            Số lượng khách: {item.SanhId?.SoLuongKhach || "Không xác định"}
+            Sức chứa: {item.SanhId?.SoLuongKhach || "Không xác định"}
           </Text>
           <View style={styles.planServices}>
-            <Text style={styles.planServiceText}>
-              Dịch vụ: {item.caterings?.length > 0 ? item.caterings.map((c) => c.name).join(", ") : "Không có"}
-            </Text>
+            <Text style={styles.planServiceTitle}>Dịch vụ:</Text>
+            {allServices.length > 0 ? (
+              <FlatList
+                data={allServices}
+                renderItem={renderServiceItem}
+                keyExtractor={(service, index) => `${item._id}-${index}`}
+                scrollEnabled={false}
+              />
+            ) : (
+              <Text style={styles.noServiceText}>Không có dịch vụ</Text>
+            )}
           </View>
           <TouchableOpacity
             style={styles.detailButtonContainer}
@@ -88,6 +106,7 @@ const GenPlan = ({ navigation, route }) => {
       </View>
     );
   };
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
@@ -137,7 +156,6 @@ const GenPlan = ({ navigation, route }) => {
               keyExtractor={(item) => item._id.toString()}
               style={styles.planList}
               scrollEnabled={false}
-
             />
           ) : (
             <View style={styles.noPlansContainer}>
@@ -213,7 +231,6 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
-
   },
   surveyInfoItem: {
     flexDirection: 'row',
@@ -301,10 +318,26 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 10,
   },
-  planServiceText: {
+  planServiceTitle: {
+    fontSize: normalize(16),
+    color: "#333",
+    fontWeight: "600",
+    marginBottom: 8,
+    fontFamily: "Playfair_me",
+  },
+  serviceItem: {
+    marginBottom: 6,
+  },
+  serviceItemText: {
     fontSize: normalize(16),
     color: "#555",
     lineHeight: 22,
+    fontFamily: "Playfair_me",
+  },
+  noServiceText: {
+    fontSize: normalize(16),
+    color: "#555",
+    fontStyle: "italic",
     fontFamily: "Playfair_me",
   },
   detailButtonContainer: {
@@ -359,3 +392,4 @@ const styles = StyleSheet.create({
     fontFamily: "Playfair_me",
   },
 });
+

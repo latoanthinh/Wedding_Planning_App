@@ -53,10 +53,7 @@ const AllPlan = ({ navigation }) => {
             </View>
             <View style={styles.detailButton}>
               <Text style={styles.detailButtonText}>Xem chi tiết</Text>
-              <Image
-                source={require('../Assets/Images/back.png')}
-                style={styles.arrowIcon}
-              />
+              
             </View>
           </View>
         </View>
