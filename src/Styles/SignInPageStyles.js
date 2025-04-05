@@ -31,7 +31,7 @@ const SignInPageStyles = StyleSheet.create({
         marginBottom: 15,
         backgroundColor: '#f9f9f9',
         paddingStart: 40,
-        fontFamily: 'Playfair_me'
+      
     },
     rememberMeContainer: {
         flexDirection: 'row',
