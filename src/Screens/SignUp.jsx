@@ -302,7 +302,7 @@ const SignUp = ({ route }) => {
 
         // Validate policy acceptance
         if (!isChecked) {
-            setPolicyError("Bạn phải đồng ý với chính sách bảo mật");
+            // setPolicyError("Bạn phải đồng ý với chính sách bảo mật");
             errorMessage = "Bạn phải đồng ý với chính sách bảo mật";
             valid = false;
             return { valid, errorMessage };
