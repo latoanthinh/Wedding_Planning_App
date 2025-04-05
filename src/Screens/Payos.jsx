@@ -167,7 +167,7 @@ const CustomAlert = ({ visible, title, message, type, onClose, actions }) => {
 };
 
 const Payos = ({ route, navigation }) => {
-  const { planId } = route.params || {};
+  const { planId, planData } = route.params || {}; // Thêm planData nếu cần truyền dữ liệu kế hoạch
   const clientID = 'd851a1c7-f29f-43fd-a51f-cabc526edab2';
   const apiKey = '4c732585-b003-45f0-a686-127b794c3a5e';
   const checkSum = 'd31e918a6c1be81129af70962f6478884b694c1ad3a4c60d2c0f196134d962d9';
@@ -302,15 +302,29 @@ const Payos = ({ route, navigation }) => {
           );
         });
     } else if (url.includes('/cancel')) {
-      showAlert('Thông báo', 'Đã hủy thanh toán.', 'warning');
-      setPaymentLink('');
+      showAlert(
+        'Thông báo',
+        'Bạn đã hủy thanh toán.',
+        'warning',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Quay về màn hình Detail với planId và planData (nếu có)
+              navigation.goBack();
+            },
+          },
+        ]
+      );
+      setPaymentLink(''); // Xóa paymentLink để quay về giao diện ban đầu
+      setOrderCode(null); // Reset orderCode
     }
   };
 
   const handleGoBack = () => {
     setPaymentLink('');
     setOrderCode(null);
-    navigation.goBack();
+    navigation.goBack(); // Quay về Detail khi nhấn nút "Quay lại"
   };
 
   return (
@@ -326,9 +340,7 @@ const Payos = ({ route, navigation }) => {
               onNavigationStateChange={handleNavigationChange}
             />
           </ScrollView>
-          <TouchableOpacity style={styles.goBackButton} onPress={handleGoBack}>
-            <Text style={styles.buttonText}>Quay Lại</Text>
-          </TouchableOpacity>
+          
         </>
       ) : (
         <View style={styles.initialContainer}>
@@ -337,7 +349,11 @@ const Payos = ({ route, navigation }) => {
           <TouchableOpacity style={styles.payButton} onPress={Payment}>
             <Text style={styles.buttonText}>Thanh Toán Ngay</Text>
           </TouchableOpacity>
+          <TouchableOpacity style={styles.goBackButton} onPress={handleGoBack}>
+            <Text style={styles.buttonText}>Quay Lại</Text>
+          </TouchableOpacity>
         </View>
+        
       )}
       
       {/* Custom Alert Component */}
