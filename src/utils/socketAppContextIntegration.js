@@ -12,15 +12,24 @@ export const connectSocketToAppContext = (appContextValue) => {
     console.warn('connectSocketToAppContext: AppContext không được cung cấp');
     return;
   }
-  
+
   console.log('Kết nối SocketService với AppContext');
   socketService.setAppContext(appContextValue);
-  
-  // Cập nhật SocketService khi user trong AppContext thay đổi
-  if (appContextValue.user) {
-    console.log('Khởi tạo SocketService với user từ AppContext');
-    socketService.init(appContextValue.user, false);
+
+  if (!appContextValue.user) {
+    console.log('Không có user, bỏ qua khởi tạo socket');
+    socketService.disconnect(); // Ngắt kết nối socket nếu không có user
+    return;
   }
+
+  if (socketService.isConnected()) {
+    console.log('Socket đã kết nối, chỉ cập nhật thông tin user');
+    socketService.updateUserInfoFromContext(appContextValue.user);
+    return;
+  }
+
+  console.log('Khởi tạo SocketService với user từ AppContext');
+  socketService.init(appContextValue.user, false);
 };
 
 /**
@@ -30,12 +39,20 @@ export const connectSocketToAppContext = (appContextValue) => {
  * @param {object} appContext - Context từ useContext(AppContext)
  */
 export const useSocketWithAppContext = (appContext) => {
-  // Cập nhật SocketService khi AppContext thay đổi
-  if (appContext && appContext.user) {
-    socketService.updateUserInfoFromContext(appContext.user);
-  }
-  
+  React.useEffect(() => {
+    if (appContext && appContext.user) {
+      socketService.updateUserInfoFromContext(appContext.user);
+      if (!socketService.isConnected()) {
+        console.log('Socket chưa kết nối, khởi tạo lại với user từ AppContext');
+        socketService.init(appContext.user, false);
+      }
+    } else {
+      console.log('Không có user trong AppContext, ngắt kết nối socket');
+      socketService.disconnect();
+    }
+  }, [appContext?.user]);
+
   return socketService;
 };
 
-export default { connectSocketToAppContext, useSocketWithAppContext }; 
+export default { connectSocketToAppContext, useSocketWithAppContext };

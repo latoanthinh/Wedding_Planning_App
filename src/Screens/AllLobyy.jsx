@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import {
     Text,
     View,
@@ -7,50 +7,158 @@ import {
     TouchableOpacity,
     Dimensions,
     Pressable,
-    StyleSheet
+    StyleSheet,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
 import { Hall } from '../redux/HallSlice';
 import Lottie from 'lottie-react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppContext } from '../AppContext'; // Thêm AppContext
 
 const { width } = Dimensions.get('window');
 
 const AllLobyy = ({ navigation }) => {
     const dispatch = useDispatch();
-    const { HallData, HallStatus } = useSelector(state => state.hall);
+    const { HallData = [], HallStatus } = useSelector(state => state.hall);
+    const { user, isLoading: contextLoading } = useContext(AppContext); // Lấy user từ AppContext
+    const [loading, setLoading] = useState(false);
 
+    // Kiểm tra user khi component mount hoặc user thay đổi
     useEffect(() => {
-        const fetchData = async () => {
-            await dispatch(Hall());
-        };
-        fetchData();
-    }, [dispatch]);
+        if (!contextLoading && !user) {
+            console.log('User không tồn tại, không tải dữ liệu');
+            setLoading(false);
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignIn' }],
+            });
+        }
+    }, [user, contextLoading, navigation]);
 
-    const renderHallItem = ({ item }) => (
-        <Pressable onPress={() => navigation.navigate('HallWeddings', { productIdHall: item._id })} 
-        android_ripple={{ color: '#e0e0e0' }}>
-            <View style={styles.backgroudhall}>
-                <Image source={{ uri: item.imageUrl }} style={styles.imghall} />
-                <Text style={styles.namehall} numberOfLines={1}>{item.name}</Text>
-                <View style={styles.bottomhall}>
-                    <View style={{ flexDirection: "row", alignItems: "center" }}>
-                        <Image source={require('../Assets/Images/numberperson.png')} style={styles.iconSmall} />
-                        <Text style={styles.guestText}>{item.SoLuongKhach} Khách</Text>
+    // Gọi API lấy danh sách sảnh
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                await dispatch(Hall()).unwrap();
+            } catch (error) {
+                console.error('Lỗi khi lấy danh sách sảnh:', error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+
+        return () => {
+            setLoading(false);
+        };
+    }, [dispatch, user]);
+
+    const renderHallItem = useCallback(
+        ({ item }) => {
+            if (!user || !item || !item._id) return null;
+            return (
+                <Pressable
+                    onPress={() => navigation.navigate('HallWeddings', { productIdHall: item._id })}
+                    android_ripple={{ color: '#e0e0e0' }}
+                >
+                    <View style={styles.backgroudhall}>
+                        <Image
+                            source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+                            style={styles.imghall}
+                        />
+                        <Text style={styles.namehall} numberOfLines={1}>
+                            {item.name || 'Unnamed Hall'}
+                        </Text>
+                        <View style={styles.bottomhall}>
+                            <View style={{ flexDirection: "row", alignItems: "center" }}>
+                                <Image
+                                    source={require('../Assets/Images/numberperson.png')}
+                                    style={styles.iconSmall}
+                                />
+                                <Text style={styles.guestText}>
+                                    {item.SoLuongKhach || 0} Khách
+                                </Text>
+                            </View>
+                        </View>
                     </View>
-                </View>
-            </View>
-        </Pressable>
+                </Pressable>
+            );
+        },
+        [navigation, user]
     );
 
     const renderLoading = () => (
         <View style={styles.loadingContainer}>
-            <Lottie source={require('../Assets/Animations/blackloading.json')} autoPlay loop style={styles.loadingAnimation} />
+            <Lottie
+                source={require('../Assets/Animations/blackloading.json')}
+                autoPlay
+                loop
+                style={styles.loadingAnimation}
+            />
             <Text style={styles.loadingText}>Đang tải...</Text>
         </View>
     );
 
+    const renderContent = useCallback(() => {
+        if (!user) return null;
+
+        if (loading || HallStatus === 'loading') return renderLoading();
+        if (HallStatus === 'failed') {
+            return (
+                <View style={styles.errorContainer}>
+                    <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
+                    <TouchableOpacity
+                        style={styles.retryButton}
+                        onPress={() => dispatch(Hall())}
+                    >
+                        <Text style={styles.retryButtonText}>Thử lại</Text>
+                    </TouchableOpacity>
+                </View>
+            );
+        }
+
+        const filteredHallData = HallData.filter(
+            (item) => item && item._id && typeof item._id === 'string'
+        );
+
+        if (!filteredHallData.length) {
+            return (
+                <View style={styles.emptyContainer}>
+                    <Text style={styles.emptyText}>Không tìm thấy sảnh nào!</Text>
+                </View>
+            );
+        }
+
+        return (
+            <FlatList
+                data={filteredHallData}
+                renderItem={renderHallItem}
+                keyExtractor={(item) => item._id.toString()}
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={styles.flatListContent}
+                style={styles.flatList}
+            />
+        );
+    }, [HallData, HallStatus, loading, user, dispatch, renderHallItem]);
+
+    if (contextLoading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                {renderLoading()}
+            </SafeAreaView>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
+
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
                     <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
@@ -61,27 +169,10 @@ const AllLobyy = ({ navigation }) => {
                 </TouchableOpacity>
             </View>
 
-            {HallStatus === 'loading' && renderLoading()}
-
-            {HallStatus === 'succeeded' && (
-                <FlatList
-                    data={HallData}
-                    renderItem={renderHallItem}
-                    keyExtractor={item => item._id.toString()}
-                    showsVerticalScrollIndicator={false}
-                    contentContainerStyle={styles.flatListContent}
-                    style={styles.flatList}
-                />
-            )}
-
-            {HallStatus === 'failed' && (
-                <View style={styles.errorContainer}>
-                    <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
-                </View>
-            )}
-        </View>
+            {renderContent()}
+        </SafeAreaView>
     );
-}
+};
 
 export default AllLobyy;
 
@@ -91,7 +182,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         width: '100%',
-        paddingTop: 30,
+       
         paddingBottom: 10,
         paddingHorizontal: 10,
     },

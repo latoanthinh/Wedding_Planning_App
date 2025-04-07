@@ -1,20 +1,19 @@
-import React, { useEffect, useState } from 'react';
-import { 
-  View, 
-  FlatList, 
-  TouchableOpacity, 
-  Image, 
-  ActivityIndicator, 
-  StyleSheet, 
-  TextInput, 
-  Text, 
+import React, { useEffect, useState, useCallback, useContext } from 'react';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  TextInput,
+  Text,
   StatusBar,
   Platform,
   RefreshControl,
   Animated,
   Dimensions,
   useWindowDimensions,
-  LogBox
+  LogBox,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
@@ -25,41 +24,24 @@ import moment from 'moment';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import 'moment/locale/vi'; // Import Vietnamese locale
 import RenderHTML from 'react-native-render-html';
-import LoadingIndicator from '../components/LoadingIndicator';
-
+import Lottie from 'lottie-react-native'; // Thêm Lottie cho loading
+import { AppContext } from '../AppContext'; // Thêm AppContext
 
 // Bỏ qua các cảnh báo về defaultProps từ react-native-render-html
 LogBox.ignoreLogs([
   'Support for defaultProps will be removed from function components in a future major release',
-  'Support for defaultProps will be removed from memo components in a future major release'
+  'Support for defaultProps will be removed from memo components in a future major release',
 ]);
 
 const { width } = Dimensions.get('window');
-
-// Custom image renderer to fix the defaultProps warning
-const CustomImageRenderer = (props) => {
-  const { 
-    Renderer, 
-    rendererProps 
-  } = useInternalRenderer('img', props);
-  
-  // Đảm bảo rằng enableExperimentalPercentWidth và contentWidth được truyền vào
-  const enhancedProps = {
-    ...rendererProps,
-    enableExperimentalPercentWidth: true
-  };
-  
-  return <Renderer {...enhancedProps} />;
-};
 
 const Blog = () => {
   const dispatch = useDispatch();
   const navigation = useNavigation();
   const { width: screenWidth } = useWindowDimensions();
-  
-  // Get state from Redux store
-  const { blogData, blogStatus, error } = useSelector((state) => state.blog);
-  
+  const { user, isLoading: contextLoading } = useContext(AppContext); // Lấy user từ AppContext
+
+  const { blogData = [], blogStatus, error } = useSelector((state) => state.blog);
   const [searchQuery, setSearchQuery] = useState('');
   const [refreshing, setRefreshing] = useState(false);
   const [fadeAnim] = useState(new Animated.Value(0));
@@ -67,19 +49,37 @@ const Blog = () => {
   // Set moment locale to Vietnamese
   moment.locale('vi');
 
+  // Kiểm tra user khi component mount hoặc user thay đổi
   useEffect(() => {
+    if (!contextLoading && !user) {
+      console.log('User không tồn tại, không tải dữ liệu');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
+    }
+  }, [user, contextLoading, navigation]);
+
+  // Gọi API lấy dữ liệu blog
+  useEffect(() => {
+    if (!user) return;
+
     console.log('Dispatching fetchBlogs');
     loadBlogsData();
-    
+
     // Start fade-in animation
     Animated.timing(fadeAnim, {
       toValue: 1,
       duration: 800,
       useNativeDriver: true,
     }).start();
-  }, [dispatch]);
 
-  // Function to fetch blogs data
+    return () => {
+      setSearchQuery('');
+      setRefreshing(false);
+    };
+  }, [dispatch, user]);
+
   const loadBlogsData = () => {
     dispatch(fetchBlogs())
       .then(result => {
@@ -89,213 +89,185 @@ const Blog = () => {
       .catch(err => console.error('fetchBlogs error:', err));
   };
 
-  // Handle pull-to-refresh
   const onRefresh = () => {
+    if (!user) return;
     setRefreshing(true);
     dispatch(fetchBlogs())
-      .finally(() => {
-        setRefreshing(false);
-      });
+      .finally(() => setRefreshing(false));
   };
 
-  // Filter blogs based on search query
-  const filteredBlogs = blogData?.filter((blog) =>
+  const filteredBlogs = blogData.filter((blog) =>
     blog?.title?.toLowerCase().includes(searchQuery.toLowerCase())
   ) || [];
 
-  // Format date
   const formatDate = (dateString) => {
     return moment(dateString).format('DD MMM, YYYY');
   };
 
-  // Function to create a truncated HTML snippet from content
   const createContentSnippet = (content, maxLength = 150) => {
     if (!content) return '';
-    
-    // Check if content is HTML
     const isHtml = content.includes('<') && content.includes('>');
-    
     if (isHtml) {
-      // More robust HTML stripping with regex
       const strippedContent = content
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '') // Remove scripts
-        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')   // Remove styles
-        .replace(/<[^>]*>/g, '')                                           // Remove HTML tags
-        .replace(/&nbsp;/g, ' ')                                           // Replace &nbsp; with space
-        .replace(/\s\s+/g, ' ')                                            // Replace multiple spaces with one
+        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+        .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/ /g, ' ')
+        .replace(/\s\s+/g, ' ')
         .trim();
-      
       const truncated = strippedContent.substring(0, maxLength);
       return truncated + (truncated.length < strippedContent.length ? '...' : '');
     }
-    
-    // Plain text handling
     return content.substring(0, maxLength) + (content.length > maxLength ? '...' : '');
   };
 
-  // Function to create a safe HTML snippet for RenderHTML
   const createHtmlSnippet = (content, maxLength = 200) => {
     if (!content) return '';
-    
-    // First paragraph extraction - often better than just truncating HTML
     let firstPara = '';
     const paraMatch = content.match(/<p[^>]*>(.*?)<\/p>/i);
-    
     if (paraMatch && paraMatch[1]) {
-      // Use the first paragraph as the snippet
       firstPara = paraMatch[0];
     } else {
-      // Fall back to a reasonable truncation
       firstPara = content.substring(0, maxLength);
-      
-      // Make sure we're not cutting in the middle of an HTML tag
       const lastOpenBracket = firstPara.lastIndexOf('<');
       const lastCloseBracket = firstPara.lastIndexOf('>');
-      
       if (lastOpenBracket > lastCloseBracket) {
         firstPara = firstPara.substring(0, lastOpenBracket);
       }
-      
       firstPara += '...';
     }
-    
-    // Wrap in a div to ensure valid HTML
     return `<div>${firstPara}</div>`;
   };
 
-  // Render each blog item
-  const renderItem = ({ item, index }) => {
-    // Check for valid data before rendering
-    if (!item || typeof item !== 'object') {
-      console.error('Invalid blog item:', item);
-      return null;
-    }
-    
-    // Ensure all required properties are valid
-    const slug = item.slug ? item.slug.toString() : '';
-    const title = item.title ? item.title.toString() : 'Bài viết không tiêu đề';
-    const content = item.content ? item.content.toString() : '';
-    const coverImage = item.coverImage || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog';
-    const category = item.category || 'Blog';
-    
-    // Create content snippet for summary
-    const contentSnippet = createContentSnippet(content);
-    
-    // Check if content is HTML
-    const isHtml = content.includes('<') && content.includes('>');
-    
-    // Alternating layouts for visual interest
-    const isEven = index % 2 === 0;
-    
-    return (
-      <Animated.View 
-        style={[
-          styles.animatedContainer, 
-          { 
-            opacity: fadeAnim,
-            transform: [
-              { 
-                translateY: fadeAnim.interpolate({
-                  inputRange: [0, 1],
-                  outputRange: [50, 0],
-                })
-              }
-            ]
-          }
-        ]}
-      >
-        <TouchableOpacity
-          style={[styles.blogItem, isEven ? styles.blogItemEven : styles.blogItemOdd]}
-          onPress={() => navigation.navigate('BlogDetail', { slug })}
-          activeOpacity={0.7}
+  const renderItem = useCallback(
+    ({ item, index }) => {
+      if (!user || !item || !item._id) {
+        console.error('Invalid blog item:', item);
+        return null;
+      }
+
+      const slug = item.slug ? item.slug.toString() : '';
+      const title = item.title ? item.title.toString() : 'Bài viết không tiêu đề';
+      const content = item.content ? item.content.toString() : '';
+      const coverImage = item.coverImage || 'https://via.placeholder.com/800x600/EDEFF1/333333?text=Wedding+Blog';
+      const category = item.category || 'Blog';
+      const contentSnippet = createContentSnippet(content);
+      const isHtml = content.includes('<') && content.includes('>');
+      const isEven = index % 2 === 0;
+
+      return (
+        <Animated.View
+          style={[
+            styles.animatedContainer,
+            {
+              opacity: fadeAnim,
+              transform: [
+                {
+                  translateY: fadeAnim.interpolate({
+                    inputRange: [0, 1],
+                    outputRange: [50, 0],
+                  }),
+                },
+              ],
+            },
+          ]}
         >
-          <View style={styles.imageWrapper}>
-            <SharedElement id={`blog.${slug}.image`}>
-              <Image 
-                source={{ uri: coverImage }} 
-                style={styles.coverImage} 
-                resizeMode="cover"
-              />
-            </SharedElement>
-            
-            {/* Category badge */}
-            <View style={styles.categoryBadge}>
-              <Text style={styles.categoryText}>{category}</Text>
-            </View>
-          </View>
-          
-          <View style={styles.contentContainer}>
-            <Text style={styles.title} numberOfLines={2}>{title}</Text>
-            
-            {/* Summary with RenderHTML for HTML content */}
-            <View style={styles.summaryContainer}>
-              {isHtml ? (
-                <View style={{height: 50, overflow: 'hidden'}}>
-                  <RenderHTML
-                    contentWidth={screenWidth - 88} // Adjust for padding
-                    source={{ html: createHtmlSnippet(content) }}
-                    tagsStyles={{
-                      body: styles.htmlSummaryBody,
-                      p: styles.htmlSummaryText,
-                      div: styles.htmlSummaryText,
-                    }}
-                    defaultTextProps={{
-                      numberOfLines: 2,
-                      style: {
-                        fontFamily: 'Playfair_me',
-                      },
-                    }}
-                    renderersProps={{
-                      img: {
-                        contentWidth: screenWidth - 88,
-                        enableExperimentalPercentWidth: true
-                      }
-                    }}
-                  />
-                </View>
-              ) : (
-                <Text style={styles.summary} numberOfLines={2}>
-                  {contentSnippet}
-                </Text>
-              )}
-            </View>
-            
-            <View style={styles.metaContainer}>
-              {item.created_at && (
-                <View style={styles.metaItem}>
-                  <AntDesign name="calendar" size={14} color="#888" />
-                  <Text style={styles.metaText}>
-                    {formatDate(item.created_at)}
-                  </Text>
-                </View>
-              )}
-              {item.author && (
-                <View style={styles.metaItem}>
-                  <AntDesign name="user" size={14} color="#888" />
-                  <Text style={styles.metaText}>
-                    {typeof item.author === 'object' ? item.author.name || 'Không rõ tác giả' : item.author.toString()}
-                  </Text>
-                </View>
-              )}
-              
-              {/* Read more link */}
-              <View style={styles.readMoreContainer}>
-                <Text style={styles.readMoreText}>Đọc tiếp</Text>
-                <AntDesign name="arrowright" size={14} color="#FF6B6B" />
+          <TouchableOpacity
+            style={[styles.blogItem, isEven ? styles.blogItemEven : styles.blogItemOdd]}
+            onPress={() => navigation.navigate('BlogDetail', { slug })}
+            activeOpacity={0.7}
+          >
+            <View style={styles.imageWrapper}>
+              <SharedElement id={`blog.${slug}.image`}>
+                <Image
+                  source={{ uri: coverImage }}
+                  style={styles.coverImage}
+                  resizeMode="cover"
+                />
+              </SharedElement>
+              <View style={styles.categoryBadge}>
+                <Text style={styles.categoryText}>{category}</Text>
               </View>
             </View>
-          </View>
-        </TouchableOpacity>
-      </Animated.View>
-    );
-  };
+            <View style={styles.contentContainer}>
+              <Text style={styles.title} numberOfLines={2}>{title}</Text>
+              <View style={styles.summaryContainer}>
+                {isHtml ? (
+                  <View style={{ height: 50, overflow: 'hidden' }}>
+                    <RenderHTML
+                      contentWidth={screenWidth - 88}
+                      source={{ html: createHtmlSnippet(content) }}
+                      tagsStyles={{
+                        body: styles.htmlSummaryBody,
+                        p: styles.htmlSummaryText,
+                        div: styles.htmlSummaryText,
+                      }}
+                      defaultTextProps={{
+                        numberOfLines: 2,
+                        style: { fontFamily: 'Playfair_me' },
+                      }}
+                      renderersProps={{
+                        img: { contentWidth: screenWidth - 88, enableExperimentalPercentWidth: true },
+                      }}
+                    />
+                  </View>
+                ) : (
+                  <Text style={styles.summary} numberOfLines={2}>{contentSnippet}</Text>
+                )}
+              </View>
+              <View style={styles.metaContainer}>
+                {item.created_at && (
+                  <View style={styles.metaItem}>
+                    <AntDesign name="calendar" size={14} color="#888" />
+                    <Text style={styles.metaText}>{formatDate(item.created_at)}</Text>
+                  </View>
+                )}
+                {item.author && (
+                  <View style={styles.metaItem}>
+                    <AntDesign name="user" size={14} color="#888" />
+                    <Text style={styles.metaText}>
+                      {typeof item.author === 'object' ? item.author.name || 'Không rõ tác giả' : item.author.toString()}
+                    </Text>
+                  </View>
+                )}
+                <View style={styles.readMoreContainer}>
+                  <Text style={styles.readMoreText}>Đọc tiếp</Text>
+                  <AntDesign name="arrowright" size={14} color="#FF6B6B" />
+                </View>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </Animated.View>
+      );
+    },
+    [user, navigation, screenWidth, fadeAnim]
+  );
 
-  // Render loading state
-  if (blogStatus === 'loading' && !refreshing) {
-    return <LoadingIndicator text="Đang tải bài viết..." />;
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <Lottie
+        source={require('../Assets/Animations/blackloading.json')}
+        autoPlay
+        loop
+        style={styles.loadingAnimation}
+      />
+      <Text style={styles.loadingText}>Đang tải bài viết...</Text>
+    </View>
+  );
+
+  if (contextLoading || (blogStatus === 'loading' && !refreshing)) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
+        {renderLoading()}
+      </SafeAreaView>
+    );
   }
 
-  // Render error state
+  if (!user) {
+    return null;
+  }
+
   if (blogStatus === 'failed' && !blogData.length) {
     return (
       <SafeAreaView style={styles.errorContainer}>
@@ -303,33 +275,31 @@ const Blog = () => {
         <View style={styles.errorContent}>
           <Image source={require('../Assets/Images/error.png')} style={{ width: 80, height: 80, marginBottom: 16 }} />
           <Text style={styles.errorTitle}>Không thể tải dữ liệu bài viết</Text>
-          <Text style={styles.errorText}>{error}</Text>
+          <Text style={styles.errorText}>{error || 'Có lỗi xảy ra'}</Text>
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.retryButton}
               onPress={() => dispatch(fetchBlogs())}
             >
               <Text style={styles.retryButtonText}>Thử lại</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.retryButton, styles.checkButton]}
               onPress={() => {
-                // Import API_BASE_URL from BlogSlice
                 const { API_BASE_URL } = require('../redux/BlogSlice');
                 console.log('Checking connection to:', API_BASE_URL);
-                // Show alert with connection info and debugging tips
                 alert(
                   'Thông tin kết nối:\n\n' +
                   `Server hiện tại: ${API_BASE_URL}\n\n` +
                   'Đảm bảo rằng:\n' +
                   '1. Server đang chạy trên đúng cổng\n' +
                   '2. Thiết bị của bạn và server cùng một mạng LAN\n' +
-                  '3. Nếu đang dùng thiết bị thật, hãy sửa IP của server trong BlogSlice.js\n' +
+                  '3. Nếu dùng thiết bị thật, sửa IP của server trong BlogSlice.js\n' +
                   '4. API trả về đúng cấu trúc dữ liệu (status: true, data: [...])\n' +
-                  '\n\nTips:\n' +
+                  '\nTips:\n' +
                   '- Thử ping tới server từ thiết bị\n' +
                   '- Tắt tường lửa trên máy chủ\n' +
-                  '- Kiểm tra API trực tiếp qua trình duyệt'
+                  '- Kiểm tra API qua trình duyệt'
                 );
               }}
             >
@@ -341,7 +311,6 @@ const Blog = () => {
     );
   }
 
-  // Render empty state when no blogs are available
   if (!blogData || blogData.length === 0) {
     return (
       <SafeAreaView style={styles.emptyContainer}>
@@ -350,7 +319,7 @@ const Blog = () => {
           <Image source={require('../Assets/Images/mask.png')} style={{ width: 100, height: 100, marginBottom: 16, opacity: 0.7 }} />
           <Text style={styles.emptyTitle}>Không có bài viết nào</Text>
           <Text style={styles.emptyText}>Hiện chưa có bài viết nào được đăng tải. Vui lòng quay lại sau.</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.retryButton}
             onPress={() => dispatch(fetchBlogs())}
           >
@@ -361,33 +330,27 @@ const Blog = () => {
     );
   }
 
-  // Main render with blog list
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
-      {/* Header */}
-      <SafeAreaView style={styles.safeHeader}>
-        <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.headerButton} 
-            onPress={() => navigation.navigate('TabNavigation')}
-            activeOpacity={0.6}
-          >
-            <AntDesign name="arrowleft" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Blog Và Xu Hướng</Text>
-          <TouchableOpacity 
-            style={styles.headerButton} 
-            onPress={() => navigation.navigate('TabNavigation')}
-            activeOpacity={0.6}
-          >
-           <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-          </TouchableOpacity>
-        </View>
-      </SafeAreaView>
-      
-      {/* Search bar */}
+      <View style={styles.header}>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <AntDesign name="arrowleft" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Blog Và Xu Hướng</Text>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.searchContainer}>
         <AntDesign name="search1" size={18} color="#AAA" style={styles.searchIcon} />
         <TextInput
@@ -403,8 +366,7 @@ const Blog = () => {
           </TouchableOpacity>
         )}
       </View>
-      
-      {/* Blog list */}
+
       <FlatList
         data={filteredBlogs}
         keyExtractor={(item) => item._id || item.id || item.slug || Math.random().toString()}
@@ -422,11 +384,11 @@ const Blog = () => {
         ListEmptyComponent={
           searchQuery.length > 0 ? (
             <View style={styles.noResultsContainer}>
-              <AntDesign name="search1" size={40} color="#DDD" style={{marginBottom: 16}} />
+              <AntDesign name="search1" size={40} color="#DDD" style={{ marginBottom: 16 }} />
               <Text style={styles.noResultsText}>
                 Không tìm thấy kết quả cho "{searchQuery}"
               </Text>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.clearSearchButton}
                 onPress={() => setSearchQuery('')}
               >
@@ -436,7 +398,7 @@ const Blog = () => {
           ) : null
         }
       />
-    </View>
+    </SafeAreaView>
   );
 };
 
@@ -452,15 +414,6 @@ const styles = StyleSheet.create({
   animatedContainer: {
     width: '100%',
   },
-  safeHeader: {
-    backgroundColor: '#FFFFFF',
-    zIndex: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 4,
-  },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -469,6 +422,7 @@ const styles = StyleSheet.create({
     paddingVertical: Platform.OS === 'ios' ? 12 : 16,
     borderBottomWidth: 1,
     borderBottomColor: '#F0EAE3',
+    backgroundColor: '#FFFFFF',
   },
   headerTitle: {
     fontSize: 22,
@@ -534,12 +488,8 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#F0EAE3',
   },
-  blogItemEven: {
-    // Even items styling
-  },
-  blogItemOdd: {
-    // Odd items styling
-  },
+  blogItemEven: {},
+  blogItemOdd: {},
   imageWrapper: {
     position: 'relative',
   },
@@ -627,17 +577,15 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginRight: 5,
   },
-  
-  // Loading state styles
   loadingContainer: {
-    flex: 1,
-    backgroundColor: '#FBF9F6',
-  },
-  loadingContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    backgroundColor: '#FBF9F6',
+  },
+  loadingAnimation: {
+    width: 100,
+    height: 100,
   },
   loadingText: {
     marginTop: 16,
@@ -645,8 +593,6 @@ const styles = StyleSheet.create({
     color: '#666',
     fontFamily: 'Playfair_me',
   },
-  
-  // Error state styles
   errorContainer: {
     flex: 1,
     backgroundColor: '#FBF9F6',
@@ -701,8 +647,6 @@ const styles = StyleSheet.create({
   checkButton: {
     backgroundColor: '#5D5F82',
   },
-  
-  // Empty state styles
   emptyContainer: {
     flex: 1,
     backgroundColor: '#FBF9F6',
@@ -730,8 +674,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
     maxWidth: width * 0.8,
   },
-  
-  // No results styles
   noResultsContainer: {
     padding: 40,
     alignItems: 'center',
@@ -758,8 +700,6 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontFamily: 'Playfair_me',
   },
-  
-  // HTML styles for summary
   htmlSummaryBody: {
     color: '#666',
     fontFamily: 'Playfair_me',

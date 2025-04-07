@@ -1,56 +1,75 @@
-import React, { useContext, useEffect } from 'react'
-import { NavigationContainer } from '@react-navigation/native'
-import { GuestStackNavigation, StackNavigation } from './StackNavigation'
-import { BackHandler, ToastAndroid } from 'react-native'
-import { AppContext } from '../AppContext'
-
-
-
+import React, { useContext, useEffect, useCallback, useState } from 'react';
+import { NavigationContainer } from '@react-navigation/native';
+import { GuestStackNavigation, StackNavigation } from './StackNavigation';
+import { BackHandler, ToastAndroid, ActivityIndicator, View, StyleSheet } from 'react-native';
+import { AppContext } from '../AppContext';
 
 const Appnavigation = () => {
-  const { user } = useContext(AppContext)
-  
-  // Handle app exit when pressing back at the root of the navigation
-  useEffect(() => {
-    let backPressedOnceToExit = false;
-    
-    const handleBackPress = () => {
-      // Check if we're at the root navigation level
-      // This is a simplified check that assumes we have a global navigation ref
-      // The actual implementation within screens will use our HOC
-      
-      if (backPressedOnceToExit) {
-        // If already pressed once, exit the app
-        BackHandler.exitApp();
-        return true;
-      }
-      
-      // First time pressing back at root, show toast
-      backPressedOnceToExit = true;
-      ToastAndroid.show('Nhấn back lần nữa để thoát ứng dụng', ToastAndroid.SHORT);
-      
-      // Reset the flag after a delay
-      setTimeout(() => {
-        backPressedOnceToExit = false;
-      }, 2000);
-      
-      return true;
-    };
-    
-    // Add the event listener for the root level handler
-    // This only triggers if no other handler intercepts the back press
-    const backHandler = BackHandler.addEventListener('hardwareBackPress', handleBackPress);
-    
-    return () => backHandler.remove();
-  }, []);
+    const { user } = useContext(AppContext);
+    const [isLoading, setIsLoading] = useState(true);
 
-  return (
-    <NavigationContainer>
-      {
-        user ? <StackNavigation /> : <GuestStackNavigation />
-      }
-    </NavigationContainer>
-  )
-}
+    // Chờ user được cập nhật
+    useEffect(() => {
+        const checkUser = async () => {
+            setTimeout(() => {
+                setIsLoading(false);
+            }, 500); // Đợi 500ms để đảm bảo user được cập nhật
+        };
+        checkUser();
+    }, []);
 
-export default Appnavigation
+    const handleBackPress = useCallback(() => {
+        let backPressedOnceToExit = false;
+        let timeoutId = null;
+
+        return () => {
+            if (backPressedOnceToExit) {
+                BackHandler.exitApp();
+                return true;
+            }
+
+            backPressedOnceToExit = true;
+            ToastAndroid.show('Nhấn back lần nữa để thoát ứng dụng', ToastAndroid.SHORT);
+
+            timeoutId = setTimeout(() => {
+                backPressedOnceToExit = false;
+            }, 2000);
+
+            return true;
+        };
+    }, []);
+
+    useEffect(() => {
+        const backHandlerFn = handleBackPress();
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backHandlerFn);
+
+        return () => {
+            backHandler.remove();
+        };
+    }, [handleBackPress]);
+
+    if (isLoading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <ActivityIndicator size="large" color="#200000" />
+            </View>
+        );
+    }
+
+    return (
+        <NavigationContainer>
+            {user ? <StackNavigation /> : <GuestStackNavigation />}
+        </NavigationContainer>
+    );
+};
+
+export default Appnavigation;
+
+const styles = StyleSheet.create({
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#F7F9FC',
+    },
+});

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import { useSelector } from "react-redux";
 import { SafeAreaView } from "react-native-safe-area-context";
+import { AppContext } from "../AppContext"; // Thêm AppContext
+import Lottie from 'lottie-react-native'; // Thêm Lottie cho loading
 
 const { height, width } = Dimensions.get("window");
 const scale = width / 375;
@@ -20,10 +22,23 @@ const normalize = (size) => Math.round(scale * size);
 
 const GenPlan = ({ navigation, route }) => {
   const { params } = route;
-  const { plans } = useSelector((state) => state.khaosat);
+  const { plans = [] } = useSelector((state) => state.khaosat);
+  const { user, isLoading: contextLoading } = useContext(AppContext); // Lấy user từ AppContext
 
-  console.log("Params in GenPlan:", params);
-  console.log("Plans in GenPlan:", plans);
+  useEffect(() => {
+    if (!contextLoading && !user) {
+      console.log('User không tồn tại, không tải dữ liệu');
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
+    }
+  }, [user, contextLoading, navigation]);
+
+  useEffect(() => {
+    console.log("Params in GenPlan:", params);
+    console.log("Plans in GenPlan:", plans);
+  }, [params, plans]);
 
   const calculateTotalPrice = (plan, guestCount) => {
     const sanhPrice = plan.SanhId?.price ? parseFloat(plan.SanhId.price) : 0;
@@ -50,62 +65,126 @@ const GenPlan = ({ navigation, route }) => {
   const formatSimplePrice = (num) =>
     num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") + " VNĐ" || "0 VNĐ";
 
-  const renderServiceItem = ({ item }) => (
-    <View style={styles.serviceItem}>
-      <Text style={styles.serviceItemText}>• {item}</Text>
+  const renderServiceItem = useCallback(
+    ({ item }) => (
+      <View style={styles.serviceItem}>
+        <Text style={styles.serviceItemText}>• {item}</Text>
+      </View>
+    ),
+    []
+  );
+
+  const renderPlan = useCallback(
+    ({ item }) => {
+      if (!user || !item || !item._id) return null;
+
+      const planDataWithParams = {
+        ...item,
+        eventDate: params?.eventDate,
+        guestCount: params?.guestCount,
+        budget: params?.budget,
+        isCopy: item.isCopy || false,
+        originalPlanId: item.originalPlanId || item._id,
+      };
+
+      const allServices = [
+        ...(item.caterings?.map((c) => c.name) || []),
+        ...(item.decorates?.map((d) => d.name) || []),
+        ...(item.presents?.map((p) => p.name) || []),
+      ].filter(Boolean);
+
+      return (
+        <View style={styles.planCard}>
+          <View style={styles.planContent}>
+            <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.planPrice}>{formatPrice(item, params?.guestCount)}</Text>
+            </View>
+            <Text style={styles.planText}>
+              Sức chứa: {item.SanhId?.SoLuongKhach || "Không xác định"}
+            </Text>
+            <View style={styles.planServices}>
+              <Text style={styles.planServiceTitle}>Dịch vụ:</Text>
+              {allServices.length > 0 ? (
+                <FlatList
+                  data={allServices}
+                  renderItem={renderServiceItem}
+                  keyExtractor={(service, index) => `${item._id}-${index}`}
+                  scrollEnabled={false}
+                />
+              ) : (
+                <Text style={styles.noServiceText}>Không có dịch vụ</Text>
+              )}
+            </View>
+            <TouchableOpacity
+              style={styles.detailButtonContainer}
+              onPress={() => navigation.navigate("DetailPlan", { planData: planDataWithParams, fromGenPlan: true })}
+            >
+              <Text style={styles.detailButton}>Xem chi tiết</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      );
+    },
+    [navigation, user, params, renderServiceItem]
+  );
+
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <Lottie
+        source={require('../Assets/Animations/blackloading.json')}
+        autoPlay
+        loop
+        style={styles.loadingAnimation}
+      />
+      <Text style={styles.loadingText}>Đang tải...</Text>
     </View>
   );
 
-  const renderPlan = ({ item }) => {
-    const planDataWithParams = {
-      ...item,
-      eventDate: params?.eventDate,
-      guestCount: params?.guestCount,
-      budget: params?.budget,
-      isCopy: item.isCopy || false,
-      originalPlanId: item.originalPlanId || item._id,
-    };
+  const renderContent = useCallback(() => {
+    if (!user) return null;
 
-    // Gộp tất cả tên của các dịch vụ
-    const allServices = [
-      ...(item.caterings?.map((c) => c.name) || []),
-      ...(item.decorates?.map((d) => d.name) || []),
-      ...(item.presents?.map((p) => p.name) || []),
-    ].filter(Boolean);
+    if (contextLoading) return renderLoading();
 
-    return (
-      <View style={styles.planCard}>
-        <View style={styles.planContent}>
-          <Text style={styles.planName}>{item.name || "Sảnh không xác định"}</Text>
-          <View style={styles.priceContainer}>
-            <Text style={styles.planPrice}>{formatPrice(item, params?.guestCount)}</Text>
-          </View>
-          <Text style={styles.planText}>
-            Sức chứa: {item.SanhId?.SoLuongKhach || "Không xác định"}
-          </Text>
-          <View style={styles.planServices}>
-            <Text style={styles.planServiceTitle}>Dịch vụ:</Text>
-            {allServices.length > 0 ? (
-              <FlatList
-                data={allServices}
-                renderItem={renderServiceItem}
-                keyExtractor={(service, index) => `${item._id}-${index}`}
-                scrollEnabled={false}
-              />
-            ) : (
-              <Text style={styles.noServiceText}>Không có dịch vụ</Text>
-            )}
-          </View>
+    const filteredPlans = plans.filter((item) => item && item._id && typeof item._id === 'string');
+
+    if (!filteredPlans.length) {
+      return (
+        <View style={styles.noPlansContainer}>
+          <Image source={require('../Assets/Images/error.png')} style={styles.emptyIcon} />
+          <Text style={styles.noPlansText}>Không có kế hoạch phù hợp với yêu cầu của bạn</Text>
           <TouchableOpacity
-            style={styles.detailButtonContainer}
-            onPress={() => navigation.navigate("DetailPlan", { planData: planDataWithParams, fromGenPlan: true })}
+            style={styles.retryButton}
+            onPress={() => navigation.navigate("Thongtincoban")}
           >
-            <Text style={styles.detailButton}>Xem chi tiết</Text>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
           </TouchableOpacity>
         </View>
-      </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={filteredPlans}
+        renderItem={renderPlan}
+        keyExtractor={(item) => item._id.toString()}
+        style={styles.planList}
+        scrollEnabled={false}
+      />
     );
-  };
+  }, [plans, user, contextLoading, navigation, renderPlan]);
+
+  if (contextLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderLoading()}
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -149,26 +228,7 @@ const GenPlan = ({ navigation, route }) => {
             <Text style={styles.sectionTitle}>Danh sách Combo gợi ý</Text>
           </View>
 
-          {plans.length > 0 ? (
-            <FlatList
-              data={plans}
-              renderItem={renderPlan}
-              keyExtractor={(item) => item._id.toString()}
-              style={styles.planList}
-              scrollEnabled={false}
-            />
-          ) : (
-            <View style={styles.noPlansContainer}>
-              <Image source={require('../Assets/Images/error.png')} style={styles.emptyIcon} />
-              <Text style={styles.noPlansText}>Không có kế hoạch phù hợp với yêu cầu của bạn</Text>
-              <TouchableOpacity
-                style={styles.retryButton}
-                onPress={() => navigation.navigate("Thongtincoban")}
-              >
-                <Text style={styles.retryButtonText}>Thử lại</Text>
-              </TouchableOpacity>
-            </View>
-          )}
+          {renderContent()}
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -390,6 +450,21 @@ const styles = StyleSheet.create({
     fontSize: normalize(16),
     textAlign: "center",
     fontFamily: "Playfair_me",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingAnimation: {
+    width: 100,
+    height: 100,
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: normalize(16),
+    color: '#555',
+    fontFamily: 'Playfair_me',
   },
 });
 

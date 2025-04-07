@@ -1,59 +1,93 @@
-import { StyleSheet, Text, View, Image, Pressable, FlatList, Dimensions, ActivityIndicator, Modal, TouchableWithoutFeedback, TouchableOpacity, Alert } from 'react-native';
-import React, { useEffect, useState, useMemo, useContext } from 'react';
+import { StyleSheet, Text, View, Image, Pressable, FlatList, Dimensions, ActivityIndicator, TouchableOpacity } from 'react-native';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Cate_decorates } from '../redux/Cate_decoratesSlice';
 import { getProductsByDecorates } from '../redux/DecoratesByCateSlice';
 import Lottie from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import { AppContext } from '../AppContext'; // Thêm AppContext
 
 const { width } = Dimensions.get('window');
 
 const formatPrice = (num) => {
-  return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' VNĐ' : '0';
+  return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ' VNĐ' : '0 VNĐ';
 };
 
 const DiaDiem_Screen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { Cate_decoratesData, Cate_decoratesStatus } = useSelector((state) => state.cate_decorates);
-  const { products, status } = useSelector((state) => state.decoratesbyCate);
+  const { Cate_decoratesData = [], Cate_decoratesStatus } = useSelector((state) => state.cate_decorates);
+  const { products = [], status } = useSelector((state) => state.decoratesbyCate);
+  const { user, isLoading: contextLoading } = useContext(AppContext); // Lấy user từ AppContext
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [selectedItem, setSelectedItem] = useState(null);
-  
+  const [loading, setLoading] = useState(false);
 
-  
-
+  // Kiểm tra user khi component mount hoặc user thay đổi
   useEffect(() => {
-    dispatch(Cate_decorates());
-  }, [dispatch]);
+    if (!contextLoading && !user) {
+      console.log('User không tồn tại, không tải dữ liệu');
+      setLoading(false);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
+    }
+  }, [user, contextLoading, navigation]);
 
+  // Gọi API lấy danh mục
   useEffect(() => {
+    if (!user) return;
+
+    const fetchCategories = async () => {
+      try {
+        await dispatch(Cate_decorates()).unwrap();
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách danh mục:', error);
+      }
+    };
+
+    fetchCategories();
+
+    return () => {
+      setSelectedCategoryId(null);
+    };
+  }, [dispatch, user]);
+
+  // Cập nhật selectedCategoryId khi danh sách danh mục thay đổi
+  useEffect(() => {
+    if (!user) return;
+
     if (Cate_decoratesStatus === 'succeeded' && Cate_decoratesData.length > 0 && !selectedCategoryId) {
       setSelectedCategoryId(Cate_decoratesData[0]._id);
     }
-  }, [Cate_decoratesData, Cate_decoratesStatus, selectedCategoryId]);
+  }, [Cate_decoratesData, Cate_decoratesStatus, selectedCategoryId, user]);
 
+  // Gọi API lấy sản phẩm khi selectedCategoryId thay đổi
   useEffect(() => {
-    if (selectedCategoryId) {
-      dispatch(getProductsByDecorates(selectedCategoryId));
-    }
-  }, [selectedCategoryId, dispatch]);
+    if (!user || !selectedCategoryId) return;
 
-  useEffect(() => {
-    if (status === 'succeeded' && products.length > 0) {
-      console.log('Products data structure:', JSON.stringify(products[0], null, 2));
-    }
-  }, [products, status]);
+    const fetchProducts = async () => {
+      try {
+        setLoading(true);
+        await dispatch(getProductsByDecorates(selectedCategoryId)).unwrap();
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách sản phẩm:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  
+    fetchProducts();
+
+    return () => {
+      setLoading(false);
+    };
+  }, [selectedCategoryId, dispatch, user]);
 
   const handleSelect = (id) => {
+    if (!user) return;
     if (id !== selectedCategoryId) setSelectedCategoryId(id);
   };
-
-
-
 
   const renderLoading = () => (
     <View style={styles.loadingContainer}>
@@ -62,49 +96,122 @@ const DiaDiem_Screen = ({ navigation }) => {
     </View>
   );
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('DecorDetail', { 
-      decorId: item._id
-    })}>
-      <View style={styles.itemContainer}>
-        <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
-        <View style={styles.itemInfo}>
-          <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+  const renderItem = useCallback(
+    ({ item }) => {
+      if (!user || !item || !item._id) return null;
+      return (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DecorDetail', { decorId: item._id })}
+        >
+          <View style={styles.itemContainer}>
+            <Image
+              source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+            <View style={styles.itemInfo}>
+              <Text style={styles.itemName} numberOfLines={1}>
+                {item.name || 'Unnamed Item'}
+              </Text>
+              <Text style={styles.itemPrice}>{formatPrice(item.price)}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [navigation, user]
   );
 
-  const renderCategoryItem = ({ item }) => (
-    <Pressable onPress={() => handleSelect(item._id)}>
-      <View style={[styles.categoryItem, selectedCategoryId === item._id && styles.selectedCategory]}>
-        <Text style={[styles.categoryText, selectedCategoryId === item._id && styles.selectedCategoryText]}>
-          {item.name}
-        </Text>
-      </View>
-    </Pressable>
+  const renderCategoryItem = useCallback(
+    ({ item }) => {
+      if (!user || !item || !item._id) return null;
+      return (
+        <Pressable onPress={() => handleSelect(item._id)}>
+          <View style={[styles.categoryItem, selectedCategoryId === item._id && styles.selectedCategory]}>
+            <Text style={[styles.categoryText, selectedCategoryId === item._id && styles.selectedCategoryText]}>
+              {item.name || 'Unnamed Category'}
+            </Text>
+          </View>
+        </Pressable>
+      );
+    },
+    [selectedCategoryId, user]
   );
+
+  const renderContent = () => {
+    if (!user) return null;
+
+    if (loading || status === 'loading') return renderLoading();
+    if (status === 'failed') {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => dispatch(getProductsByDecorates(selectedCategoryId))}
+          >
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const filteredProducts = products.filter(
+      (item) => item && item._id && typeof item._id === 'string'
+    );
+
+    if (!filteredProducts.length) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Không tìm thấy sản phẩm nào!</Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        numColumns={2}
+        data={filteredProducts}
+        renderItem={renderItem}
+        keyExtractor={(item) => item._id.toString()}
+        style={styles.productList}
+        contentContainerStyle={styles.productListContent}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  };
+
+  if (contextLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderLoading()}
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-                <TouchableOpacity 
-                  style={styles.headerButton} 
-                  onPress={() => navigation.navigate('TabNavigation')}
-                  activeOpacity={0.6}
-                >
-                  <AntDesign name="arrowleft" size={24} color="#333" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Trang Trí</Text>
-                <TouchableOpacity 
-                  style={styles.headerButton} 
-                  onPress={() => navigation.navigate('TabNavigation')}
-                  activeOpacity={0.6}
-                >
-                 <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-                </TouchableOpacity>
-              </View>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <AntDesign name="arrowleft" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Trang Trí</Text>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         horizontal
@@ -116,21 +223,7 @@ const DiaDiem_Screen = ({ navigation }) => {
         showsHorizontalScrollIndicator={false}
       />
 
-      {status === 'loading' ? (
-        renderLoading()
-      ) : (
-        <FlatList
-          numColumns={2}
-          data={products}
-          renderItem={renderItem}
-          keyExtractor={(item) => item._id.toString()}
-          style={styles.productList}
-          contentContainerStyle={styles.productListContent}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
-
-      
+      {renderContent()}
     </SafeAreaView>
   );
 };
@@ -170,15 +263,6 @@ const styles = StyleSheet.create({
   icon: {
     width: 24,
     height: 24,
-  },
-  icon_1: {
-    width: 20,
-    height: 15,
-  },
-  title: {
-    fontSize: 22,
-    fontFamily: 'Playfair_me',
-    color: '#000',
   },
   categoryList: {
     flexGrow: 0,
@@ -244,13 +328,6 @@ const styles = StyleSheet.create({
     color: '#000',
     marginBottom: 4,
   },
-  itemDescription: {
-    fontSize: 12,
-    color: '#000',
-    marginBottom: 6,
-    lineHeight: 16,
-    fontFamily: 'Playfair_me',
-  },
   itemPrice: {
     fontSize: 16,
     fontFamily: 'Playfair_me',
@@ -271,68 +348,36 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
     color: '#000',
   },
-  modalOverlay: {
+  errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
-  modalContent: {
-    width: '80%',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 20,
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    position: 'relative',
-  },
-  modalImage: {
-    width: '100%',
-    height: 200,
-    borderRadius: 8,
-    marginBottom: 15,
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontFamily: 'Playfair_me',
-    color: '#000',
-    fontWeight: '600',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  modalPrice: {
-    fontSize: 18,
-    fontFamily: 'Playfair_me',
-    color: 'red',
-    fontWeight: '700',
-    marginBottom: 10,
-  },
-  modalDescription: {
-    fontSize: 14,
-    fontFamily: 'Playfair_me',
-    color: '#555',
-    textAlign: 'center',
-    marginBottom: 20,
-  },
-  modalError: {
+  errorText: {
     fontSize: 16,
     color: '#FF3B30',
-    textAlign: 'center',
     marginBottom: 20,
   },
-  favoriteIcon: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    zIndex: 1,
-    padding: 5,
+  retryButton: {
+    backgroundColor: '#FF6F61',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 20,
+    elevation: 2,
   },
-  heartImage: {
-    width: 24,
-    height: 24,
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontFamily: 'Playfair_me',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    fontFamily: 'Playfair_me',
+    color: '#555',
   },
 });

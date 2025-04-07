@@ -1,236 +1,212 @@
-import React, { createContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useState, useEffect, useRef, useCallback } from 'react';
 import { Provider } from 'react-redux';
 import { store } from './redux/store';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { AppState } from 'react-native';
+import { AppState, ToastAndroid } from 'react-native';
 import { updateUserOnlineStatus, setCurrentUserStatus } from './redux/UserActivitySlice';
 import { connectSocketToAppContext } from './utils/socketAppContextIntegration';
 import socketService from './utils/socketService';
 
-// Create Context
 export const AppContext = createContext();
 
 export const AppContextProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [appLoaded, setAppLoaded] = useState(false);
-  const [theme, setTheme] = useState('light');
-  const [appState, setAppState] = useState(AppState.currentState);
-  const contextValueRef = useRef(null);
+    const [user, setUser] = useState(null);
+    const [isLoading, setIsLoading] = useState(false);
+    const [appLoaded, setAppLoaded] = useState(false);
+    const [theme, setTheme] = useState('light');
+    const [appState, setAppState] = useState(AppState.currentState);
+    const contextValueRef = useRef(null);
 
-  // Effect để cập nhật contextValueRef khi user hoặc các giá trị khác thay đổi
-  useEffect(() => {
-    // Cập nhật giá trị context
-    contextValueRef.current = {
-      user,
-      setUser,
-      isLoading,
-      setIsLoading,
-      login,
-      logout,
-      theme,
-      toggleTheme,
-      appLoaded,
-      setAppLoaded,
-      appState
-    };
-    
-    // Kết nối SocketService với AppContext khi user thay đổi
-    if (contextValueRef.current) {
-      connectSocketToAppContext(contextValueRef.current);
-    }
-  }, [user, isLoading, theme, appLoaded, appState]);
+    useEffect(() => {
+        contextValueRef.current = {
+            user,
+            setUser,
+            isLoading,
+            setIsLoading,
+            login,
+            logout,
+            theme,
+            toggleTheme,
+            appLoaded,
+            setAppLoaded,
+            appState,
+        };
 
-  useEffect(() => {
-    const checkUser = async () => {
-      try {
-        const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
-        if (isLoggedOut === 'true') {
-          console.log('Vừa đăng xuất, không khôi phục user');
-          setUser(null);
-          return;
-        }
+        console.log('AppContext useEffect triggered with user:', user ? user.name : 'No user');
+        connectSocketToAppContext(contextValueRef.current);
+    }, [user]);
 
-        const userData = await AsyncStorage.getItem('userData');
-        if (userData) {
-          console.log('Khôi phục user từ AsyncStorage');
-          const parsedUserData = JSON.parse(userData);
-          setUser(parsedUserData);
-          
-          // Khởi tạo SocketService với thông tin user
-          socketService.init(parsedUserData, false);
-        } else {
-          setUser(null);
-        }
-      } catch (error) {
-        console.error('Error checking user data:', error);
-        setUser(null);
-      }
-    };
+    useEffect(() => {
+        const checkUser = async () => {
+            try {
+                setIsLoading(true);
+                const isLoggedOut = await AsyncStorage.getItem('isLoggedOut');
+                if (isLoggedOut === 'true') {
+                    setUser(null);
+                    return;
+                }
 
-    checkUser();
-  }, []);
+                const userData = await AsyncStorage.getItem('userData');
+                if (userData) {
+                    const parsedUserData = JSON.parse(userData);
+                    setUser(parsedUserData);
+                } else {
+                    setUser(null);
+                }
+            } catch (error) {
+                console.error('Lỗi kiểm tra user:', error);
+                ToastAndroid.show('Không thể kiểm tra dữ liệu người dùng', ToastAndroid.SHORT);
+                setUser(null);
+            } finally {
+                setIsLoading(false);
+            }
+        };
 
-  useEffect(() => {
-    const requestInterceptor = axios.interceptors.request.use(
-      async (config) => {
+        checkUser();
+    }, []);
+
+    useEffect(() => {
+        const requestInterceptor = axios.interceptors.request.use(
+            async (config) => {
+                const token = await AsyncStorage.getItem('token');
+                if (token) {
+                    config.headers.Authorization = `Bearer ${token}`;
+                }
+                return config;
+            },
+            (error) => Promise.reject(error)
+        );
+
+        const responseInterceptor = axios.interceptors.response.use(
+            (response) => response,
+            async (error) => {
+                if (error.response?.status === 401) {
+                    console.log('Phiên đăng nhập hết hạn, ngắt kết nối socket');
+                    socketService.disconnect();
+                    await AsyncStorage.multiRemove(['token', 'userData']);
+                    setUser(null);
+                    ToastAndroid.show('Phiên đăng nhập hết hạn', ToastAndroid.SHORT);
+                }
+                return Promise.reject(error);
+            }
+        );
+
+        return () => {
+            axios.interceptors.request.eject(requestInterceptor);
+            axios.interceptors.response.eject(responseInterceptor);
+        };
+    }, []);
+
+    const login = useCallback(async (userData, token) => {
+        setIsLoading(true);
         try {
-          const token = await AsyncStorage.getItem('token');
-          if (token) {
-            config.headers.Authorization = `Bearer ${token}`;
-          }
+            await AsyncStorage.multiSet([
+                ['userData', JSON.stringify(userData)],
+                ['token', token],
+            ]);
+            await AsyncStorage.setItem('isLoggedOut', 'false');
+            setUser(userData);
+            ToastAndroid.show('Đăng nhập thành công', ToastAndroid.SHORT);
         } catch (error) {
-          console.error('Error getting token for request:', error);
+            console.error('Lỗi đăng nhập:', error);
+            ToastAndroid.show('Đăng nhập thất bại', ToastAndroid.SHORT);
+            throw new Error('Login failed');
+        } finally {
+            setIsLoading(false);
         }
-        return config;
-      },
-      (error) => Promise.reject(error)
-    );
+    }, []);
 
-    const responseInterceptor = axios.interceptors.response.use(
-      (response) => response,
-      async (error) => {
-        if (error.response && error.response.status === 401) {
-          await AsyncStorage.removeItem('token');
-          await AsyncStorage.removeItem('userData');
-          setUser(null);
-        }
-        return Promise.reject(error);
-      }
-    );
-
-    return () => {
-      axios.interceptors.request.eject(requestInterceptor);
-      axios.interceptors.response.eject(responseInterceptor);
-    };
-  }, []);
-
-  const login = async (userData, token) => {
-    try {
-      await AsyncStorage.setItem('userData', JSON.stringify(userData));
-      await AsyncStorage.setItem('token', token);
-      setUser(userData);
-      
-      // Khởi tạo SocketService với thông tin đăng nhập mới
-      socketService.init(userData, false);
-    } catch (error) {
-      console.error('Error logging in:', error);
-      throw new Error('Login failed');
-    }
-  };
-
-  const logout = async () => {
-    try {
-      console.log('Bắt đầu quá trình đăng xuất...');
-
-      // Ngắt kết nối SocketService
-      socketService.disconnect();
-
-      if (user && user._id) {
+    const logout = useCallback(async () => {
+        setIsLoading(true);
         try {
-          console.log('Setting user offline on logout');
-          store.dispatch(setCurrentUserStatus({
-            isOnline: false,
-            lastActive: new Date().toISOString()
-          }));
-          await store.dispatch(updateUserOnlineStatus({ 
-            userId: user._id, 
-            isOnline: false 
-          })).unwrap();
-          console.log('Updated offline status');
+            console.log('Đăng xuất, ngắt kết nối socket');
+            socketService.disconnect();
+
+            if (user?._id) {
+                store.dispatch(setCurrentUserStatus({
+                    isOnline: false,
+                    lastActive: new Date().toISOString(),
+                }));
+                await store.dispatch(updateUserOnlineStatus({
+                    userId: user._id,
+                    isOnline: false,
+                })).unwrap();
+            }
+
+            const rememberMe = await AsyncStorage.getItem('rememberMe');
+            const keysToRemove = ['token', 'userData'];
+            if (rememberMe !== 'true') {
+                keysToRemove.push('savedEmail', 'savedPassword', 'rememberMe');
+            }
+
+            await AsyncStorage.multiRemove(keysToRemove);
+            await AsyncStorage.setItem('isLoggedOut', 'true');
+            setUser(null);
+            ToastAndroid.show('Đăng xuất thành công', ToastAndroid.SHORT);
+            return true;
         } catch (error) {
-          console.error('Error updating status during logout:', error);
+            console.error('Lỗi đăng xuất:', error);
+            ToastAndroid.show('Đăng xuất thất bại, thử lại sau', ToastAndroid.SHORT);
+            const rememberMe = await AsyncStorage.getItem('rememberMe');
+            const keysToRemove = ['token', 'userData'];
+            if (rememberMe !== 'true') {
+                keysToRemove.push('savedEmail', 'savedPassword', 'rememberMe');
+            }
+            await AsyncStorage.multiRemove(keysToRemove);
+            await AsyncStorage.setItem('isLoggedOut', 'true');
+            setUser(null);
+            return true;
+        } finally {
+            setIsLoading(false);
         }
-      }
+    }, [user]);
 
-      // Kiểm tra trạng thái "Ghi nhớ"
-      const rememberMe = await AsyncStorage.getItem('rememberMe');
-      console.log('Trạng thái rememberMe:', rememberMe);
+    const toggleTheme = useCallback(async () => {
+        const newTheme = theme === 'light' ? 'dark' : 'light';
+        setTheme(newTheme);
+        await AsyncStorage.setItem('theme', newTheme);
+    }, [theme]);
 
-      // Danh sách các key sẽ xóa
-      const keysToRemove = ['token', 'userData'];
+    useEffect(() => {
+        const loadTheme = async () => {
+            try {
+                const savedTheme = await AsyncStorage.getItem('theme');
+                if (savedTheme) {
+                    setTheme(savedTheme);
+                }
+            } catch (error) {
+                ToastAndroid.show('Không thể tải theme', ToastAndroid.SHORT);
+            }
+        };
 
-      // Nếu không chọn "Ghi nhớ", xóa thêm thông tin tài khoản
-      if (rememberMe !== 'true') {
-        keysToRemove.push('savedEmail', 'savedPassword', 'rememberMe');
-      }
+        loadTheme();
+    }, []);
 
-      console.log('Xóa các key từ AsyncStorage:', keysToRemove);
-      await AsyncStorage.multiRemove(keysToRemove);
-      await AsyncStorage.setItem('isLoggedOut', 'true');
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', setAppState);
+        return () => subscription.remove();
+    }, []);
 
-      console.log('Đặt user state thành null...');
-      setUser(null);
-
-      console.log('Đăng xuất hoàn tất');
-      return true;
-    } catch (error) {
-      console.error('Error logging out:', error);
-      // Xử lý lỗi: vẫn đảm bảo xóa dữ liệu cần thiết
-      const rememberMe = await AsyncStorage.getItem('rememberMe');
-      const keysToRemove = ['token', 'userData'];
-      if (rememberMe !== 'true') {
-        keysToRemove.push('savedEmail', 'savedPassword', 'rememberMe');
-      }
-      await AsyncStorage.multiRemove(keysToRemove);
-      await AsyncStorage.setItem('isLoggedOut', 'true');
-      setUser(null);
-      return true;
-    }
-  };
-
-  const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    AsyncStorage.setItem('theme', newTheme);
-  };
-
-  useEffect(() => {
-    const loadTheme = async () => {
-      try {
-        const savedTheme = await AsyncStorage.getItem('theme');
-        if (savedTheme) {
-          setTheme(savedTheme);
-        }
-      } catch (error) {
-        console.error('Error loading theme:', error);
-      }
+    const contextValue = {
+        user,
+        setUser,
+        isLoading,
+        setIsLoading,
+        login,
+        logout,
+        theme,
+        toggleTheme,
+        appLoaded,
+        setAppLoaded,
+        appState,
     };
 
-    loadTheme();
-  }, []);
-
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      setAppState(nextAppState);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  // Create context value
-  const contextValue = {
-    user,
-    setUser,
-    isLoading,
-    setIsLoading,
-    login,
-    logout,
-    theme,
-    toggleTheme,
-    appLoaded,
-    setAppLoaded,
-    appState
-  };
-
-  return (
-    <AppContext.Provider value={contextValue}>
-      <Provider store={store}>
-        {children}
-      </Provider>
-    </AppContext.Provider>
-  );
+    return (
+        <AppContext.Provider value={contextValue}>
+            <Provider store={store}>
+                {children}
+            </Provider>
+        </AppContext.Provider>
+    );
 };

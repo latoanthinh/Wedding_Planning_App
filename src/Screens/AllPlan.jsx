@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
-import React, { useEffect, useCallback, useContext } from 'react';
+import React, { useEffect, useState, useCallback, useContext } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Plan } from '../redux/GetAllPlanSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -8,61 +8,84 @@ import { useBackHandler } from '../hooks/useBackHandler';
 
 const AllPlan = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { AllPlanData, AllPlanStatus, error } = useSelector((state) => state.plan);
-  const { user } = useContext(AppContext);
-  const userId = user._id;
+  const { AllPlanData = [], AllPlanStatus, error } = useSelector((state) => state.plan);
+  const { user, isLoading: contextLoading } = useContext(AppContext);
+  const userId = user?._id;
+  const [loading, setLoading] = useState(false);
 
   useBackHandler(navigation, 'TabNavigation', { screen: 'Setting' });
 
   useEffect(() => {
-    if (userId) {
-      dispatch(Plan(userId));
-    } else {
-      console.warn('Không có userId để lấy danh sách kế hoạch');
+    if (!contextLoading && !user) {
+      console.log('User không tồn tại, không tải dữ liệu');
+      setLoading(false);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
     }
+  }, [user, contextLoading, navigation]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const fetchPlans = async () => {
+      try {
+        setLoading(true);
+        await dispatch(Plan(userId)).unwrap();
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách kế hoạch:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPlans();
+
+    return () => {
+      setLoading(false);
+    };
   }, [dispatch, userId]);
 
-  const PlanCard = useCallback(({ item }) => {
-    return (
-      <TouchableOpacity
-        onPress={() => {
-          if (!item._id) {
-            return;
-          }
-          navigation.navigate("DetailPlan", { planId: item._id, fromGenPlan: false });
-        }}
-        style={styles.cardContainer}
-      >
-        <View style={styles.card}>
-          <View style={styles.cardHeader}>
-            <Text style={styles.productName}>{item.name || 'Kế hoạch không tên'}</Text>
-            <View style={[
-              styles.statusBadge,
-              { backgroundColor: getStatusColor(item.status) }
-            ]}>
-              <Text style={styles.statusText}>
-                {item.status || 'Chưa có trạng thái'}
-              </Text>
+  const PlanCard = useCallback(
+    ({ item }) => {
+      if (!user || !item || !item._id) return null;
+      return (
+        <TouchableOpacity
+          onPress={() => navigation.navigate('DetailPlan', { planId: item._id, fromGenPlan: false })}
+          style={styles.cardContainer}
+        >
+          <View style={styles.card}>
+            <View style={styles.cardHeader}>
+              <Text style={styles.productName}>{item.name || 'Kế hoạch không tên'}</Text>
+              <View
+                style={[
+                  styles.statusBadge,
+                  { backgroundColor: getStatusColor(item.status) },
+                ]}
+              >
+                <Text style={styles.statusText}>{item.status || 'Chưa có trạng thái'}</Text>
+              </View>
+            </View>
+            <View style={styles.cardDivider} />
+            <View style={styles.cardFooter}>
+              <View style={styles.priceContainer}>
+                <Text style={styles.priceLabel}>Tổng tiền:</Text>
+                <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
+              </View>
+              <View style={styles.detailButton}>
+                <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+              </View>
             </View>
           </View>
-          <View style={styles.cardDivider} />
-          <View style={styles.cardFooter}>
-            <View style={styles.priceContainer}>
-              <Text style={styles.priceLabel}>Tổng tiền:</Text>
-              <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
-            </View>
-            <View style={styles.detailButton}>
-              <Text style={styles.detailButtonText}>Xem chi tiết</Text>
-              
-            </View>
-          </View>
-        </View>
-      </TouchableOpacity>
-    );
-  }, [navigation]);
+        </TouchableOpacity>
+      );
+    },
+    [navigation, user]
+  );
 
   const formatPrice = (price) => {
-    return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") || '0';
+    return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') || '0';
   };
 
   const getStatusColor = (status) => {
@@ -83,68 +106,70 @@ const AllPlan = ({ navigation }) => {
   };
 
   const handleCreateNewPlan = () => {
-    navigation.navigate('Thongtincoban'); // Điều hướng đến màn hình tạo plan mới
+    if (!user) return;
+    navigation.navigate('Thongtincoban');
   };
 
-  const renderContent = useCallback(() => {
-    return (
-      <>
-        {(() => {
-          switch (AllPlanStatus) {
-            case 'idle':
-              return (
-                <View style={styles.statusContainer}>
-                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
-                  <Text style={styles.statusMessage}>Đang chờ dữ liệu...</Text>
-                </View>
-              );
-            case 'loading':
-              return (
-                <View style={styles.statusContainer}>
-                  <ActivityIndicator size="large" color="#2196F3" />
-                  <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
-                </View>
-              );
-            case 'succeeded':
-              return AllPlanData && AllPlanData.length > 0 ? (
-                <FlatList
-                  data={AllPlanData}
-                  keyExtractor={(item) => item._id}
-                  renderItem={PlanCard}
-                  showsVerticalScrollIndicator={false}
-                  contentContainerStyle={styles.flatListContent}
-                  refreshing={AllPlanStatus === 'loading'}
-                  onRefresh={handleRefresh}
-                  
-                />
-              ) : (
-                <View style={styles.statusContainer}>
-                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
-                  <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
-                </View>
-              );
-            case 'failed':
-              return (
-                <View style={styles.statusContainer}>
-                  <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
-                  <Text style={styles.errorText}>Bạn Hãy tạo Thêm Kế Hoạch nhé</Text>
-                </View>
-              );
-            default:
-              return null;
-          }
-        })()}
+  const renderLoading = () => (
+    <View style={styles.statusContainer}>
+      <ActivityIndicator size="large" color="#2196F3" />
+      <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+    </View>
+  );
 
-        {/* Nút tạo plan mới */}
-        <TouchableOpacity
-          style={styles.createPlanButton}
-          onPress={handleCreateNewPlan}
-        >
-          <Text style={styles.createPlanButtonText}>Tạo plan mới</Text>
-        </TouchableOpacity>
-      </>
+  const renderContent = useCallback(() => {
+    if (!user) return null;
+
+    if (loading || AllPlanStatus === 'loading') return renderLoading();
+    if (AllPlanStatus === 'failed') {
+      return (
+        <View style={styles.statusContainer}>
+          <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
+          <Text style={styles.errorText}>Không thể tải dữ liệu! Hãy thử lại sau.</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(Plan(userId))}>
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      );
+    }
+
+    const filteredPlanData = AllPlanData.filter(
+      (item) => item && item._id && typeof item._id === 'string'
     );
-  }, [AllPlanData, AllPlanStatus, error, dispatch, userId, PlanCard]);
+
+    if (!filteredPlanData.length) {
+      return (
+        <View style={styles.statusContainer}>
+          <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
+          <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        data={filteredPlanData}
+        keyExtractor={(item) => item._id.toString()}
+        renderItem={PlanCard}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.flatListContent}
+        refreshing={AllPlanStatus === 'loading'}
+        onRefresh={handleRefresh}
+      />
+    );
+  }, [AllPlanData, AllPlanStatus, loading, user, userId, dispatch, PlanCard]);
+
+  if (contextLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderLoading()}
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -165,6 +190,9 @@ const AllPlan = ({ navigation }) => {
       </View>
       <View style={styles.listContainer}>
         {renderContent()}
+        <TouchableOpacity style={styles.createPlanButton} onPress={handleCreateNewPlan}>
+          <Text style={styles.createPlanButtonText}>Tạo plan mới</Text>
+        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );
@@ -200,12 +228,6 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
   },
-  arrowIcon: {
-    width: 16,
-    height: 16,
-    tintColor: '#FFFFFF',
-    transform: [{ rotate: '180deg' }],
-  },
   title: {
     fontSize: 20,
     fontWeight: '700',
@@ -218,7 +240,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
   },
   flatListContent: {
-    paddingBottom: 100, // Tăng padding để nút "Tạo plan mới" không che danh sách
+    paddingBottom: 100,
   },
   cardContainer: {
     marginBottom: 16,
@@ -335,6 +357,18 @@ const styles = StyleSheet.create({
     color: '#F44336',
     textAlign: 'center',
     marginVertical: 12,
+  },
+  retryButton: {
+    backgroundColor: '#FF6F61',
+    paddingVertical: 10,
+    paddingHorizontal: 25,
+    borderRadius: 20,
+    elevation: 2,
+  },
+  retryButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
   },
   createPlanButton: {
     position: 'absolute',

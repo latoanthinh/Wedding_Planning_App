@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useContext } from "react";
 import {
   View,
   Text,
@@ -6,7 +6,6 @@ import {
   Image,
   StyleSheet,
   TouchableOpacity,
-  TextInput,
   Dimensions,
   Modal,
   Pressable,
@@ -17,55 +16,97 @@ import { FlowersAPI } from "../redux/FlowersSlice";
 import { Cate_catering } from "../redux/Cate_CateringSlice";
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Lottie from 'lottie-react-native';
-import LoadingIndicator from '../components/LoadingIndicator';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import { AppContext } from '../AppContext'; // Thêm AppContext
 
 const { width } = Dimensions.get("window");
 
 const formatPrice = (num) => {
-  if (!num) return "0";
-  return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ";
+  return num ? num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') + " VNĐ" : "0 VNĐ";
 };
-
-const renderLoading = () => <LoadingIndicator text="Chờ xíu..." />;
 
 const FlowersScreen = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { FlowersData, FlowersStatus } = useSelector((state) => state.flowers);
-  const { Cate_cateringData, Cate_cateringStatus } = useSelector((state) => state.cate_catering);
+  const { FlowersData = [], FlowersStatus } = useSelector((state) => state.flowers);
+  const { Cate_cateringData = [], Cate_cateringStatus } = useSelector((state) => state.cate_catering);
+  const { user, isLoading: contextLoading } = useContext(AppContext); // Lấy user từ AppContext
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
-  const [searchQuery, setSearchQuery] = useState("");
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedItem, setSelectedItem] = useState(null);
   const [favorites, setFavorites] = useState(new Set());
+  const [loading, setLoading] = useState(false);
 
+  // Kiểm tra user khi component mount hoặc user thay đổi
   useEffect(() => {
-    dispatch(Cate_catering());
-  }, [dispatch]);
+    if (!contextLoading && !user) {
+      console.log('User không tồn tại, không tải dữ liệu');
+      setLoading(false);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
+    }
+  }, [user, contextLoading, navigation]);
 
+  // Gọi API lấy danh mục
   useEffect(() => {
+    if (!user) return;
+
+    const fetchCategories = async () => {
+      try {
+        await dispatch(Cate_catering()).unwrap();
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách danh mục:', error);
+      }
+    };
+
+    fetchCategories();
+
+    return () => {
+      setSelectedCategoryId(null);
+    };
+  }, [dispatch, user]);
+
+  // Cập nhật selectedCategoryId khi danh sách danh mục thay đổi
+  useEffect(() => {
+    if (!user) return;
+
     if (Cate_cateringStatus === 'succeeded' && Cate_cateringData.length > 0 && !selectedCategoryId) {
       setSelectedCategoryId(Cate_cateringData[0]._id);
     }
-  }, [Cate_cateringData, Cate_cateringStatus, selectedCategoryId]);
+  }, [Cate_cateringData, Cate_cateringStatus, selectedCategoryId, user]);
 
+  // Gọi API lấy sản phẩm khi selectedCategoryId thay đổi
   useEffect(() => {
-    if (selectedCategoryId) {
-      dispatch(FlowersAPI(selectedCategoryId));
-    }
-  }, [selectedCategoryId, dispatch]);
+    if (!user || !selectedCategoryId) return;
+
+    const fetchFlowers = async () => {
+      try {
+        setLoading(true);
+        await dispatch(FlowersAPI(selectedCategoryId)).unwrap();
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách sản phẩm:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchFlowers();
+
+    return () => {
+      setLoading(false);
+    };
+  }, [selectedCategoryId, dispatch, user]);
 
   const handleSelect = (id) => {
-    if (id !== selectedCategoryId) {
-      setSelectedCategoryId(id);
-    }
+    if (!user) return;
+    if (id !== selectedCategoryId) setSelectedCategoryId(id);
   };
 
   const handleItemPress = (item) => {
-    if (item && item._id) {
-      setSelectedItem(item);
-      setModalVisible(true);
-    }
+    if (!user || !item || !item._id) return;
+    setSelectedItem(item);
+    setModalVisible(true);
   };
 
   const closeModal = () => {
@@ -74,6 +115,7 @@ const FlowersScreen = ({ navigation }) => {
   };
 
   const toggleFavorite = (itemId) => {
+    if (!user) return;
     const newFavorites = new Set(favorites);
     if (newFavorites.has(itemId)) {
       newFavorites.delete(itemId);
@@ -83,87 +125,127 @@ const FlowersScreen = ({ navigation }) => {
     setFavorites(newFavorites);
   };
 
-  const renderItem = ({ item }) => (
-    <TouchableOpacity onPress={() => navigation.navigate('FoodDetail' , {Id: item._id })}>
-      <View style={styles.card}>
-        <Image source={{ uri: item.imageUrl }} style={styles.image} resizeMode="cover" />
-        <View style={styles.cardContent}>
-          <Text style={styles.productName} numberOfLines={1}>{item.name}</Text>
-          <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
-        </View>
-      </View>
-    </TouchableOpacity>
+  const renderLoading = () => (
+    <View style={styles.loadingContainer}>
+      <Lottie source={require('../Assets/Animations/blackloading.json')} autoPlay loop style={styles.loadingAnimation} />
+      <Text style={styles.loadingText}>Chờ xíu...</Text>
+    </View>
+  );
+
+  const renderItem = useCallback(
+    ({ item }) => {
+      if (!user || !item || !item._id) return null;
+      return (
+        <TouchableOpacity onPress={() => navigation.navigate('FoodDetail', { Id: item._id })}>
+          <View style={styles.card}>
+            <Image
+              source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+              style={styles.image}
+              resizeMode="cover"
+            />
+            <View style={styles.cardContent}>
+              <Text style={styles.productName} numberOfLines={1}>
+                {item.name || 'Unnamed Item'}
+              </Text>
+              <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
+            </View>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [navigation, user]
   );
 
   const renderCategoryItem = useCallback(
-    ({ item }) => (
-      <TouchableOpacity onPress={() => handleSelect(item._id)} activeOpacity={0.8}>
-        <View style={[styles.categoryItem, selectedCategoryId === item._id && styles.selectedCategory]}>
-          <Text style={[styles.categoryText, selectedCategoryId === item._id && styles.selectedCategoryText]}>
-            {item.name}
-          </Text>
-        </View>
-      </TouchableOpacity>
-    ),
-    [selectedCategoryId]
+    ({ item }) => {
+      if (!user || !item || !item._id) return null;
+      return (
+        <TouchableOpacity onPress={() => handleSelect(item._id)} activeOpacity={0.8}>
+          <View style={[styles.categoryItem, selectedCategoryId === item._id && styles.selectedCategory]}>
+            <Text style={[styles.categoryText, selectedCategoryId === item._id && styles.selectedCategoryText]}>
+              {item.name || 'Unnamed Category'}
+            </Text>
+          </View>
+        </TouchableOpacity>
+      );
+    },
+    [selectedCategoryId, user]
   );
 
-  const renderContent = () => {
-    switch (FlowersStatus) {
-      case 'loading':
-        return renderLoading();
-      case 'succeeded':
-        return FlowersData.length > 0 ? (
-          <FlatList
-            numColumns={2}
-            data={FlowersData}
-            renderItem={renderItem}
-            keyExtractor={(item) => item._id.toString()}
-            contentContainerStyle={styles.flatListContainer}
-            showsVerticalScrollIndicator={false}
-          />
-        ) : (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Không tìm thấy sản phẩm nào!</Text>
-          </View>
-        );
-      case 'failed':
-        return (
-          <View style={styles.errorContainer}>
-            <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
-            <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(FlowersAPI(selectedCategoryId))}>
-              <Text style={styles.retryButtonText}>Thử lại</Text>
-            </TouchableOpacity>
-          </View>
-        );
-      default:
-        return (
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Chưa có dữ liệu để hiển thị</Text>
-          </View>
-        );
+  const renderContent = useCallback(() => {
+    if (!user) return null;
+
+    if (loading || FlowersStatus === 'loading') return renderLoading();
+    if (FlowersStatus === 'failed') {
+      return (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => dispatch(FlowersAPI(selectedCategoryId))}
+          >
+            <Text style={styles.retryButtonText}>Thử lại</Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
-  };
+
+    const filteredFlowersData = FlowersData.filter(
+      (item) => item && item._id && typeof item._id === 'string'
+    );
+
+    if (!filteredFlowersData.length) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>Không tìm thấy sản phẩm nào!</Text>
+        </View>
+      );
+    }
+
+    return (
+      <FlatList
+        numColumns={2}
+        data={filteredFlowersData}
+        renderItem={renderItem}
+        keyExtractor={(item) => item._id.toString()}
+        contentContainerStyle={styles.flatListContainer}
+        showsVerticalScrollIndicator={false}
+      />
+    );
+  }, [FlowersData, FlowersStatus, loading, user, selectedCategoryId, dispatch, renderItem]);
+
+  if (contextLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderLoading()}
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-                <TouchableOpacity 
-                  style={styles.headerButton} 
-                  onPress={() => navigation.navigate('TabNavigation')}
-                  activeOpacity={0.6}
-                >
-                  <AntDesign name="arrowleft" size={24} color="#333" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Đồ Ăn</Text>
-                <TouchableOpacity 
-                  style={styles.headerButton} 
-                  onPress={() => navigation.navigate('TabNavigation')}
-                  activeOpacity={0.6}
-                >
-                 <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-                </TouchableOpacity>
-              </View>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <AntDesign name="arrowleft" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Đồ Ăn</Text>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.categoryWrapper}>
         <FlatList
           horizontal
@@ -200,7 +282,7 @@ const FlowersScreen = ({ navigation }) => {
                       onPress={() => toggleFavorite(selectedItem._id)}
                     >
                       <Image
-                        source={require('../Assets/Images/heart_filled.png')} // Thay bằng đường dẫn đến ảnh trái tim
+                        source={require('../Assets/Images/heart_filled.png')}
                         style={[styles.heartImage, favorites.has(selectedItem._id) && styles.heartFilled]}
                         resizeMode="contain"
                       />
@@ -255,30 +337,9 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderRadius: 21,
   },
-  title: {
-    fontSize: 22,
-    fontFamily: 'Playfair_me',
-    color: '#000',
-  },
   icon: {
     width: 24,
     height: 24,
-  },
-  icon_1: {
-    width: 20,
-    height: 15,
-  },
-  searchBox: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginHorizontal: 15,
-    fontSize: 16,
-    color: '#333',
-    fontFamily: 'Playfair_me',
-    borderWidth: 0.5,
-    borderColor: '#E0E0E0',
   },
   categoryWrapper: {
     height: 70,

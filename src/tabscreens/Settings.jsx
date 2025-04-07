@@ -1,39 +1,54 @@
 import { StyleSheet, Text, View, Image, TouchableOpacity, ScrollView, Switch, Alert, ActivityIndicator, Modal } from 'react-native';
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { AppContext } from '../AppContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import UserStatusIndicator from '../components/UserStatusIndicator';
 import { useDispatch } from 'react-redux';
 import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { reset } from '../redux/LoginSlice';
 
 const Settings = (props) => {
     const { navigation } = props;
-    const { user, logout, setUser } = useContext(AppContext);
+    const { user, logout, isLoading } = useContext(AppContext);
     const dispatch = useDispatch();
 
     const [isOnline, setIsOnline] = useState(true);
     const [isLoggingOut, setIsLoggingOut] = useState(false);
     const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-    console.log('User object in Settings:', user ? {
-        hasAvatar: !!user.avatar,
-        avatarType: user.avatar ? typeof user.avatar : 'none',
-        avatarLength: user.avatar ? user.avatar.length : 0,
-        avatarPreview: user.avatar ? user.avatar.substring(0, 50) + '...' : 'no avatar'
-    } : 'no user');
+    useEffect(() => {
+        if (!isLoading && !user) {
+            console.log('User không tồn tại, chuyển hướng về SignIn');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignIn' }],
+            });
+        }
+    }, [user, isLoading, navigation]);
 
-    const handle = (screenName) => {
-        navigation.navigate(screenName);
+    const isValidAvatar = (avatar) => {
+        return typeof avatar === 'string' && avatar.length > 0 && avatar.startsWith('http');
+    };
+
+    const handle = (screenName, params) => {
+        if (!user) {
+            console.log('User không tồn tại, không thể chuyển trang');
+            Alert.alert('Lỗi', 'Vui lòng đăng nhập lại để tiếp tục.');
+            navigation.reset({
+                index: 0,
+                routes: [{ name: 'SignIn' }],
+            });
+            return;
+        }
+        navigation.navigate(screenName, params);
     };
 
     const toggleOnlineStatus = (value) => {
         setIsOnline(value);
-        if (user && user._id) {
+        if (user?._id) {
             dispatch(updateUserOnlineStatus({
                 userId: user._id,
-                isOnline: value
+                isOnline: value,
             }));
         }
     };
@@ -42,26 +57,20 @@ const Settings = (props) => {
         try {
             setIsLoggingOut(true);
             setShowLogoutModal(false);
-            console.log('Người dùng xác nhận đăng xuất');
 
-            // Gọi hàm logout từ context, đã xử lý logic "Ghi nhớ"
+            // Gọi logout và chờ hoàn tất
             await logout();
 
-            // Xóa dữ liệu từ Redux
-            console.log('Resetting LoginSlice...');
+            // Dispatch reset sau khi logout hoàn tất
             dispatch(reset());
 
-            console.log('Đã đăng xuất thành công từ Settings');
-
-            // Điều hướng về màn hình đăng nhập
-            setTimeout(() => {
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'SignIn' }],
-                });
-            }, 300);
+            // // Chuyển hướng sau khi tất cả các bước hoàn tất
+            // navigation.reset({
+            //     index: 0,
+            //     routes: [{ name: 'SignIn' }],
+            // });
         } catch (error) {
-            console.error("Lỗi khi thực hiện đăng xuất:", error);
+            console.error('Lỗi đăng xuất:', error);
             Alert.alert("Lỗi", "Không thể đăng xuất. Vui lòng thử lại sau.");
         } finally {
             setIsLoggingOut(false);
@@ -70,7 +79,6 @@ const Settings = (props) => {
 
     const onLogout = () => {
         if (isLoggingOut) return;
-        console.log('Gọi logout từ Settings...');
         setShowLogoutModal(true);
     };
 
@@ -85,23 +93,17 @@ const Settings = (props) => {
                     <Image 
                         source={require('../Assets/Images/logout.png')} 
                         style={styles.logoutIcon}
-                        defaultSource={require('../Assets/Images/logout.png')} // Fallback nếu không có hình logout_icon
+                        defaultSource={require('../Assets/Images/logout.png')}
                     />
-                    
                     <Text style={styles.modalTitle}>Xác nhận đăng xuất</Text>
                     <Text style={styles.modalMessage}>Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?</Text>
-                    
                     <View style={styles.modalButtons}>
                         <TouchableOpacity 
                             style={[styles.modalButton, styles.cancelButton]}
-                            onPress={() => {
-                                setShowLogoutModal(false);
-                                console.log('Đăng xuất bị hủy');
-                            }}
+                            onPress={() => setShowLogoutModal(false)}
                         >
                             <Text style={styles.cancelButtonText}>Hủy</Text>
                         </TouchableOpacity>
-                        
                         <TouchableOpacity 
                             style={[styles.modalButton, styles.logoutButton]}
                             onPress={performLogout}
@@ -113,6 +115,21 @@ const Settings = (props) => {
             </View>
         </Modal>
     );
+
+    if (isLoading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <View style={styles.loadingOverlay}>
+                    <ActivityIndicator size="large" color="#200000" />
+                    <Text style={styles.loadingText}>Đang tải...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (!user) {
+        return null;
+    }
 
     return (
         <SafeAreaView style={styles.container}>
@@ -131,26 +148,19 @@ const Settings = (props) => {
 
             <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
                 <View style={styles.profileContainer}>
-                    {user && user.avatar ? (
-                        <>
-                            {console.log('Trying to render avatar with URI:', user.avatar.substring(0, 50) + '...')}
-                            <Image
-                                source={{ uri: user.avatar }}
-                                style={styles.profileImage}
-                                onError={(error) => console.error('Image loading error:', error.nativeEvent.error)}
-                            />
-                        </>
+                    {isValidAvatar(user.avatar) ? (
+                        <Image
+                            source={{ uri: user.avatar }}
+                            style={styles.profileImage}
+                            onError={(error) => console.error('Image loading error:', error.nativeEvent.error)}
+                        />
                     ) : (
-                        <>
-                            {console.log('Rendering default avatar image')}
-                            <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
-                        </>
+                        <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
                     )}
                     <View style={styles.profileTextContainer}>
-                        <Text style={styles.profileName} numberOfLines={1}>{user.name}</Text>
-                        <Text style={styles.profileEmail} numberOfLines={1}>{user.email}</Text>
-
-                        {user && user._id && (
+                        <Text style={styles.profileName} numberOfLines={1}>{user.name || 'Không có tên'}</Text>
+                        <Text style={styles.profileEmail} numberOfLines={1}>{user.email || 'Không có email'}</Text>
+                        {user._id && (
                             <View style={styles.statusContainer}>
                                 <UserStatusIndicator
                                     userId={user._id}
@@ -182,7 +192,7 @@ const Settings = (props) => {
                     />
                 </View>
 
-                <TouchableOpacity style={styles.optionRow} onPress={() => navigation.navigate("AllPlan")}>
+                <TouchableOpacity style={styles.optionRow} onPress={() => handle("AllPlan")}>
                     <View style={styles.optionLeft}>
                         <Image source={require('../Assets/Images/addfolder.png')} style={styles.optionIcon} />
                         <Text style={styles.optionText}>Kế hoạch</Text>
@@ -190,7 +200,7 @@ const Settings = (props) => {
                     <Image source={require('../Assets/Images/Next.png')} style={styles.nextIcon} />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.optionRow} onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })}>
+                <TouchableOpacity style={styles.optionRow} onPress={() => handle('TabNavigation', { screen: 'Message' })}>
                     <View style={styles.optionLeft}>
                         <Image source={require('../Assets/Images/question.png')} style={styles.optionIcon} />
                         <Text style={styles.optionText}>Trợ giúp & Phản hồi</Text>
@@ -205,7 +215,7 @@ const Settings = (props) => {
                     <View style={styles.optionLeft}>
                         <Image
                             source={require('../Assets/Images/logout.png')}
-                            style={[styles.optionIcon, { tintColor: '#E74C3C',width: 25, height: 25 }]}
+                            style={[styles.optionIcon, { tintColor: '#E74C3C', width: 25, height: 25 }]}
                         />
                         <Text style={[styles.optionText, { color: '#E74C3C' }]}>Đăng Xuất</Text>
                     </View>
@@ -217,6 +227,7 @@ const Settings = (props) => {
 
 export default Settings;
 
+// Styles giữ nguyên như cũ
 const styles = StyleSheet.create({
     container: {
         flex: 1,
@@ -349,8 +360,6 @@ const styles = StyleSheet.create({
         color: '#333',
         fontFamily: 'Playfair_me',
     },
-    
-    // Styles cho Modal đăng xuất
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0, 0, 0, 0.5)',

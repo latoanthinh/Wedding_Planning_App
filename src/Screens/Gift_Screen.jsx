@@ -6,7 +6,7 @@ import { Cate_present } from '../redux/Cate_PresentSlice';
 import Lottie from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-
+import { AppContext } from '../AppContext'; // Import AppContext để kiểm tra user
 
 const { width } = Dimensions.get('window');
 
@@ -16,42 +16,87 @@ const formatPrice = (price) => {
 
 const Gift_Screen = ({ navigation, route }) => {
   const dispatch = useDispatch();
+  const { user, isLoading: contextLoading } = useContext(AppContext); // Lấy user từ AppContext
   const { Cate_presentData = [], Cate_presentStatus } = useSelector((state) => state.cate_present);
   const { InvitationsData = [], InvitationsStatus } = useSelector((state) => state.invitations);
   const [selectedCategoryId, setSelectedCategoryId] = useState(null);
   const [selectedItem, setSelectedItem] = useState(null);
   const [loading, setLoading] = useState(false);
-  
- 
-  
 
+  // Kiểm tra user khi component mount hoặc user thay đổi
   useEffect(() => {
-    dispatch(Cate_present());
-  }, [dispatch]);
+    if (!contextLoading && !user) {
+      console.log('User không tồn tại, không tải dữ liệu');
+      setLoading(false);
+      setSelectedCategoryId(null);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
+    }
+  }, [user, contextLoading, navigation]);
 
+  // Gọi API để lấy danh sách danh mục
   useEffect(() => {
+    if (!user) return; // Không gọi API nếu user không tồn tại
+
+    const fetchCategories = async () => {
+      try {
+        await dispatch(Cate_present()).unwrap();
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách danh mục:', error);
+      }
+    };
+
+    fetchCategories();
+
+    // Cleanup khi component unmount
+    return () => {
+      setSelectedCategoryId(null);
+    };
+  }, [dispatch, user]);
+
+  // Cập nhật selectedCategoryId khi danh sách danh mục thay đổi
+  useEffect(() => {
+    if (!user) return; // Không thực hiện nếu user không tồn tại
+
     if (Cate_presentStatus === 'succeeded' && Cate_presentData.length > 0 && !selectedCategoryId) {
       setSelectedCategoryId(Cate_presentData[0]._id);
     }
-  }, [Cate_presentData, Cate_presentStatus, selectedCategoryId]);
+  }, [Cate_presentData, Cate_presentStatus, selectedCategoryId, user]);
 
+  // Gọi API để lấy danh sách sản phẩm khi selectedCategoryId thay đổi
   useEffect(() => {
-    if (selectedCategoryId) {
-      setLoading(true);
-      dispatch(Invitations(selectedCategoryId)).finally(() => setLoading(false));
-    }
-  }, [selectedCategoryId, dispatch]);
+    if (!user || !selectedCategoryId) return; // Không gọi API nếu user hoặc selectedCategoryId không tồn tại
 
- 
+    const fetchInvitations = async () => {
+      try {
+        setLoading(true);
+        await dispatch(Invitations(selectedCategoryId)).unwrap();
+      } catch (error) {
+        console.error('Lỗi khi lấy danh sách sản phẩm:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvitations();
+
+    // Cleanup khi component unmount
+    return () => {
+      setLoading(false);
+    };
+  }, [selectedCategoryId, dispatch, user]);
 
   const handleSelect = (id) => {
+    if (!user) return; // Không cho phép chọn nếu user không tồn tại
     if (id !== selectedCategoryId) setSelectedCategoryId(id);
   };
 
   const handleItemPress = (item) => {
+    if (!user) return; // Không cho phép chọn nếu user không tồn tại
     if (item && item._id) {
       setSelectedItem(item);
-      
     }
   };
 
@@ -75,30 +120,42 @@ const Gift_Screen = ({ navigation, route }) => {
     [selectedCategoryId]
   );
 
-  const renderItem = ({ item }) => (
-    <Pressable onPress={() => handleItemPress(item)}>
-      <TouchableOpacity 
-        style={styles.card} 
-        onPress={() => navigation.navigate('GiftDetail', { 
-          GitflId: item._id 
-        })}
-      >
-        <Image source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }} style={styles.image} resizeMode="cover" />
-        <View style={styles.cardContent}>
-          <Text style={styles.productName} numberOfLines={1}>{item.name || 'Unnamed Item'}</Text>
-          <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
-        </View>
-      </TouchableOpacity>
-    </Pressable>
-  );
+  const renderItem = ({ item }) => {
+    if (!user) return null; // Không render nếu user không tồn tại
+    return (
+      <Pressable onPress={() => handleItemPress(item)}>
+        <TouchableOpacity
+          style={styles.card}
+          onPress={() => navigation.navigate('GiftDetail', { GitflId: item._id })}
+        >
+          <Image
+            source={{ uri: item.imageUrl || 'https://via.placeholder.com/150' }}
+            style={styles.image}
+            resizeMode="cover"
+          />
+          <View style={styles.cardContent}>
+            <Text style={styles.productName} numberOfLines={1}>
+              {item.name || 'Unnamed Item'}
+            </Text>
+            <Text style={styles.productPrice}>{formatPrice(item.price)}</Text>
+          </View>
+        </TouchableOpacity>
+      </Pressable>
+    );
+  };
 
   const renderContent = () => {
+    if (!user) return null; // Không render nếu user không tồn tại
+
     if (loading || InvitationsStatus === 'loading') return renderLoading();
     if (InvitationsStatus === 'failed') {
       return (
         <View style={styles.errorContainer}>
           <Text style={styles.errorText}>Không thể tải dữ liệu!</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(Invitations(selectedCategoryId))}>
+          <TouchableOpacity
+            style={styles.retryButton}
+            onPress={() => dispatch(Invitations(selectedCategoryId))}
+          >
             <Text style={styles.retryButtonText}>Thử lại</Text>
           </TouchableOpacity>
         </View>
@@ -124,27 +181,37 @@ const Gift_Screen = ({ navigation, route }) => {
     );
   };
 
-  
+  if (contextLoading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        {renderLoading()}
+      </SafeAreaView>
+    );
+  }
+
+  if (!user) {
+    return null; // Không render nếu user không tồn tại
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-          <TouchableOpacity 
-            style={styles.headerButton} 
-            onPress={() => navigation.navigate('TabNavigation')}
-            activeOpacity={0.6}
-          >
-            <AntDesign name="arrowleft" size={24} color="#333" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Quà Tặng</Text>
-          <TouchableOpacity 
-            style={styles.headerButton} 
-            onPress={() => navigation.navigate('TabNavigation')}
-            activeOpacity={0.6}
-          >
-           <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <AntDesign name="arrowleft" size={24} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>Quà Tặng</Text>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={() => navigation.navigate('TabNavigation')}
+          activeOpacity={0.6}
+        >
+          <Image source={require('../Assets/Images/home48.png')} style={styles.icon} />
+        </TouchableOpacity>
+      </View>
 
       <FlatList
         horizontal
@@ -157,44 +224,43 @@ const Gift_Screen = ({ navigation, route }) => {
       />
 
       {renderContent()}
-
-      
     </SafeAreaView>
   );
 };
 
 export default Gift_Screen;
 
+// Styles giữ nguyên như cũ
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
   header: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      paddingHorizontal: 16,
-      paddingVertical: Platform.OS === 'ios' ? 12 : 16,
-      borderBottomWidth: 1,
-      borderBottomColor: '#F0EAE3',
-    },
-    headerTitle: {
-      fontSize: 22,
-      fontWeight: '600',
-      color: '#333',
-      fontFamily: 'Playfair_me',
-      letterSpacing: 0.5,
-      textAlign: 'center',
-      flex: 1,
-    },
-    headerButton: {
-      width: 42,
-      height: 42,
-      alignItems: 'center',
-      justifyContent: 'center',
-      borderRadius: 21,
-    },
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: Platform.OS === 'ios' ? 12 : 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0EAE3',
+  },
+  headerTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#333',
+    fontFamily: 'Playfair_me',
+    letterSpacing: 0.5,
+    textAlign: 'center',
+    flex: 1,
+  },
+  headerButton: {
+    width: 42,
+    height: 42,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 21,
+  },
   icon: {
     width: 24,
     height: 24,
