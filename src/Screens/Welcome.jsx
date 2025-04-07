@@ -27,7 +27,7 @@ const Welcome = () => {
 
     // Navigate to Intro screen after 3 seconds
     const timer = setTimeout(() => {
-      navigation.navigate('Intro');
+      navigation.navigate('SignIn');
     }, 3000);
     return () => clearTimeout(timer);
   }, []);

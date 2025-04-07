@@ -143,7 +143,7 @@ export const AppContextProvider = ({ children }) => {
             await AsyncStorage.multiRemove(keysToRemove);
             await AsyncStorage.setItem('isLoggedOut', 'true');
             setUser(null);
-            ToastAndroid.show('Đăng xuất thành công', ToastAndroid.SHORT);
+            // ToastAndroid.show('Đăng xuất thành công', ToastAndroid.SHORT);
             return true;
         } catch (error) {
             console.error('Lỗi đăng xuất:', error);

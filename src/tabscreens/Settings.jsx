@@ -7,6 +7,7 @@ import { useDispatch } from 'react-redux';
 import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
 import { reset } from '../redux/LoginSlice';
 
+
 const Settings = (props) => {
     const { navigation } = props;
     const { user, logout, isLoading } = useContext(AppContext);
@@ -64,7 +65,7 @@ const Settings = (props) => {
             // Dispatch reset sau khi logout hoàn tất
             dispatch(reset());
 
-            // // Chuyển hướng sau khi tất cả các bước hoàn tất
+            // Chuyển hướng sau khi tất cả các bước hoàn tất
             // navigation.reset({
             //     index: 0,
             //     routes: [{ name: 'SignIn' }],
