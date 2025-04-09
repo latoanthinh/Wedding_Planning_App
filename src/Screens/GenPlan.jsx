@@ -41,18 +41,24 @@ const GenPlan = ({ navigation, route }) => {
   }, [params, plans]);
 
   const calculateTotalPrice = (plan, guestCount) => {
+    if (!plan) return 0;
+    
     const sanhPrice = plan.SanhId?.price ? parseFloat(plan.SanhId.price) : 0;
 
-    const cateringTotal = plan.caterings?.reduce((sum, item) => {
-      const price = item.price ? parseFloat(item.price) : 0;
-      const multiplier = guestCount ? guestCount / 10 : 0;
-      return sum + (price * multiplier);
-    }, 0) || 0;
+    const cateringTotal = Array.isArray(plan.caterings) 
+      ? plan.caterings.filter(item => item && typeof item === 'object').reduce((sum, item) => {
+          const price = item.price ? parseFloat(item.price) : 0;
+          const multiplier = guestCount ? guestCount / 10 : 0;
+          return sum + (price * multiplier);
+        }, 0) 
+      : 0;
 
-    const decorateTotal = plan.decorates?.reduce((sum, item) => {
-      const price = item.price ? parseFloat(item.price) : 0;
-      return sum + price;
-    }, 0) || 0;
+    const decorateTotal = Array.isArray(plan.decorates) 
+      ? plan.decorates.filter(item => item && typeof item === 'object').reduce((sum, item) => {
+          const price = item.price ? parseFloat(item.price) : 0;
+          return sum + price;
+        }, 0) 
+      : 0;
 
     return sanhPrice + cateringTotal + decorateTotal;
   };
@@ -88,9 +94,9 @@ const GenPlan = ({ navigation, route }) => {
       };
 
       const allServices = [
-        ...(item.caterings?.map((c) => c.name) || []),
-        ...(item.decorates?.map((d) => d.name) || []),
-        ...(item.presents?.map((p) => p.name) || []),
+        ...(Array.isArray(item.caterings) ? item.caterings.filter(c => c && c.name).map(c => c.name) : []),
+        ...(Array.isArray(item.decorates) ? item.decorates.filter(d => d && d.name).map(d => d.name) : []),
+        ...(Array.isArray(item.presents) ? item.presents.filter(p => p && p.name).map(p => p.name) : [])
       ].filter(Boolean);
 
       return (
@@ -146,7 +152,14 @@ const GenPlan = ({ navigation, route }) => {
 
     if (contextLoading) return renderLoading();
 
-    const filteredPlans = plans.filter((item) => item && item._id && typeof item._id === 'string');
+    // Make sure plans is an array and filter out invalid items
+    const validPlans = Array.isArray(plans) ? plans : [];
+    const filteredPlans = validPlans.filter(item => 
+      item && 
+      typeof item === 'object' && 
+      item._id && 
+      typeof item._id === 'string'
+    );
 
     if (!filteredPlans.length) {
       return (
