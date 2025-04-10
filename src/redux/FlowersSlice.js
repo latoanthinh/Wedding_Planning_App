@@ -40,7 +40,7 @@ export const FlowersAPI = createAsyncThunk(
   export const FlowersSlice = createSlice({
     name: 'flowers',
     initialState: {
-        FlowersData: {}, // Dữ liệu hall
+        FlowersData: [], // Dữ liệu hall
         FlowersStatus: 'idle', // Trạng thái API
     },
     reducers: {},
