@@ -43,6 +43,9 @@ const Message = () => {
   // Check if admin is online (simplification - in real app you'd get actual admin IDs)
   const isAdminOnline = onlineUsers.some(user => user.role === 'admin');
   
+  // Ensure admin name is always "Hỗ trợ khách hàng" regardless of what might be in the API
+  const adminName = "Hỗ trợ khách hàng";
+  
   // Initialize socket when component mounts
   useEffect(() => {
     if (user && user._id) {
@@ -188,7 +191,7 @@ const Message = () => {
                   
                   <View style={styles.chatInfo}>
                     <View style={styles.chatHeader}>
-                      <Text style={styles.chatName}>Hỗ trợ khách hàng</Text>
+                      <Text style={styles.chatName}>{adminName}</Text>
                       <Text style={styles.timeText}>{lastMessageTime}</Text>
                     </View>
                     

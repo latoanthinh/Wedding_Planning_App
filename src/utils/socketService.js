@@ -445,8 +445,8 @@ class SocketService {
     }
 
     await this.getUserName();
-    const userName = this.userName;
-    console.log('Using userName from AppContext for message:', userName);
+    const userName = this.isAdmin ? "Hỗ trợ khách hàng" : this.userName;
+    console.log('Using userName for message:', userName);
 
     const messageData = {
       senderId: this.userId,

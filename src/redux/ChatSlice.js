@@ -44,7 +44,7 @@ export const fetchChatHistory = createAsyncThunk(
           sender: message.senderType,
           timestamp: message.createdAt,
           messageType: message.messageType || 'text', // Add messageType field with default
-          userName: message.userName || '' // Add userName field
+          userName: message.senderType === 'admin' ? 'Hỗ trợ khách hàng' : (message.userName || '') // Override admin name
         }));
         
         return formattedMessages;
@@ -156,7 +156,7 @@ export const sendMessage = createAsyncThunk(
             timestamp: serverMessage.createdAt || new Date().toISOString(),
             tempId: tempId, // Keep tempId if present
             messageType: serverMessage.messageType || 'text', // Add messageType field
-            userName: serverMessage.userName || userName // Add userName field
+            userName: serverMessage.senderType === 'admin' ? 'Hỗ trợ khách hàng' : (serverMessage.userName || userName) // Override admin name
           };
         }
         
@@ -170,7 +170,7 @@ export const sendMessage = createAsyncThunk(
           timestamp: new Date().toISOString(),
           tempId: tempId,
           messageType: messageType,
-          userName: userName
+          userName: senderType === 'admin' ? 'Hỗ trợ khách hàng' : userName // Override admin name
         };
       } catch (error) {
         console.error('Error sending message via API:', error);
@@ -186,7 +186,7 @@ export const sendMessage = createAsyncThunk(
           timestamp: new Date().toISOString(),
           tempId: tempId,
           messageType: messageType,
-          userName: userName
+          userName: senderType === 'admin' ? 'Hỗ trợ khách hàng' : userName // Override admin name
         };
       }
     } catch (error) {
@@ -233,6 +233,11 @@ const chatSlice = createSlice({
         sender: newMessage.sender,
         messageType: newMessage.messageType
       });
+      
+      // Override admin name to ensure consistency
+      if (newMessage.sender === 'admin') {
+        newMessage.userName = 'Hỗ trợ khách hàng';
+      }
       
       // Check if message already exists in state
       let existingMsgIndex = -1;

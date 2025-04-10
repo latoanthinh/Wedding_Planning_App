@@ -191,10 +191,10 @@ const Chat = ({ navigation }) => {
   const renderMessage = useCallback(({ item }) => {
     const isUser = item.sender === 'user';
     const isImage = item.messageType === 'image';
-    // Get sender name
+    // Get sender name - always use "Hỗ trợ khách hàng" for admin messages
     const senderName = isUser 
       ? (user?.fullname || user?.name || 'Bạn') 
-      : (item.userName || 'Hỗ trợ khách hàng');
+      : 'Hỗ trợ khách hàng';
     
     return (
       <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.adminMessageContainer]}>
