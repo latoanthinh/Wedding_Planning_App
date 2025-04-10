@@ -7,7 +7,6 @@ import { useDispatch } from 'react-redux';
 import { updateUserOnlineStatus } from '../redux/UserActivitySlice';
 import { reset } from '../redux/LoginSlice';
 
-
 const Settings = (props) => {
     const { navigation } = props;
     const { user, logout, isLoading } = useContext(AppContext);
@@ -28,7 +27,11 @@ const Settings = (props) => {
     }, [user, isLoading, navigation]);
 
     const isValidAvatar = (avatar) => {
-        return typeof avatar === 'string' && avatar.length > 0 && avatar.startsWith('http');
+        if (typeof avatar !== 'string' || avatar.length === 0) return false;
+        if (avatar.startsWith('http')) return true;
+        if (avatar.startsWith('data:image')) return true; // Hỗ trợ chuỗi Base64 với tiền tố
+        if (avatar.startsWith('/9j/')) return true; // Hỗ trợ chuỗi Base64 thô (dự phòng)
+        return false;
     };
 
     const handle = (screenName, params) => {
@@ -58,14 +61,8 @@ const Settings = (props) => {
         try {
             setIsLoggingOut(true);
             setShowLogoutModal(false);
-
-            // Gọi logout và chờ hoàn tất
             await logout();
-
-            // Dispatch reset sau khi logout hoàn tất
             dispatch(reset());
-
-            // Chuyển hướng sau khi tất cả các bước hoàn tất
             // navigation.reset({
             //     index: 0,
             //     routes: [{ name: 'SignIn' }],
@@ -91,21 +88,21 @@ const Settings = (props) => {
         >
             <View style={styles.modalOverlay}>
                 <View style={styles.modalContainer}>
-                    <Image 
-                        source={require('../Assets/Images/logout.png')} 
+                    <Image
+                        source={require('../Assets/Images/logout.png')}
                         style={styles.logoutIcon}
                         defaultSource={require('../Assets/Images/logout.png')}
                     />
                     <Text style={styles.modalTitle}>Xác nhận đăng xuất</Text>
                     <Text style={styles.modalMessage}>Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?</Text>
                     <View style={styles.modalButtons}>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.modalButton, styles.cancelButton]}
                             onPress={() => setShowLogoutModal(false)}
                         >
                             <Text style={styles.cancelButtonText}>Hủy</Text>
                         </TouchableOpacity>
-                        <TouchableOpacity 
+                        <TouchableOpacity
                             style={[styles.modalButton, styles.logoutButton]}
                             onPress={performLogout}
                         >
@@ -140,9 +137,9 @@ const Settings = (props) => {
                     <Text style={styles.loadingText}>Đang đăng xuất...</Text>
                 </View>
             )}
-            
+
             <LogoutModal />
-            
+
             <View style={styles.header}>
                 <Text style={styles.headerTitle}>Hồ sơ</Text>
             </View>
@@ -151,9 +148,17 @@ const Settings = (props) => {
                 <View style={styles.profileContainer}>
                     {isValidAvatar(user.avatar) ? (
                         <Image
-                            source={{ uri: user.avatar }}
+                            key={user.avatar}
+                            source={{
+                                uri: user.avatar.startsWith('http') || user.avatar.startsWith('data:image')
+                                    ? user.avatar
+                                    : `data:image/jpeg;base64,${user.avatar}`,
+                            }}
                             style={styles.profileImage}
-                            onError={(error) => console.error('Image loading error:', error.nativeEvent.error)}
+                            onError={(error) => {
+                                console.error('Image loading error:', error.nativeEvent.error);
+                                console.log('Attempted URI:', user.avatar);
+                            }}
                         />
                     ) : (
                         <Image source={require('../Assets/Images/mask.png')} style={styles.profileImage} />
@@ -208,8 +213,8 @@ const Settings = (props) => {
                     </View>
                 </TouchableOpacity>
 
-                <TouchableOpacity 
-                    style={styles.optionRow} 
+                <TouchableOpacity
+                    style={styles.optionRow}
                     onPress={onLogout}
                     disabled={isLoggingOut}
                 >
@@ -227,6 +232,8 @@ const Settings = (props) => {
 };
 
 export default Settings;
+
+// Styles giữ nguyên như bạn đã cung cấp
 
 // Styles giữ nguyên như cũ
 const styles = StyleSheet.create({
