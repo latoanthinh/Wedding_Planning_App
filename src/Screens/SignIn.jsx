@@ -186,18 +186,7 @@ const SignIn = (props) => {
                 <Text style={SignInPageStyles.signInButtonText}>Đăng nhập</Text>
             </TouchableOpacity>
 
-            <Text style={SignInPageStyles.orText}>Hoặc</Text>
-            <View style={SignInPageStyles.socialButtonsContainer}>
-                <TouchableOpacity style={SignInPageStyles.socialButton}>
-                    <Image source={require('../Assets/Images/gg_btn.png')} style={SignInPageStyles.socialIcon} />
-                </TouchableOpacity>
-                <TouchableOpacity style={SignInPageStyles.socialButton}>
-                    <Image source={require('../Assets/Images/apple_btn.png')} style={SignInPageStyles.socialIcon} />
-                </TouchableOpacity>
-                <TouchableOpacity style={SignInPageStyles.socialButton}>
-                    <Image source={require('../Assets/Images/fb_btn.png')} style={SignInPageStyles.socialIcon} />
-                </TouchableOpacity>
-            </View>
+            
 
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
                 <Text style={SignInPageStyles.signUpPrompt}>
