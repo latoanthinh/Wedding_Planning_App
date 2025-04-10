@@ -1,19 +1,234 @@
-import { StyleSheet, Text, View, TouchableOpacity, Image, FlatList, ActivityIndicator } from 'react-native';
-import React, { useEffect, useState, useCallback, useContext } from 'react';
+import {
+  StyleSheet,
+  Text,
+  View,
+  TouchableOpacity,
+  Image,
+  FlatList,
+  ActivityIndicator,
+  Modal,
+  Animated,
+} from 'react-native';
+import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Plan } from '../redux/GetAllPlanSlice';
+import { Plan, deletePlan } from '../redux/GetAllPlanSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../AppContext';
 import { useBackHandler } from '../hooks/useBackHandler';
 
+// Custom Icon Component
+const CustomIcon = ({ type }) => {
+  const iconStyles = [styles.iconBase];
+  let iconContent = '!'; // Default icon content
+
+  switch (type) {
+    case 'success':
+      iconStyles.push(styles.successIcon);
+      iconContent = '✓';
+      break;
+    case 'error':
+      iconStyles.push(styles.errorIcon);
+      iconContent = '✕';
+      break;
+    case 'warning':
+      iconStyles.push(styles.warningIcon);
+      iconContent = '!';
+      break;
+    case 'info':
+      iconStyles.push(styles.infoIcon);
+      iconContent = 'i';
+      break;
+    default:
+      iconStyles.push(styles.defaultIcon);
+  }
+
+  return (
+    <View style={iconStyles}>
+      <Text style={styles.iconText}>{iconContent}</Text>
+    </View>
+  );
+};
+
+// Custom Alert Component
+const CustomAlert = ({ visible, title, message, type, onClose, actions }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+    });
+  };
+
+  // Background color based on alert type
+  const getHeaderColor = () => {
+    switch (type) {
+      case 'success':
+        return '#E8F5E9';
+      case 'error':
+        return '#FFEBEE';
+      case 'warning':
+        return '#FFF8E1';
+      case 'info':
+        return '#E3F2FD';
+      default:
+        return '#F5F5F5';
+    }
+  };
+
+  // Button color based on alert type
+  const getButtonColor = () => {
+    switch (type) {
+      case 'success':
+        return '#4CAF50';
+      case 'error':
+        return '#F44336';
+      case 'warning':
+        return '#FF9800';
+      case 'info':
+        return '#2196F3';
+      default:
+        return '#757575';
+    }
+  };
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={closeModal}
+    >
+      <View style={styles.alertOverlay}>
+        <Animated.View
+          style={[
+            styles.alertContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <View style={[styles.alertHeader, { backgroundColor: getHeaderColor() }]}>
+            <View style={styles.alertIconContainer}>
+              <CustomIcon type={type} />
+            </View>
+          </View>
+
+          <View style={styles.alertContent}>
+            <Text style={styles.alertTitle}>{title}</Text>
+            <Text style={styles.alertMessage}>{message}</Text>
+
+            <View style={styles.alertActions}>
+              {actions ? (
+                actions.map((action, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.alertButton, { backgroundColor: getButtonColor() }]}
+                    onPress={() => {
+                      closeModal();
+                      action.onPress && action.onPress();
+                    }}
+                  >
+                    <Text style={styles.alertButtonText}>{action.text}</Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <TouchableOpacity
+                  style={[styles.alertButton, { backgroundColor: getButtonColor() }]}
+                  onPress={closeModal}
+                >
+                  <Text style={styles.alertButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
+
 const AllPlan = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { AllPlanData = [], AllPlanStatus, error } = useSelector((state) => state.plan);
+  const { AllPlanData = [], AllPlanStatus, deleteStatus, error } = useSelector((state) => state.plan);
   const { user, isLoading: contextLoading } = useContext(AppContext);
   const userId = user?._id;
   const [loading, setLoading] = useState(false);
 
+  // State for CustomAlert
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('info');
+  const [alertActions, setAlertActions] = useState(null);
+
+  // Custom alert function
+  const showAlert = (title, message, type = 'info', actions = null) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertActions(actions);
+    setAlertVisible(true);
+  };
+
   useBackHandler(navigation, 'TabNavigation', { screen: 'Setting' });
+
+  const handleDeletePlan = useCallback(
+    (planId) => {
+      showAlert(
+        'Xác nhận xóa',
+        'Bạn có chắc muốn xóa kế hoạch này?',
+        'warning',
+        [
+          {
+            text: 'Hủy',
+            onPress: () => {},
+          },
+          {
+            text: 'Xóa',
+            onPress: async () => {
+              try {
+                await dispatch(deletePlan({ userId, planId })).unwrap();
+                showAlert('Thành công', 'Kế hoạch đã được xóa', 'success');
+              } catch (error) {
+                showAlert('Lỗi', `Không thể xóa kế hoạch: ${error}`, 'error');
+              }
+            },
+          },
+        ]
+      );
+    },
+    [dispatch, userId]
+  );
 
   useEffect(() => {
     if (!contextLoading && !user) {
@@ -50,6 +265,8 @@ const AllPlan = ({ navigation }) => {
   const PlanCard = useCallback(
     ({ item }) => {
       if (!user || !item || !item._id) return null;
+      const isDeleteDisabled = item.status && ['đang chờ', 'đã kích hoạt'].includes(item.status.toLowerCase());
+
       return (
         <TouchableOpacity
           onPress={() => navigation.navigate('DetailPlan', { planId: item._id, fromGenPlan: false })}
@@ -57,14 +274,13 @@ const AllPlan = ({ navigation }) => {
         >
           <View style={styles.card}>
             <View style={styles.cardHeader}>
-              <Text style={styles.productName}>{item.name || 'Kế hoạch không tên'}</Text>
-              <View
-                style={[
-                  styles.statusBadge,
-                  { backgroundColor: getStatusColor(item.status) },
-                ]}
-              >
-                <Text style={styles.statusText}>{item.status || 'Chưa có trạng thái'}</Text>
+              <Text style={styles.productName}>{(item.name || 'Kế hoạch không tên').slice(0, 20)}</Text>
+              <View style={styles.statusBadgeContainer}>
+                <View
+                  style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}
+                >
+                  <Text style={styles.statusText}>{item.status || 'Chưa có trạng thái'}</Text>
+                </View>
               </View>
             </View>
             <View style={styles.cardDivider} />
@@ -73,15 +289,24 @@ const AllPlan = ({ navigation }) => {
                 <Text style={styles.priceLabel}>Tổng tiền:</Text>
                 <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
               </View>
-              <View style={styles.detailButton}>
-                <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+              <View style={styles.buttonsContainer}>
+                <TouchableOpacity
+                  style={[styles.deleteButton, isDeleteDisabled && styles.deleteButtonDisabled]}
+                  onPress={() => handleDeletePlan(item._id)}
+                  disabled={isDeleteDisabled || deleteStatus === 'loading'}
+                >
+                  <Text style={styles.deleteButtonText}>Xóa</Text>
+                </TouchableOpacity>
+                <View style={styles.detailButton}>
+                  <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                </View>
               </View>
             </View>
           </View>
         </TouchableOpacity>
       );
     },
-    [navigation, user]
+    [navigation, user, handleDeletePlan, deleteStatus]
   );
 
   const formatPrice = (price) => {
@@ -91,11 +316,16 @@ const AllPlan = ({ navigation }) => {
   const getStatusColor = (status) => {
     if (!status) return '#9E9E9E';
     switch (status.toLowerCase()) {
-      case 'đã kích hoạt': return '#4CAF50';
-      case 'chưa kích hoạt': return '#2196F3';
-      case 'đang chờ': return '#FF9800';
-      case 'đã hủy': return '#F44336';
-      default: return '#9E9E9E';
+      case 'đã kích hoạt':
+        return '#4CAF50';
+      case 'chưa kích hoạt':
+        return '#2196F3';
+      case 'đang chờ':
+        return '#FF9800';
+      case 'đã hủy':
+        return '#F44336';
+      default:
+        return '#9E9E9E';
     }
   };
 
@@ -124,7 +354,10 @@ const AllPlan = ({ navigation }) => {
     if (AllPlanStatus === 'failed') {
       return (
         <View style={styles.statusContainer}>
-          <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#F44336' }]} />
+          <Image
+            source={require('../Assets/Images/home48.png')}
+            style={[styles.statusIcon, { tintColor: '#F44336' }]}
+          />
           <Text style={styles.errorText}>Không thể tải dữ liệu! Hãy thử lại sau.</Text>
           <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(Plan(userId))}>
             <Text style={styles.retryButtonText}>Thử lại</Text>
@@ -140,7 +373,10 @@ const AllPlan = ({ navigation }) => {
     if (!filteredPlanData.length) {
       return (
         <View style={styles.statusContainer}>
-          <Image source={require('../Assets/Images/home48.png')} style={[styles.statusIcon, { tintColor: '#9E9E9E' }]} />
+          <Image
+            source={require('../Assets/Images/home48.png')}
+            style={[styles.statusIcon, { tintColor: '#9E9E9E' }]}
+          />
           <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
         </View>
       );
@@ -160,11 +396,7 @@ const AllPlan = ({ navigation }) => {
   }, [AllPlanData, AllPlanStatus, loading, user, userId, dispatch, PlanCard]);
 
   if (contextLoading) {
-    return (
-      <SafeAreaView style={styles.container}>
-        {renderLoading()}
-      </SafeAreaView>
-    );
+    return <SafeAreaView style={styles.container}>{renderLoading()}</SafeAreaView>;
   }
 
   if (!user) {
@@ -194,6 +426,15 @@ const AllPlan = ({ navigation }) => {
           <Text style={styles.createPlanButtonText}>Tạo plan mới</Text>
         </TouchableOpacity>
       </View>
+      {/* Custom Alert Component */}
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+        actions={alertActions}
+      />
     </SafeAreaView>
   );
 };
@@ -271,11 +512,14 @@ const styles = StyleSheet.create({
     flex: 1,
     letterSpacing: 0.3,
   },
+  statusBadgeContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   statusBadge: {
     paddingHorizontal: 12,
     paddingVertical: 5,
     borderRadius: 20,
-    marginLeft: 8,
     shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -310,6 +554,31 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#F44336',
+  },
+  buttonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  deleteButton: {
+    backgroundColor: '#F44336',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    marginRight: 8,
+    shadowColor: '#222222',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  deleteButtonDisabled: {
+    backgroundColor: '#F44336',
+    opacity: 0.5,
+  },
+  deleteButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   detailButton: {
     flexDirection: 'row',
@@ -388,6 +657,102 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+  },
+  // Custom Alert Styles
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertContainer: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  alertHeader: {
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertIconContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertContent: {
+    padding: 20,
+  },
+  alertTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  alertActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  alertButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    minWidth: 120,
+    marginHorizontal: 5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  alertButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  // Custom Icon Styles
+  iconBase: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  successIcon: {
+    backgroundColor: '#4CAF50',
+  },
+  errorIcon: {
+    backgroundColor: '#F44336',
+  },
+  warningIcon: {
+    backgroundColor: '#FF9800',
+  },
+  infoIcon: {
+    backgroundColor: '#2196F3',
+  },
+  defaultIcon: {
+    backgroundColor: '#757575',
+  },
+  iconText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
 

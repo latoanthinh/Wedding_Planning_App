@@ -207,7 +207,7 @@ const Payos = ({ route, navigation }) => {
   const Payment = async () => {
     const amount = 5000;
     const cancelUrl = 'https://abc123.ngrok.io/cancel';
-    const description = 'Đơn hàng của Bikerrrr nè';
+    const description = 'đặt cọc ';
     const newOrderCode = Date.now();
     const returnUrl = 'https://abc123.ngrok.io/success';
 

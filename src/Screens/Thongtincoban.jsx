@@ -11,6 +11,7 @@ import {
   Keyboard,
   SafeAreaView,
   ScrollView,
+  ToastAndroid,
 } from "react-native";
 import Sound from "react-native-sound";
 import Video from "react-native-video";
@@ -22,6 +23,7 @@ import { fetchKhaoSatPlans, resetKhaoSat } from "../redux/KhaoSatSlice";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
+// surveyData giữ nguyên
 const surveyData = [
   {
     question: "Ngày dự định tổ chức đám cưới?",
@@ -103,74 +105,76 @@ const Thongtincoban = () => {
     return () => sound.release();
   };
 
-  // Thongtincoban.js (chỉ sửa phần handleNext)
-const handleNext = () => {
-  Keyboard.dismiss();
+  const handleNext = () => {
+    Keyboard.dismiss();
 
-  const formattedBudget = Number(answers.budget.replace(/\./g, ""));
+    const formattedBudget = Number(answers.budget.replace(/\./g, ""));
 
-  if (currentIndex === 0) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    if (answers.eventDate < today) {
-      alert("Vui lòng chọn ngày trong tương lai!");
-      return;
+    if (currentIndex === 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      if (answers.eventDate < today) {
+        ToastAndroid.show("Vui lòng chọn ngày trong tương lai!", ToastAndroid.SHORT);
+        return;
+      }
+    } else if (currentIndex === 1) {
+      if (!answers.guestCount || isNaN(answers.guestCount) || Number(answers.guestCount) <= 0) {
+        ToastAndroid.show("Vui lòng nhập số lượng khách hợp lệ!", ToastAndroid.SHORT);
+        return;
+      }
+    } else if (currentIndex === 2) {
+      if (isNaN(formattedBudget) || formattedBudget <= 0) {
+        ToastAndroid.show("Vui lòng nhập ngân sách hợp lệ!", ToastAndroid.SHORT);
+        return;
+      }
+      if (formattedBudget < 150000000) {
+        ToastAndroid.show("Ngân sách tối thiểu là 150.000.000 VNĐ!", ToastAndroid.SHORT);
+        return;
+      }
     }
-  } else if (currentIndex === 1) {
-    if (!answers.guestCount || isNaN(answers.guestCount) || Number(answers.guestCount) <= 0) {
-      alert("Vui lòng nhập số lượng khách hợp lệ!");
-      return;
-    }
-  } else if (currentIndex === 2) {
-    if (isNaN(formattedBudget) || formattedBudget <= 0) {
-      alert("Vui lòng nhập ngân sách hợp lệ!");
-      return;
-    }
-    if (formattedBudget < 50000000) {
-      alert("Ngân sách tối thiểu là 50.000.000 VNĐ!");
-      return;
-    }
-  }
 
-  Animated.timing(slideAnim, {
-    toValue: -screenWidth,
-    duration: 300,
-    useNativeDriver: true,
-  }).start(() => {
-    if (currentIndex < surveyData.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    } else {
-      const surveyParams = {
-        eventDate: answers.eventDate.toISOString(),
-        guestCount: answers.guestCount,
-        budget: formattedBudget,
-        userId: answers.userId,
-      };
-      console.log("Data sent to GenPlan:", surveyParams);
-
-      dispatch(
-        fetchKhaoSatPlans({
-          planprice: formattedBudget.toString(),
-          plansoluongkhach: answers.guestCount,
-        })
-      ).then((result) => {
-        if (result.meta.requestStatus === "fulfilled") {
-          navigation.navigate("GenPlan", surveyParams); // Truyền trực tiếp sang GenPlan
-        } else {
-          console.error("Error fetching plans:", result.payload);
-          alert("Đã xảy ra lỗi khi lấy gợi ý kế hoạch. Vui lòng thử lại.");
-          setCurrentIndex(currentIndex - 1);
-        }
-      });
-    }
-    slideAnim.setValue(screenWidth);
     Animated.timing(slideAnim, {
-      toValue: 0,
+      toValue: -screenWidth,
       duration: 300,
       useNativeDriver: true,
-    }).start();
-  });
-};
+    }).start(() => {
+      if (currentIndex < surveyData.length - 1) {
+        setCurrentIndex(currentIndex + 1);
+      } else {
+        const surveyParams = {
+          eventDate: answers.eventDate.toISOString(),
+          guestCount: answers.guestCount,
+          budget: formattedBudget,
+          userId: answers.userId,
+        };
+        console.log("Data sent to GenPlan:", surveyParams);
+
+        dispatch(
+          fetchKhaoSatPlans({
+            planprice: formattedBudget.toString(),
+            plansoluongkhach: answers.guestCount,
+          })
+        ).then((result) => {
+          if (result.meta.requestStatus === "fulfilled") {
+            navigation.navigate("GenPlan", surveyParams);
+          } else {
+            console.error("Error fetching plans:", result.payload);
+            ToastAndroid.show(
+              "Đã xảy ra lỗi khi lấy gợi ý kế hoạch. Vui lòng thử lại.",
+              ToastAndroid.SHORT
+            );
+            setCurrentIndex(currentIndex - 1);
+          }
+        });
+      }
+      slideAnim.setValue(screenWidth);
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
+    });
+  };
 
   const isTextRequired =
     surveyData[currentIndex].type === "text" &&
@@ -283,6 +287,7 @@ const handleNext = () => {
 
 export default Thongtincoban;
 
+// Styles giữ nguyên
 const styles = StyleSheet.create({
   loadingText: {
     textAlign: "center",

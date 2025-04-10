@@ -307,6 +307,13 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show('Không thể đặt cọc: Thiếu planId', ToastAndroid.SHORT);
       return;
     }
+
+    // Kiểm tra xem UserId có tồn tại không
+    if (!planData.UserId) {
+      ToastAndroid.show('Không thể đặt cọc: Kế hoạch chưa được liên kết với người dùng', ToastAndroid.SHORT);
+      return;
+    }
+
     if (planData.status === 'active') {
       ToastAndroid.show('Kế hoạch đã được kích hoạt, không thể đặt cọc!', ToastAndroid.SHORT);
     } else if (planData.status === 'pending') {
@@ -457,41 +464,38 @@ const DetailPlan = ({ navigation, route }) => {
 
       <View style={styles.persistentBottomBar}>
         <TouchableOpacity
-          style={styles.bottomBarButton}
-          onPress={handleEditPlan}
-        >
-          <Icon name="pencil-outline" size={22} color="#FFF" style={styles.bottomBarButtonIcon} />
-          <Text style={styles.bottomBarButtonText}>Chỉnh sửa</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
           style={[
             styles.bottomBarButton,
-            styles.depositBottomBarButton,
-            isDepositDisabled && styles.disabledBottomBarButton,
+            !planData?.UserId && styles.fullWidthButton, // Nếu không có UserId, nút chỉnh sửa chiếm toàn bộ chiều rộng
           ]}
-          onPress={handleDeposit}
-          disabled={isDepositDisabled}
+          onPress={handleEditPlan}
         >
-          <View style={styles.depositButtonContent}>
-            <View style={styles.depositTextContainer}>
-              <Text style={styles.bottomBarButtonText}>
-                {planData.status === 'active' ? 'Đã kích hoạt' : planData.status === 'pending' ? 'Đang chờ' : 'Đặt cọc'}
-              </Text>
-              <Text style={styles.depositPriceText}>
-                {depositPrice.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </View>
-            <Icon
-              name={
-                planData.status === 'active' ? 'check-circle' :
-                  planData.status === 'pending' ? 'clock-outline' : 'cash-plus'
-              }
-              size={22}
-              color="#FFF"
-              style={styles.bottomBarButtonIcon}
-            />
-          </View>
+          
+          <Text style={styles.bottomBarButtonText}>Chỉnh sửa</Text>
         </TouchableOpacity>
+        {planData?.UserId && (
+          <TouchableOpacity
+            style={[
+              styles.bottomBarButton,
+              styles.depositBottomBarButton,
+              isDepositDisabled && styles.disabledBottomBarButton,
+            ]}
+            onPress={handleDeposit}
+            disabled={isDepositDisabled}
+          >
+            <View style={styles.depositButtonContent}>
+              <View style={styles.depositTextContainer}>
+                <Text style={styles.bottomBarButtonText}>
+                  {planData.status === 'active' ? 'Đã kích hoạt' : planData.status === 'pending' ? 'Đang chờ' : 'Đặt cọc'}
+                </Text>
+                <Text style={styles.depositPriceText}>
+                  {depositPrice.toLocaleString('vi-VN')} VNĐ
+                </Text>
+              </View>
+              
+            </View>
+          </TouchableOpacity>
+        )}
       </View>
     </SafeAreaView>
   );
@@ -500,6 +504,10 @@ const DetailPlan = ({ navigation, route }) => {
 export default DetailPlan;
 
 const styles = StyleSheet.create({
+  fullWidthButton: {
+    flex: 1, // Chiếm toàn bộ không gian khi không có nút đặt cọc
+    marginHorizontal: 0, // Xóa margin để nút đầy chiều rộng
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
