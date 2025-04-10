@@ -12,7 +12,6 @@ import {
   Animated,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-
 import { Hall } from '../redux/HallSlice';
 import styles from '../Styles/Home_Style';
 import { AppContext } from '../AppContext';
