@@ -12,7 +12,7 @@ import {
   Animated,
 } from 'react-native';
 import { useDispatch, useSelector } from 'react-redux';
-import Lottie from 'lottie-react-native';
+
 import { Hall } from '../redux/HallSlice';
 import styles from '../Styles/Home_Style';
 import { AppContext } from '../AppContext';
@@ -112,12 +112,7 @@ const ScreenHome = ({ navigation }) => {
   const renderCarouselItem = ({ item }) => (
     <View style={styles.slide}>
       <Image source={item.image} style={styles.slideImage} />
-      <View style={styles.slideOverlay}>
-        <Text style={styles.slideTitle}>{item.title}</Text>
-        <TouchableOpacity style={styles.exploreButton}>
-          <Text style={styles.exploreButtonText}>Khám phá ngay</Text>
-        </TouchableOpacity>
-      </View>
+    
     </View>
   );
 
