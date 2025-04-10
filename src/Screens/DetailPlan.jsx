@@ -314,9 +314,9 @@ const DetailPlan = ({ navigation, route }) => {
       return;
     }
 
-    if (planData.status === 'active') {
+    if (planData.status === 'Đã kích hoạt') {
       ToastAndroid.show('Kế hoạch đã được kích hoạt, không thể đặt cọc!', ToastAndroid.SHORT);
-    } else if (planData.status === 'pending') {
+    } else if (planData.status === 'Đang chờ') {
       ToastAndroid.show('Kế hoạch đang chờ xử lý, không thể đặt cọc!', ToastAndroid.SHORT);
     } else {
       navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice || planData.totalPrice });
@@ -324,7 +324,7 @@ const DetailPlan = ({ navigation, route }) => {
   };
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
-  const isDepositDisabled = planData.status === 'active' || planData.status === 'pending';
+  const isDepositDisabled = planData.status === 'Đã kích hoạt' || planData.status === 'Đang chờ';
 
   // Tính giá tiền đặt cọc (10% tổng tiền)
   const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
@@ -486,7 +486,7 @@ const DetailPlan = ({ navigation, route }) => {
             <View style={styles.depositButtonContent}>
               <View style={styles.depositTextContainer}>
                 <Text style={styles.bottomBarButtonText}>
-                  {planData.status === 'active' ? 'Đã kích hoạt' : planData.status === 'pending' ? 'Đang chờ' : 'Đặt cọc'}
+                  {planData.status === 'Đã kích hoạt' ? 'Đã kích hoạt' : planData.status === 'Đang chờ' ? 'Đang chờ' : 'Đặt cọc'}
                 </Text>
                 <Text style={styles.depositPriceText}>
                   {depositPrice.toLocaleString('vi-VN')} VNĐ
