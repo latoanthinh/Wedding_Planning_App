@@ -14,6 +14,7 @@ import { Hall } from '../redux/HallSlice';
 import Lottie from 'lottie-react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../AppContext'; // Thêm AppContext
+import AntDesign from 'react-native-vector-icons/AntDesign';
 
 const { width } = Dimensions.get('window');
 
@@ -161,7 +162,7 @@ const AllLobyy = ({ navigation }) => {
         <SafeAreaView style={styles.container}>
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.navigate("TabNavigation")}>
-                    <Image source={require('../Assets/Images/back.png')} style={styles.icon_1} />
+                    <AntDesign name="arrowleft" size={24} color="#333" />
                 </TouchableOpacity>
                 <Text style={styles.title}>Tất cả Sảnh</Text>
                 <TouchableOpacity onPress={() => navigation.navigate('TabNavigation')}>
