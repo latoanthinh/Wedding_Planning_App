@@ -698,15 +698,15 @@ const handleSelectItem = (item) => {
             </View>
 
             <View style={styles.inputRow}>
-              <Text style={styles.label}>Ngân sách:</Text>
-              <TextInput
-                style={styles.input}
-                value={planprice}
-                onChangeText={(text) => setPlanprice(text.replace(/[^0-9]/g, ''))}
-                placeholder="Nhập ngân sách (VNĐ)"
-                keyboardType="numeric"
-              />
-            </View>
+  <Text style={styles.label}>Ngân sách:</Text>
+  <TextInput
+    style={styles.input}
+    value={planprice ? parseFloat(planprice).toLocaleString('vi-VN') + ' VNĐ' : ''}
+    onChangeText={(text) => setPlanprice(text.replace(/[^0-9]/g, ''))}
+    placeholder="Nhập ngân sách (VNĐ)"
+    keyboardType="numeric"
+  />
+</View>
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Tổng giá:</Text>
