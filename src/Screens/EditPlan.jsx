@@ -60,11 +60,10 @@ const EditPlan = ({ navigation, route }) => {
   const [sanhId, setSanhId] = useState(planData?.SanhId?._id || '');
   const [selectedSanh, setSelectedSanh] = useState(planData?.SanhId || null);
   const [cateringsList, setCateringsList] = useState(planData?.caterings?.filter(item => item && item._id) || []);
-  // Trong khai báo state
   const [decoratesList, setDecoratesList] = useState(
     planData?.decorates?.filter(item => item && item._id).map(item => ({
       ...item,
-      Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Lấy _id hoặc giá trị gốc nếu không phải object
+      Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null,
     })) || []
   );
   const [presentsList, setPresentsList] = useState(
@@ -76,7 +75,7 @@ const EditPlan = ({ navigation, route }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [currentType, setCurrentType] = useState('');
   const [availableItems, setAvailableItems] = useState([]);
-  const [actionType, setActionType] = useState('add');
+  const [actionType, setActionType] = useState('replace');
   const [replaceIndex, setReplaceIndex] = useState(null);
   const [sanhModalVisible, setSanhModalVisible] = useState(false);
   const [showFavorites, setShowFavorites] = useState(false);
@@ -84,6 +83,7 @@ const EditPlan = ({ navigation, route }) => {
   const [selectedItemDetail, setSelectedItemDetail] = useState(null);
   const [priceDifference, setPriceDifference] = useState(0);
   const [presentQuantities, setPresentQuantities] = useState({});
+  const [selectedItems, setSelectedItems] = useState([]);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -101,7 +101,6 @@ const EditPlan = ({ navigation, route }) => {
   };
   const DECORATE_TYPES = Object.values(DECORATE_CATEGORIES);
 
-  // Kiểm tra giới hạn và trùng lặp
   const isDecorateLimitReached = () => {
     const currentCateIds = decoratesList.map(item => item.Cate_decorateId).filter(Boolean);
     return Object.keys(DECORATE_CATEGORIES).every(cateId => currentCateIds.includes(cateId));
@@ -111,7 +110,6 @@ const EditPlan = ({ navigation, route }) => {
     return decoratesList.some(item => item.Cate_decorateId === cateId);
   };
 
-  // Trong useEffect xử lý availableItems
   useEffect(() => {
     if (modalVisible) {
       let items = [];
@@ -129,7 +127,7 @@ const EditPlan = ({ navigation, route }) => {
           new Map(
             decorates.map(item => [item._id, {
               ...item,
-              Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
+              Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null,
             }])
           ).values()
         );
@@ -139,7 +137,6 @@ const EditPlan = ({ navigation, route }) => {
       console.log('Available items for', currentType, ':', items);
       setAvailableItems(items);
     }
-    // ... (phần còn lại của useEffect giữ nguyên)
   }, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData, sanhModalVisible, showSanhFavorites]);
 
   useEffect(() => {
@@ -182,18 +179,31 @@ const EditPlan = ({ navigation, route }) => {
     calculateTotals();
   }, [cateringsList, decoratesList, presentsList, selectedSanh, plansoluongkhach, planprice]);
 
-  const openChangeModal = (type, action = 'add', index = null) => {
+  const openChangeModal = (type, action = 'replace', index = null) => {
     setCurrentType(type);
-    setActionType(action);
+    setActionType(type === 'presents' ? action : 'replace');
     setReplaceIndex(index);
     setModalVisible(true);
     setShowFavorites(false);
     setSelectedItemDetail(null);
     setPresentQuantities({});
-
-    if (type === 'caterings') dispatch(fetchCaterings());
-    else if (type === 'decorates') dispatch(fetchDecorates());
-    else if (type === 'presents') dispatch(fetchPresents());
+  
+    // Initialize selectedItems based on currentType
+    if (type === 'caterings') {
+      setSelectedItems([...cateringsList]);
+      dispatch(fetchCaterings());
+    } else if (type === 'decorates') {
+      setSelectedItems([...decoratesList]);
+      dispatch(fetchDecorates());
+    } else if (type === 'presents') {
+      // For presents, only set selectedItems if replacing an item
+      if (action === 'replace' && index !== null) {
+        setSelectedItems([presentsList[index]]);
+      } else {
+        setSelectedItems([]);
+      }
+      dispatch(fetchPresents());
+    }
   };
 
   const handleChangeSanh = () => {
@@ -219,12 +229,12 @@ const EditPlan = ({ navigation, route }) => {
       } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
         items = Array.from(new Map(decorates.map(item => [item._id, {
           ...item,
-          Cate_decorateId: item.Cate_decorateId || null, // Đảm bảo Cate_decorateId tồn tại
+          Cate_decorateId: item.Cate_decorateId || null,
         }])).values());
       } else if (currentType === 'presents' && presentStatus === 'succeeded') {
         items = Array.from(new Map(presents.map(item => [item._id, item])).values());
       }
-      console.log('Available items for', currentType, ':', items); // Debug dữ liệu
+      console.log('Available items for', currentType, ':', items);
       setAvailableItems(items);
     }
 
@@ -265,7 +275,6 @@ const EditPlan = ({ navigation, route }) => {
     };
   }, [dispatch]);
 
-  // Trong handleSelectItem
   const handleSelectItem = (item) => {
     if (!item) return;
 
@@ -275,7 +284,7 @@ const EditPlan = ({ navigation, route }) => {
       price: item.price || 0,
       imageUrl: item.imageUrl || item.image || null,
       description: item.description || '',
-      Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
+      Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null,
       ...(currentType === 'presents' && {
         quantity: parseInt(presentQuantities[item._id] || '1') || 1,
       }),
@@ -283,35 +292,40 @@ const EditPlan = ({ navigation, route }) => {
 
     console.log('Selected item:', normalizedItem);
 
-    const updateList = (list, setList) => {
-      const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
-      const cateIndex = list.findIndex((existing) => existing.Cate_decorateId === normalizedItem.Cate_decorateId);
-
-      console.log('Current decoratesList:', list);
-      console.log('Existing index:', existingIndex, 'Cate index:', cateIndex);
-
-      if (actionType === 'add') {
+    if (currentType === 'caterings' || currentType === 'decorates') {
+      const isSelected = selectedItems.some((selected) => selected._id === normalizedItem._id);
+      if (isSelected) {
+        setSelectedItems(selectedItems.filter((selected) => selected._id !== normalizedItem._id));
+      } else {
         if (currentType === 'decorates') {
           if (!normalizedItem.Cate_decorateId) {
             ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
             return;
           }
-          if (existingIndex !== -1 || cateIndex !== -1) {
+          const isCateDuplicate = selectedItems.some(
+            (selected) => selected.Cate_decorateId === normalizedItem.Cate_decorateId
+          );
+          if (isCateDuplicate) {
             ToastAndroid.show(
-              `Đã có "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" trong danh sách. Chỉ có thể thay đổi, không thêm mới!`,
+              `Loại "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" đã được chọn. Vui lòng chọn loại khác!`,
               ToastAndroid.SHORT
             );
             return;
           }
-          if (isDecorateLimitReached()) {
+          if (selectedItems.length >= DECORATE_TYPES.length) {
             ToastAndroid.show(
-              'Đã đủ số lượng trang trí tối đa (Cổng hoa, Sân khấu, Background, Pháo hoa - khói)! Chỉ có thể thay đổi.',
+              'Đã đủ số lượng trang trí tối đa (Cổng hoa, Sân khấu, Background, Pháo hoa - khói)!',
               ToastAndroid.SHORT
             );
             return;
           }
-          setList([...list, normalizedItem]);
-        } else {
+        }
+        setSelectedItems([...selectedItems, normalizedItem]);
+      }
+    } else if (currentType === 'presents') {
+      const updateList = (list, setList) => {
+        const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
+        if (actionType === 'add') {
           if (existingIndex !== -1) {
             ToastAndroid.show(
               `Món "${normalizedItem.name}" đã có trong danh sách. Vui lòng chọn món khác!`,
@@ -320,41 +334,30 @@ const EditPlan = ({ navigation, route }) => {
             return;
           }
           setList([...list, normalizedItem]);
+          setModalVisible(false);
+        } else if (actionType === 'replace' && replaceIndex !== null) {
+          const newList = [...list];
+          const existingQuantity = list[replaceIndex]?.quantity || 1;
+          newList[replaceIndex] = { ...normalizedItem, quantity: existingQuantity };
+          setList(newList);
+          setModalVisible(false);
         }
-        setModalVisible(false);
-      } else if (actionType === 'replace' && replaceIndex !== null) {
-        const newList = [...list];
-        const existingQuantity = list[replaceIndex]?.quantity || 1;
-
-        if (currentType === 'decorates') {
-          if (!normalizedItem.Cate_decorateId) {
-            ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
-            return;
-          }
-          const isCateDuplicate = newList.some(
-            (existing, idx) => idx !== replaceIndex && existing.Cate_decorateId === normalizedItem.Cate_decorateId
-          );
-          if (isCateDuplicate) {
-            ToastAndroid.show(
-              `Loại "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" đã tồn tại trong danh sách. Không thể thay thế bằng cùng loại!`,
-              ToastAndroid.SHORT
-            );
-            return;
-          }
-        }
-
-        newList[replaceIndex] = { ...normalizedItem, quantity: existingQuantity };
-        setList(newList);
-        setModalVisible(false);
-      }
-    };
-
-    if (currentType === 'caterings') updateList(cateringsList, setCateringsList);
-    else if (currentType === 'decorates') updateList(decoratesList, setDecoratesList);
-    else if (currentType === 'presents') updateList(presentsList, setPresentsList);
+      };
+      updateList(presentsList, setPresentsList);
+    }
 
     setReplaceIndex(null);
-    setActionType('add');
+    if (currentType === 'presents') setActionType('add');
+  };
+
+  const confirmSelection = () => {
+    if (currentType === 'caterings') {
+      setCateringsList(selectedItems);
+    } else if (currentType === 'decorates') {
+      setDecoratesList(selectedItems);
+    }
+    setModalVisible(false);
+    setSelectedItems([]);
   };
 
   const handleRemoveItem = (type, index) => {
@@ -507,13 +510,11 @@ const EditPlan = ({ navigation, route }) => {
         <Text style={styles.totalLabel}>Tổng chi phí {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}:</Text>
         <Text style={styles.totalValue}>{total.toLocaleString('vi-VN')} VNĐ</Text>
       </View>
-      {type !== 'decorates' || (type === 'decorates' && items.length < DECORATE_TYPES.length) ? (
-        <TouchableOpacity style={styles.changeButton} onPress={() => openChangeModal(type, 'add')}>
-          <Text style={styles.buttonText}>
-            Thêm {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
-          </Text>
-        </TouchableOpacity>
-      ) : null}
+      <TouchableOpacity style={styles.changeButton} onPress={() => openChangeModal(type, 'replace')}>
+        <Text style={styles.buttonText}>
+          Thay đổi {type === 'caterings' ? 'món ăn' : type === 'decorates' ? 'trang trí' : 'quà tặng'}
+        </Text>
+      </TouchableOpacity>
     </View>
   );
 
@@ -542,14 +543,30 @@ const EditPlan = ({ navigation, route }) => {
 
   const renderModalItem = ({ item }) => (
     item ? (
-      <View style={styles.modalItem}>
-        <TouchableOpacity style={styles.modalItemSelect} onPress={() => handleSelectItem(item)}>
+      <TouchableOpacity
+        style={[
+          styles.modalItem,
+          selectedItems.some((selected) => selected._id === item._id) && styles.modalItemSelected,
+        ]}
+        activeOpacity={0.7}
+        onPress={() => handleSelectItem(item)}
+      >
+        <View style={styles.modalItemSelect}>
           {(item.imageUrl || item.image) && (
             <Image source={{ uri: item.imageUrl || item.image }} style={styles.modalItemImage} />
           )}
           <View style={styles.modalItemContent}>
             <Text style={styles.modalItemText}>{item.name || 'Không có tên'}</Text>
             <Text style={styles.modalItemPrice}>{item.price?.toLocaleString('vi-VN') || '0'} VNĐ</Text>
+            {(currentType === 'caterings' || currentType === 'decorates') && (
+              <View style={styles.checkboxContainer}>
+                <Icon
+                  name={selectedItems.some((selected) => selected._id === item._id) ? 'checkbox-marked' : 'checkbox-blank-outline'}
+                  size={20}
+                  color={selectedItems.some((selected) => selected._id === item._id) ? '#007AFF' : '#666666'}
+                />
+              </View>
+            )}
             {currentType === 'presents' && (
               <View style={styles.quantityInputContainer}>
                 <Text style={styles.quantityLabel}>Số lượng:</Text>
@@ -566,18 +583,22 @@ const EditPlan = ({ navigation, route }) => {
               </View>
             )}
           </View>
-        </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.viewButton} onPress={() => handleViewDetail(item)}>
-          <Icon name="eye" size={20} color="#FFF" />
+          <Icon name="eye" size={18} color="#FFF" />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     ) : null
   );
 
   const renderSanhItem = ({ item }) => (
     item ? (
-      <View style={styles.modalItem}>
-        <TouchableOpacity style={styles.modalItemSelect} onPress={() => handleSelectSanh(item)}>
+      <TouchableOpacity
+        style={styles.modalItem}
+        activeOpacity={0.7}
+        onPress={() => handleSelectSanh(item)}
+      >
+        <View style={styles.modalItemSelect}>
           {(item.imageUrl || item.image) && (
             <Image source={{ uri: item.imageUrl || item.image }} style={styles.modalItemImage} />
           )}
@@ -588,11 +609,11 @@ const EditPlan = ({ navigation, route }) => {
               <Text style={styles.modalItemPrice}>{item.SoLuongKhach}/người</Text>
             )}
           </View>
-        </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.viewButton} onPress={() => handleViewDetail(item)}>
-          <Icon name="eye" size={20} color="#FFF" />
+          <Icon name="eye" size={18} color="#FFF" />
         </TouchableOpacity>
-      </View>
+      </TouchableOpacity>
     ) : null
   );
 
@@ -718,13 +739,13 @@ const EditPlan = ({ navigation, route }) => {
             </View>
             <View style={styles.inputRow}>
               <Text style={styles.label}>Chênh lệch:</Text>
+              
               <Text
+              
                 style={[
-                  styles.input,
-                  {
-                    color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#666',
-                    fontWeight: 'bold',
-                  },
+                  styles.input,,
+                  { color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#666',
+                    fontWeight: 'bold',}
                 ]}
               >
                 {priceDifference.toLocaleString('vi-VN')} VNĐ
@@ -797,22 +818,30 @@ const EditPlan = ({ navigation, route }) => {
         />
       </View>
 
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
+      {/* Modified Modal for Caterings, Decorates, Presents */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>
-              {actionType === 'add' ? 'Thêm' : 'Thay đổi'} {currentType === 'caterings' ? 'món ăn' : currentType === 'decorates' ? 'trang trí' : 'quà tặng'}
+              Thay đổi {currentType === 'caterings' ? 'món ăn' : currentType === 'decorates' ? 'trang trí' : 'quà tặng'}
             </Text>
             <View style={styles.toggleContainer}>
               <TouchableOpacity
                 style={[styles.toggleButton, !showFavorites && styles.activeToggle]}
                 onPress={() => setShowFavorites(false)}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.toggleText, !showFavorites && styles.activeToggleText]}>Tất cả</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.toggleButton, showFavorites && styles.activeToggle]}
                 onPress={() => setShowFavorites(true)}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.toggleText, showFavorites && styles.activeToggleText]}>Yêu thích</Text>
               </TouchableOpacity>
@@ -822,11 +851,11 @@ const EditPlan = ({ navigation, route }) => {
             ) : (
               <>
                 {(currentType === 'caterings' && cateringStatus === 'loading') ||
-                  (currentType === 'decorates' && decorateStatus === 'loading') ||
-                  (currentType === 'presents' && presentStatus === 'loading') ||
-                  (showFavorites && favoriteStatus === 'loading') ? (
+                (currentType === 'decorates' && decorateStatus === 'loading') ||
+                (currentType === 'presents' && presentStatus === 'loading') ||
+                (showFavorites && favoriteStatus === 'loading') ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#000000" />
+                    <ActivityIndicator size="large" color="#007AFF" />
                     <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
                   </View>
                 ) : availableItems.length > 0 ? (
@@ -835,22 +864,36 @@ const EditPlan = ({ navigation, route }) => {
                     renderItem={renderModalItem}
                     keyExtractor={(item, index) => `${currentType}-${item._id || item.itemId || 'item'}-${index}`}
                     style={styles.modalList}
+                    ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
                   />
                 ) : (
                   <Text style={styles.noDataText}>
                     {showFavorites ? 'Không có mục yêu thích nào' : 'Không có dữ liệu để hiển thị'}
                   </Text>
                 )}
-                <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
-                  <Text style={styles.closeButtonText}>Đóng</Text>
-                </TouchableOpacity>
+                <View style={styles.modalButtonContainer}>
+                  {(currentType === 'caterings' || currentType === 'decorates') && (
+                    <TouchableOpacity style={styles.confirmButton} onPress={confirmSelection}>
+                      <Text style={styles.modalButtonText}>Xác nhận</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity style={styles.closeButton} onPress={() => setModalVisible(false)}>
+                    <Text style={styles.modalButtonText}>Đóng</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
           </View>
         </View>
       </Modal>
 
-      <Modal animationType="slide" transparent={true} visible={sanhModalVisible} onRequestClose={() => setSanhModalVisible(false)}>
+      {/* Modified Modal for Sanh */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={sanhModalVisible}
+        onRequestClose={() => setSanhModalVisible(false)}
+      >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Chọn sảnh</Text>
@@ -858,12 +901,14 @@ const EditPlan = ({ navigation, route }) => {
               <TouchableOpacity
                 style={[styles.toggleButton, !showSanhFavorites && styles.activeToggle]}
                 onPress={() => setShowSanhFavorites(false)}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.toggleText, !showSanhFavorites && styles.activeToggleText]}>Tất cả</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[styles.toggleButton, showSanhFavorites && styles.activeToggle]}
                 onPress={() => setShowSanhFavorites(true)}
+                activeOpacity={0.7}
               >
                 <Text style={[styles.toggleText, showSanhFavorites && styles.activeToggleText]}>Yêu thích</Text>
               </TouchableOpacity>
@@ -874,7 +919,7 @@ const EditPlan = ({ navigation, route }) => {
               <>
                 {(HallStatus === 'loading' || (showSanhFavorites && favoriteStatus === 'loading')) ? (
                   <View style={styles.loadingContainer}>
-                    <ActivityIndicator size="large" color="#000000" />
+                    <ActivityIndicator size="large" color="#007AFF" />
                     <Text style={styles.loadingText}>Đang tải danh sách sảnh...</Text>
                   </View>
                 ) : availableItems.length > 0 ? (
@@ -883,15 +928,18 @@ const EditPlan = ({ navigation, route }) => {
                     renderItem={renderSanhItem}
                     keyExtractor={(item, index) => `sanh-${item._id || item.itemId || 'sanh'}-${index}`}
                     style={styles.modalList}
+                    ItemSeparatorComponent={() => <View style={styles.itemSeparator} />}
                   />
                 ) : (
                   <Text style={styles.noDataText}>
                     {showSanhFavorites ? 'Không có sảnh yêu thích nào' : 'Không có sảnh nào để hiển thị'}
                   </Text>
                 )}
-                <TouchableOpacity style={styles.closeButton} onPress={() => setSanhModalVisible(false)}>
-                  <Text style={styles.closeButtonText}>Đóng</Text>
-                </TouchableOpacity>
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity style={styles.closeButton} onPress={() => setSanhModalVisible(false)}>
+                    <Text style={styles.modalButtonText}>Đóng</Text>
+                  </TouchableOpacity>
+                </View>
               </>
             )}
           </View>
@@ -957,13 +1005,18 @@ const styles = StyleSheet.create({
   confirmModalContent: {
     width: '80%',
     backgroundColor: '#FFF',
-    borderRadius: 10,
+    borderRadius: 12,
     padding: 20,
     alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   confirmModalTitle: {
     fontSize: 20,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#000000',
     marginBottom: 15,
   },
@@ -980,7 +1033,7 @@ const styles = StyleSheet.create({
   },
   confirmButton: {
     flex: 1,
-    paddingVertical: 10,
+    paddingVertical: 12,
     borderRadius: 8,
     alignItems: 'center',
     marginHorizontal: 5,
@@ -989,32 +1042,35 @@ const styles = StyleSheet.create({
     backgroundColor: '#666666',
   },
   confirmSaveButton: {
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
   confirmButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   toggleContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginBottom: 15,
+    marginBottom: 20,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    borderRadius: 25,
+    padding: 4,
   },
   toggleButton: {
-    paddingVertical: 8,
-    paddingHorizontal: 20,
+    paddingVertical: 10,
+    paddingHorizontal: 24,
     borderRadius: 20,
-    backgroundColor: 'rgba(0, 0, 0, 0.05)',
-    marginHorizontal: 5,
+    marginHorizontal: 4,
+    transition: 'background-color 0.3s',
   },
   activeToggle: {
-    backgroundColor: '#000000',
+    backgroundColor: '#007AFF',
   },
   toggleText: {
-    fontSize: 16,
-    color: '#000000',
-    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#333333',
+    fontWeight: '600',
   },
   activeToggleText: {
     color: '#FFFFFF',
@@ -1055,7 +1111,7 @@ const styles = StyleSheet.create({
   },
   planTitle: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: '700',
     color: '#000000',
     marginBottom: 20,
   },
@@ -1097,7 +1153,6 @@ const styles = StyleSheet.create({
   itemText: {
     fontSize: 14,
     color: '#000000',
-    fontWeight: '500',
   },
   itemPrice: {
     fontSize: 12,
@@ -1126,6 +1181,7 @@ const styles = StyleSheet.create({
     color: '#757575',
     fontStyle: 'italic',
     textAlign: 'center',
+    marginVertical: 20,
   },
   changeButton: {
     backgroundColor: '#000000',
@@ -1137,38 +1193,50 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#FFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   modalOverlay: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
   },
   modalContent: {
-    width: '90%',
-    backgroundColor: '#FFF',
-    borderRadius: 10,
+    width: '92%',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
     padding: 20,
-    maxHeight: '80%',
+    maxHeight: '85%',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 6,
   },
   modalTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#000000',
-    marginBottom: 15,
+    marginBottom: 20,
     textAlign: 'center',
   },
   modalList: {
     flexGrow: 0,
+    marginBottom: 10,
   },
   modalItem: {
     flexDirection: 'row',
+    backgroundColor: '#F8F8F8',
+    borderRadius: 12,
     padding: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    marginVertical: 4,
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  modalItemSelected: {
+    backgroundColor: 'rgba(0, 122, 255, 0.1)',
+    borderWidth: 1,
+    borderColor: '#007AFF',
   },
   modalItemSelect: {
     flexDirection: 'row',
@@ -1176,10 +1244,10 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalItemImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 8,
-    marginRight: 10,
+    width: 60,
+    height: 60,
+    borderRadius: 10,
+    marginRight: 12,
   },
   modalItemContent: {
     flex: 1,
@@ -1187,32 +1255,49 @@ const styles = StyleSheet.create({
   modalItemText: {
     fontSize: 16,
     color: '#000000',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   modalItemPrice: {
     fontSize: 14,
-    color: '#000000',
-    marginTop: 5,
+    color: '#333333',
+    marginTop: 4,
   },
   viewButton: {
-    backgroundColor: '#000000',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
+    backgroundColor: '#007AFF',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
     borderRadius: 8,
     marginLeft: 10,
   },
-  closeButton: {
-    backgroundColor: '#000000',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
-    alignSelf: 'center',
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
     marginTop: 15,
   },
-  closeButtonText: {
-    color: '#FFF',
+  confirmButton: {
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginHorizontal: 8,
+    flex: 1,
+  },
+  closeButton: {
+    backgroundColor: '#666666',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
+    marginHorizontal: 8,
+    flex: 1,
+  },
+  modalButtonText: {
+    color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  itemSeparator: {
+    height: 8,
   },
   loadingContainer: {
     justifyContent: 'center',
@@ -1222,47 +1307,47 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#000000',
+    color: '#333333',
   },
   detailContainer: {
     padding: 10,
   },
   detailTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 22,
+    fontWeight: '700',
     color: '#000000',
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
   },
   detailImage: {
     width: '100%',
     height: 200,
-    borderRadius: 10,
-    marginBottom: 10,
+    borderRadius: 12,
+    marginBottom: 12,
   },
   detailPrice: {
     fontSize: 18,
     color: '#000000',
-    marginBottom: 10,
+    marginBottom: 12,
     textAlign: 'center',
   },
   detailDescription: {
     fontSize: 16,
-    color: '#757575',
-    marginBottom: 10,
+    color: '#666666',
+    marginBottom: 12,
     textAlign: 'center',
   },
   detailCapacity: {
     fontSize: 16,
-    color: '#757575',
-    marginBottom: 10,
+    color: '#666666',
+    marginBottom: 12,
     textAlign: 'center',
   },
   backButtonDetail: {
-    backgroundColor: '#000000',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 10,
     alignSelf: 'center',
   },
   divider: {
@@ -1273,35 +1358,35 @@ const styles = StyleSheet.create({
   quantityInputContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 5,
+    marginTop: 8,
   },
   quantityLabel: {
-    fontSize: 12,
-    color: '#000000',
-    marginRight: 5,
+    fontSize: 14,
+    color: '#333333',
+    marginRight: 8,
   },
   smallQuantityInput: {
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
-    borderRadius: 4,
-    padding: 4,
-    width: 40,
-    fontSize: 12,
+    borderColor: 'rgba(0, 0, 0, 0.15)',
+    borderRadius: 6,
+    padding: 6,
+    width: 50,
+    fontSize: 14,
     color: '#000000',
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    backgroundColor: '#FFFFFF',
     textAlign: 'center',
   },
   quantityInput: {
     borderWidth: 1,
-    borderColor: 'rgba(0, 0, 0, 0.1)',
+    borderColor: 'rgba(0, 0, 0, 0.15)',
     borderRadius: 6,
     padding: 6,
     width: 60,
     fontSize: 14,
     color: '#000000',
-    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    backgroundColor: '#FFFFFF',
     textAlign: 'center',
-    marginTop: 5,
+    marginTop: 8,
   },
   persistentBottomBar: {
     position: 'absolute',
@@ -1344,7 +1429,7 @@ const styles = StyleSheet.create({
   bottomBarPriceValue: {
     fontSize: 13,
     color: '#000000',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   saveBottomBarButton: {
     borderRadius: 8,
@@ -1365,7 +1450,7 @@ const styles = StyleSheet.create({
   bottomBarButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   differenceContainer: {
     flexDirection: 'row',
@@ -1388,7 +1473,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 14,
     color: '#000000',
-    fontWeight: 'bold',
+    fontWeight: '600',
   },
   toggleAutoSaveButton: {
     backgroundColor: '#000000',
@@ -1397,6 +1482,9 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     alignSelf: 'flex-start',
     marginTop: 10,
+  },
+  checkboxContainer: {
+    marginTop: 8,
   },
 });
 

@@ -308,14 +308,13 @@ const DetailPlan = ({ navigation, route }) => {
       return;
     }
 
-    // Kiểm tra xem UserId có tồn tại không
     if (!planData.UserId) {
       ToastAndroid.show('Không thể đặt cọc: Kế hoạch chưa được liên kết với người dùng', ToastAndroid.SHORT);
       return;
     }
 
-    if (planData.status === 'Đã kích hoạt') {
-      ToastAndroid.show('Kế hoạch đã được kích hoạt, không thể đặt cọc!', ToastAndroid.SHORT);
+    if (planData.status === 'Đã đặt cọc') {
+      ToastAndroid.show('Kế hoạch đã được đặt cọc, không thể đặt cọc!', ToastAndroid.SHORT);
     } else if (planData.status === 'Đang chờ') {
       ToastAndroid.show('Kế hoạch đang chờ xử lý, không thể đặt cọc!', ToastAndroid.SHORT);
     } else {
@@ -324,9 +323,8 @@ const DetailPlan = ({ navigation, route }) => {
   };
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
-  const isDepositDisabled = planData.status === 'Đã kích hoạt' || planData.status === 'Đang chờ';
+  const isDepositDisabled = planData.status === 'Đã đặt cọc' || planData.status === 'Đang chờ';
 
-  // Tính giá tiền đặt cọc (10% tổng tiền)
   const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
   const depositPrice = totalPrice * 0.1;
 
@@ -401,16 +399,25 @@ const DetailPlan = ({ navigation, route }) => {
                 <Icon name="scale-balance" size={22} color="#000000" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
-                  <Text
-                    style={[
-                      styles.planDetail,
-                      {
-                        color: priceDifference > 0 ? '#43A047' : priceDifference < 0 ? '#E53935' : '#757575',
-                      },
-                    ]}
-                  >
-                    {priceDifference > 0 ? '+' : ''}{priceDifference.toLocaleString('vi-VN')} VNĐ
-                  </Text>
+                  <View style={styles.differenceContainer}>
+                    <Icon
+                      name={priceDifference >= 0 ? "arrow-down-bold" : "arrow-up-bold"}
+                      size={13}
+                      color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={[
+                        styles.planDetail,
+                        {
+                          color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000',
+                          fontWeight: 'bold',
+                        },
+                      ]}
+                    >
+                      {Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
@@ -466,11 +473,10 @@ const DetailPlan = ({ navigation, route }) => {
         <TouchableOpacity
           style={[
             styles.bottomBarButton,
-            !planData?.UserId && styles.fullWidthButton, // Nếu không có UserId, nút chỉnh sửa chiếm toàn bộ chiều rộng
+            !planData?.UserId && styles.fullWidthButton,
           ]}
           onPress={handleEditPlan}
         >
-          
           <Text style={styles.bottomBarButtonText}>Chỉnh sửa</Text>
         </TouchableOpacity>
         {planData?.UserId && (
@@ -486,13 +492,12 @@ const DetailPlan = ({ navigation, route }) => {
             <View style={styles.depositButtonContent}>
               <View style={styles.depositTextContainer}>
                 <Text style={styles.bottomBarButtonText}>
-                  {planData.status === 'Đã kích hoạt' ? 'Đã kích hoạt' : planData.status === 'Đang chờ' ? 'Đang chờ' : 'Đặt cọc'}
+                  {planData.status === 'Đã đặt cọc' ? 'Đã đặt cọc' : planData.status === 'Đang chờ' ? 'Đang chờ' : 'Đặt cọc'}
                 </Text>
                 <Text style={styles.depositPriceText}>
                   {depositPrice.toLocaleString('vi-VN')} VNĐ
                 </Text>
               </View>
-              
             </View>
           </TouchableOpacity>
         )}
@@ -504,9 +509,13 @@ const DetailPlan = ({ navigation, route }) => {
 export default DetailPlan;
 
 const styles = StyleSheet.create({
+  differenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
   fullWidthButton: {
-    flex: 1, // Chiếm toàn bộ không gian khi không có nút đặt cọc
-    marginHorizontal: 0, // Xóa margin để nút đầy chiều rộng
+    flex: 1,
+    marginHorizontal: 0,
   },
   container: {
     flex: 1,

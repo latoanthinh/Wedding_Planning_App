@@ -265,7 +265,7 @@ const AllPlan = ({ navigation }) => {
   const PlanCard = useCallback(
     ({ item }) => {
       if (!user || !item || !item._id) return null;
-      const isDeleteDisabled = item.status && ['đang chờ', 'đã kích hoạt'].includes(item.status.toLowerCase());
+      const isDeleteDisabled = item.status && ['đang chờ', 'đã đặt cọc'].includes(item.status.toLowerCase());
 
       return (
         <TouchableOpacity
@@ -316,9 +316,9 @@ const AllPlan = ({ navigation }) => {
   const getStatusColor = (status) => {
     if (!status) return '#9E9E9E';
     switch (status.toLowerCase()) {
-      case 'đã kích hoạt':
+      case 'đã đặc cọc':
         return '#4CAF50';
-      case 'chưa kích hoạt':
+      case 'chưa đặt cọc':
         return '#2196F3';
       case 'đang chờ':
         return '#FF9800';
