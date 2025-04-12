@@ -61,12 +61,12 @@ const EditPlan = ({ navigation, route }) => {
   const [selectedSanh, setSelectedSanh] = useState(planData?.SanhId || null);
   const [cateringsList, setCateringsList] = useState(planData?.caterings?.filter(item => item && item._id) || []);
   // Trong khai báo state
-const [decoratesList, setDecoratesList] = useState(
-  planData?.decorates?.filter(item => item && item._id).map(item => ({
-    ...item,
-    Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Lấy _id hoặc giá trị gốc nếu không phải object
-  })) || []
-);  
+  const [decoratesList, setDecoratesList] = useState(
+    planData?.decorates?.filter(item => item && item._id).map(item => ({
+      ...item,
+      Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Lấy _id hoặc giá trị gốc nếu không phải object
+    })) || []
+  );
   const [presentsList, setPresentsList] = useState(
     planData?.presents?.filter(item => item && item._id).map(item => ({
       ...item,
@@ -102,45 +102,45 @@ const [decoratesList, setDecoratesList] = useState(
   const DECORATE_TYPES = Object.values(DECORATE_CATEGORIES);
 
   // Kiểm tra giới hạn và trùng lặp
-const isDecorateLimitReached = () => {
-  const currentCateIds = decoratesList.map(item => item.Cate_decorateId).filter(Boolean);
-  return Object.keys(DECORATE_CATEGORIES).every(cateId => currentCateIds.includes(cateId));
-};
+  const isDecorateLimitReached = () => {
+    const currentCateIds = decoratesList.map(item => item.Cate_decorateId).filter(Boolean);
+    return Object.keys(DECORATE_CATEGORIES).every(cateId => currentCateIds.includes(cateId));
+  };
 
-const isDecorateTypeExist = (cateId) => {
-  return decoratesList.some(item => item.Cate_decorateId === cateId);
-};
+  const isDecorateTypeExist = (cateId) => {
+    return decoratesList.some(item => item.Cate_decorateId === cateId);
+  };
 
   // Trong useEffect xử lý availableItems
-useEffect(() => {
-  if (modalVisible) {
-    let items = [];
-    if (showFavorites && favoriteStatus === 'succeeded') {
-      const typeMap = { caterings: 'catering', decorates: 'decorate', presents: 'present' };
-      items = Array.from(
-        new Map(
-          favorites.filter(item => item.type === typeMap[currentType]).map(item => [item._id, item])
-        ).values()
-      );
-    } else if (currentType === 'caterings' && cateringStatus === 'succeeded') {
-      items = Array.from(new Map(caterings.map(item => [item._id, item])).values());
-    } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
-      items = Array.from(
-        new Map(
-          decorates.map(item => [item._id, {
-            ...item,
-            Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
-          }])
-        ).values()
-      );
-    } else if (currentType === 'presents' && presentStatus === 'succeeded') {
-      items = Array.from(new Map(presents.map(item => [item._id, item])).values());
+  useEffect(() => {
+    if (modalVisible) {
+      let items = [];
+      if (showFavorites && favoriteStatus === 'succeeded') {
+        const typeMap = { caterings: 'catering', decorates: 'decorate', presents: 'present' };
+        items = Array.from(
+          new Map(
+            favorites.filter(item => item.type === typeMap[currentType]).map(item => [item._id, item])
+          ).values()
+        );
+      } else if (currentType === 'caterings' && cateringStatus === 'succeeded') {
+        items = Array.from(new Map(caterings.map(item => [item._id, item])).values());
+      } else if (currentType === 'decorates' && decorateStatus === 'succeeded') {
+        items = Array.from(
+          new Map(
+            decorates.map(item => [item._id, {
+              ...item,
+              Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
+            }])
+          ).values()
+        );
+      } else if (currentType === 'presents' && presentStatus === 'succeeded') {
+        items = Array.from(new Map(presents.map(item => [item._id, item])).values());
+      }
+      console.log('Available items for', currentType, ':', items);
+      setAvailableItems(items);
     }
-    console.log('Available items for', currentType, ':', items);
-    setAvailableItems(items);
-  }
-  // ... (phần còn lại của useEffect giữ nguyên)
-}, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData, sanhModalVisible, showSanhFavorites]);
+    // ... (phần còn lại của useEffect giữ nguyên)
+  }, [caterings, cateringStatus, decorates, decorateStatus, presents, presentStatus, favorites, favoriteStatus, currentType, showFavorites, HallStatus, HallData, sanhModalVisible, showSanhFavorites]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
@@ -266,96 +266,96 @@ useEffect(() => {
   }, [dispatch]);
 
   // Trong handleSelectItem
-const handleSelectItem = (item) => {
-  if (!item) return;
+  const handleSelectItem = (item) => {
+    if (!item) return;
 
-  const normalizedItem = {
-    _id: item.itemId || item._id,
-    name: item.name || 'Không có tên',
-    price: item.price || 0,
-    imageUrl: item.imageUrl || item.image || null,
-    description: item.description || '',
-    Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
-    ...(currentType === 'presents' && {
-      quantity: parseInt(presentQuantities[item._id] || '1') || 1,
-    }),
-  };
+    const normalizedItem = {
+      _id: item.itemId || item._id,
+      name: item.name || 'Không có tên',
+      price: item.price || 0,
+      imageUrl: item.imageUrl || item.image || null,
+      description: item.description || '',
+      Cate_decorateId: item.Cate_decorateId?._id || item.Cate_decorateId || null, // Chuẩn hóa Cate_decorateId
+      ...(currentType === 'presents' && {
+        quantity: parseInt(presentQuantities[item._id] || '1') || 1,
+      }),
+    };
 
-  console.log('Selected item:', normalizedItem);
+    console.log('Selected item:', normalizedItem);
 
-  const updateList = (list, setList) => {
-    const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
-    const cateIndex = list.findIndex((existing) => existing.Cate_decorateId === normalizedItem.Cate_decorateId);
+    const updateList = (list, setList) => {
+      const existingIndex = list.findIndex((existing) => existing._id === normalizedItem._id);
+      const cateIndex = list.findIndex((existing) => existing.Cate_decorateId === normalizedItem.Cate_decorateId);
 
-    console.log('Current decoratesList:', list);
-    console.log('Existing index:', existingIndex, 'Cate index:', cateIndex);
+      console.log('Current decoratesList:', list);
+      console.log('Existing index:', existingIndex, 'Cate index:', cateIndex);
 
-    if (actionType === 'add') {
-      if (currentType === 'decorates') {
-        if (!normalizedItem.Cate_decorateId) {
-          ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
-          return;
+      if (actionType === 'add') {
+        if (currentType === 'decorates') {
+          if (!normalizedItem.Cate_decorateId) {
+            ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
+            return;
+          }
+          if (existingIndex !== -1 || cateIndex !== -1) {
+            ToastAndroid.show(
+              `Đã có "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" trong danh sách. Chỉ có thể thay đổi, không thêm mới!`,
+              ToastAndroid.SHORT
+            );
+            return;
+          }
+          if (isDecorateLimitReached()) {
+            ToastAndroid.show(
+              'Đã đủ số lượng trang trí tối đa (Cổng hoa, Sân khấu, Background, Pháo hoa - khói)! Chỉ có thể thay đổi.',
+              ToastAndroid.SHORT
+            );
+            return;
+          }
+          setList([...list, normalizedItem]);
+        } else {
+          if (existingIndex !== -1) {
+            ToastAndroid.show(
+              `Món "${normalizedItem.name}" đã có trong danh sách. Vui lòng chọn món khác!`,
+              ToastAndroid.SHORT
+            );
+            return;
+          }
+          setList([...list, normalizedItem]);
         }
-        if (existingIndex !== -1 || cateIndex !== -1) {
-          ToastAndroid.show(
-            `Đã có "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" trong danh sách. Chỉ có thể thay đổi, không thêm mới!`,
-            ToastAndroid.SHORT
+        setModalVisible(false);
+      } else if (actionType === 'replace' && replaceIndex !== null) {
+        const newList = [...list];
+        const existingQuantity = list[replaceIndex]?.quantity || 1;
+
+        if (currentType === 'decorates') {
+          if (!normalizedItem.Cate_decorateId) {
+            ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
+            return;
+          }
+          const isCateDuplicate = newList.some(
+            (existing, idx) => idx !== replaceIndex && existing.Cate_decorateId === normalizedItem.Cate_decorateId
           );
-          return;
+          if (isCateDuplicate) {
+            ToastAndroid.show(
+              `Loại "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" đã tồn tại trong danh sách. Không thể thay thế bằng cùng loại!`,
+              ToastAndroid.SHORT
+            );
+            return;
+          }
         }
-        if (isDecorateLimitReached()) {
-          ToastAndroid.show(
-            'Đã đủ số lượng trang trí tối đa (Cổng hoa, Sân khấu, Background, Pháo hoa - khói)! Chỉ có thể thay đổi.',
-            ToastAndroid.SHORT
-          );
-          return;
-        }
-        setList([...list, normalizedItem]);
-      } else {
-        if (existingIndex !== -1) {
-          ToastAndroid.show(
-            `Món "${normalizedItem.name}" đã có trong danh sách. Vui lòng chọn món khác!`,
-            ToastAndroid.SHORT
-          );
-          return;
-        }
-        setList([...list, normalizedItem]);
+
+        newList[replaceIndex] = { ...normalizedItem, quantity: existingQuantity };
+        setList(newList);
+        setModalVisible(false);
       }
-      setModalVisible(false);
-    } else if (actionType === 'replace' && replaceIndex !== null) {
-      const newList = [...list];
-      const existingQuantity = list[replaceIndex]?.quantity || 1;
+    };
 
-      if (currentType === 'decorates') {
-        if (!normalizedItem.Cate_decorateId) {
-          ToastAndroid.show('Dữ liệu trang trí không hợp lệ: Thiếu Cate_decorateId!', ToastAndroid.SHORT);
-          return;
-        }
-        const isCateDuplicate = newList.some(
-          (existing, idx) => idx !== replaceIndex && existing.Cate_decorateId === normalizedItem.Cate_decorateId
-        );
-        if (isCateDuplicate) {
-          ToastAndroid.show(
-            `Loại "${DECORATE_CATEGORIES[normalizedItem.Cate_decorateId] || normalizedItem.name}" đã tồn tại trong danh sách. Không thể thay thế bằng cùng loại!`,
-            ToastAndroid.SHORT
-          );
-          return;
-        }
-      }
+    if (currentType === 'caterings') updateList(cateringsList, setCateringsList);
+    else if (currentType === 'decorates') updateList(decoratesList, setDecoratesList);
+    else if (currentType === 'presents') updateList(presentsList, setPresentsList);
 
-      newList[replaceIndex] = { ...normalizedItem, quantity: existingQuantity };
-      setList(newList);
-      setModalVisible(false);
-    }
+    setReplaceIndex(null);
+    setActionType('add');
   };
-
-  if (currentType === 'caterings') updateList(cateringsList, setCateringsList);
-  else if (currentType === 'decorates') updateList(decoratesList, setDecoratesList);
-  else if (currentType === 'presents') updateList(presentsList, setPresentsList);
-
-  setReplaceIndex(null);
-  setActionType('add');
-};
 
   const handleRemoveItem = (type, index) => {
     const updateList = (list, setList) => setList(list.filter((_, i) => i !== index));
@@ -698,15 +698,15 @@ const handleSelectItem = (item) => {
             </View>
 
             <View style={styles.inputRow}>
-  <Text style={styles.label}>Ngân sách:</Text>
-  <TextInput
-    style={styles.input}
-    value={planprice ? parseFloat(planprice).toLocaleString('vi-VN') + ' VNĐ' : ''}
-    onChangeText={(text) => setPlanprice(text.replace(/[^0-9]/g, ''))}
-    placeholder="Nhập ngân sách (VNĐ)"
-    keyboardType="numeric"
-  />
-</View>
+              <Text style={styles.label}>Ngân sách:</Text>
+              <TextInput
+                style={styles.input}
+                value={planprice ? parseFloat(planprice).toLocaleString('vi-VN') + ' VNĐ' : ''}
+                onChangeText={(text) => setPlanprice(text.replace(/[^0-9]/g, ''))}
+                placeholder="Nhập ngân sách (VNĐ)"
+                keyboardType="numeric"
+              />
+            </View>
 
             <View style={styles.inputRow}>
               <Text style={styles.label}>Tổng giá:</Text>
