@@ -178,6 +178,8 @@ const DetailPlan = ({ navigation, route }) => {
               )
             ))}
             <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
+            
+              
               <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
               <Text style={[styles.sectionTotal, { color: '#000000' }]}>
                 {sectionTotal.toLocaleString('vi-VN')} VNĐ
@@ -352,10 +354,12 @@ const DetailPlan = ({ navigation, route }) => {
           <View style={styles.planInfoCard}>
             <Text style={styles.planTitle}>{planData.name || 'Kế hoạch không tên'}</Text>
             <View style={styles.priceContainer}>
+              
+              <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
+
               <Text style={styles.planPrice}>
                 {totalPrice.toLocaleString('vi-VN')} VNĐ
               </Text>
-              <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
             </View>
 
             <View style={styles.divider} />
@@ -575,7 +579,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   planPriceLabel: {
-    fontSize: 14,
+    fontSize: 20,
     color: '#000000',
     marginTop: 4,
   },

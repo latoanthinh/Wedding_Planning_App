@@ -31,6 +31,10 @@ const HallWeddings = ({ route }) => {
     const descAnim = useRef(new Animated.Value(0)).current;
     const priceAnim = useRef(new Animated.Value(0)).current;
 
+    console.log('displayData:', displayData);
+
+    console.log('HallTheoWeddingFlowersData:', HallTheoWeddingFlowersData);
+
     useEffect(() => {
         if (userId && productIdHall) {
             dispatch(fetchUserFavorites(userId));
@@ -104,23 +108,20 @@ const HallWeddings = ({ route }) => {
         }
     };
 
-    const displayData = item || HallTheoWeddingFlowersData;
-    if (!productIdHall) {
-        return (
-            <SafeAreaView style={styles.container}>
-                <Text style={styles.errorText}>ID không hợp lệ</Text>
-            </SafeAreaView>
-        );
-    }
-
-    if (!item && HallTheoWeddingFlowersStatus === 'loading') {
+    const displayData = HallTheoWeddingFlowersData || item;
+    useEffect(() => {
+        if (userId && productIdHall) {
+            dispatch(fetchUserFavorites(userId));
+            dispatch(HallTheoWedding(productIdHall));
+        }
+    }, [productIdHall, dispatch, userId]);
+    if (!productIdHall || HallTheoWeddingFlowersStatus === 'loading') {
         return (
             <SafeAreaView style={styles.container}>
                 <ActivityIndicator size="large" color="#A67C52" />
             </SafeAreaView>
         );
     }
-
     if (!displayData) {
         return (
             <SafeAreaView style={styles.container}>
@@ -179,13 +180,15 @@ const HallWeddings = ({ route }) => {
                         <View style={styles.tagItem}><Text style={styles.tagText}>Sang trọng</Text></View>
                         <View style={styles.tagItem}><Text style={styles.tagText}>Cao cấp</Text></View>
                     </View>
-                    
+
                     <View style={styles.divider} />
                     <View style={styles.featuresSection}>
                         <Text style={styles.sectionTitle}>Đặc điểm</Text>
                         <View style={styles.featureItem}>
                             <Icon name="account-group" size={20} color="#A67C52" />
-                            <Text style={styles.featureText}>Sức chứa: {displayData.SoLuongKhach || 'N/A'} khách</Text>
+                            <Text style={styles.featureText}>
+                                Sức chứa: {typeof displayData.SoLuongKhach === 'number' ? displayData.SoLuongKhach : 'N/A'} khách
+                            </Text>
                         </View>
                         <View style={styles.featureItem}>
                             <Icon name="check-circle" size={20} color="#A67C52" />
@@ -211,7 +214,7 @@ const HallWeddings = ({ route }) => {
                         <Icon name="phone" size={20} color="#A67C52" />
                         <Text style={styles.contactButtonText}>Liên hệ</Text>
                     </TouchableOpacity>
-                   
+
                 </View>
             </View>
         </SafeAreaView>
@@ -420,7 +423,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#A67C52',
         borderRadius: 10,
-       
+
     },
     contactButtonText: {
         marginLeft: 8,
