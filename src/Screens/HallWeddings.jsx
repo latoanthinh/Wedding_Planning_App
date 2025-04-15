@@ -26,18 +26,21 @@ const HallWeddings = ({ route }) => {
     const [loadingImage, setLoadingImage] = useState(true);
     const [isFavorite, setIsFavorite] = useState(false);
     const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+    const [isFavoriteListLoading, setIsFavoriteListLoading] = useState(true); // Added for consistency
 
     const nameAnim = useRef(new Animated.Value(0)).current;
     const descAnim = useRef(new Animated.Value(0)).current;
     const priceAnim = useRef(new Animated.Value(0)).current;
 
-    console.log('displayData:', displayData);
-
-    console.log('HallTheoWeddingFlowersData:', HallTheoWeddingFlowersData);
-
     useEffect(() => {
         if (userId && productIdHall) {
-            dispatch(fetchUserFavorites(userId));
+            setIsFavoriteListLoading(true);
+            dispatch(fetchUserFavorites(userId))
+                .unwrap()
+                .catch((err) => {
+                    ToastAndroid.show('Không thể tải danh sách yêu thích', ToastAndroid.SHORT);
+                })
+                .finally(() => setIsFavoriteListLoading(false));
         }
         if (!item && productIdHall) {
             dispatch(HallTheoWedding(productIdHall));
@@ -70,51 +73,33 @@ const HallWeddings = ({ route }) => {
 
     const handleImageLoad = () => setLoadingImage(false);
 
-    const handleToggleFavorite = () => {
+    const handleToggleFavorite = async () => {
         if (!productIdHall || !user || !user._id) {
             ToastAndroid.show('Vui lòng đăng nhập để sử dụng tính năng này', ToastAndroid.SHORT);
             navigation.navigate('LoginScreen');
             return;
         }
 
-        const payload = { userId: user._id, type: 'Sanh', itemId: productIdHall };
-        console.log('Payload gửi đi:', payload); // Ghi log để kiểm tra
-
         setIsFavoriteLoading(true);
-        if (isFavorite) {
-            dispatch(removeFavoriteItem(payload))
-                .unwrap()
-                .then(() => {
-                    setIsFavorite(false);
-                    ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
-                })
-                .catch((err) => {
-                    const errorMessage = err.message || 'Lỗi không xác định';
-                    ToastAndroid.show(`Không thể xóa: ${errorMessage}`, ToastAndroid.SHORT);
-                })
-                .finally(() => setIsFavoriteLoading(false));
-        } else {
-            dispatch(addFavoriteItem(payload))
-                .unwrap()
-                .then(() => {
-                    setIsFavorite(true);
-                    ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
-                })
-                .catch((err) => {
-                    const errorMessage = err.message || 'Lỗi không xác định';
-                    ToastAndroid.show(`Không thể thêm: ${errorMessage}`, ToastAndroid.SHORT);
-                })
-                .finally(() => setIsFavoriteLoading(false));
+        try {
+            if (isFavorite) {
+                await dispatch(removeFavoriteItem({ userId: user._id, type: 'Sanh', itemId: productIdHall })).unwrap();
+                setIsFavorite(false);
+                ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
+            } else {
+                await dispatch(addFavoriteItem({ userId: user._id, type: 'Sanh', itemId: productIdHall })).unwrap();
+                setIsFavorite(true);
+                ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+            }
+            await dispatch(fetchUserFavorites(user._id)).unwrap();
+        } catch (err) {
+            ToastAndroid.show(`Lỗi: ${err.message || 'Không thể thực hiện thao tác'}`, ToastAndroid.SHORT);
+        } finally {
+            setIsFavoriteLoading(false);
         }
     };
 
     const displayData = HallTheoWeddingFlowersData || item;
-    useEffect(() => {
-        if (userId && productIdHall) {
-            dispatch(fetchUserFavorites(userId));
-            dispatch(HallTheoWedding(productIdHall));
-        }
-    }, [productIdHall, dispatch, userId]);
     if (!productIdHall || HallTheoWeddingFlowersStatus === 'loading') {
         return (
             <SafeAreaView style={styles.container}>
@@ -148,9 +133,9 @@ const HallWeddings = ({ route }) => {
                     <TouchableOpacity
                         style={styles.favoriteButton}
                         onPress={handleToggleFavorite}
-                        disabled={isFavoriteLoading}
+                        disabled={isFavoriteLoading || isFavoriteListLoading}
                     >
-                        {isFavoriteLoading ? (
+                        {isFavoriteLoading || isFavoriteListLoading ? (
                             <ActivityIndicator size="small" color="#fff" />
                         ) : (
                             <Icon
@@ -214,7 +199,6 @@ const HallWeddings = ({ route }) => {
                         <Icon name="phone" size={20} color="#A67C52" />
                         <Text style={styles.contactButtonText}>Liên hệ</Text>
                     </TouchableOpacity>
-
                 </View>
             </View>
         </SafeAreaView>
@@ -423,31 +407,10 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#A67C52',
         borderRadius: 10,
-
     },
     contactButtonText: {
         marginLeft: 8,
         color: '#A67C52',
-        fontWeight: '600',
-        fontFamily: 'serif',
-    },
-    addToCartButton: {
-        flex: 2,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        backgroundColor: '#220000',
-        paddingVertical: 12,
-        borderRadius: 10,
-        shadowColor: '#B78D51',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.3,
-        shadowRadius: 6,
-        elevation: 6,
-    },
-    addToCartText: {
-        marginLeft: 8,
-        color: '#FFFFFF',
         fontWeight: '600',
         fontFamily: 'serif',
     },

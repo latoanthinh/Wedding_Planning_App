@@ -9,7 +9,7 @@ import LoadingIndicator from '../components/LoadingIndicator';
 // Custom Icon Component for CustomAlert
 const CustomIcon = ({ type }) => {
   const iconStyles = [styles.iconBase];
-  let iconContent = '!'; // Default icon content
+  let iconContent = '!';
 
   switch (type) {
     case 'success':
@@ -171,14 +171,12 @@ const Favorites = ({ navigation }) => {
   const { user } = useContext(AppContext);
   const userId = user?._id;
 
-  // State for Custom Alert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('info');
   const [alertActions, setAlertActions] = useState(null);
 
-  // Custom alert function
   const showAlert = (title, message, type = 'info', actions = null) => {
     setAlertTitle(title);
     setAlertMessage(message);
@@ -229,9 +227,7 @@ const Favorites = ({ navigation }) => {
         [
           {
             text: 'Hủy',
-            onPress: () => {
-              // No action needed, just close the alert
-            },
+            onPress: () => {},
           },
           {
             text: 'Xóa',
@@ -253,16 +249,16 @@ const Favorites = ({ navigation }) => {
   const handleNavigateToDetail = (item) => {
     const detailScreens = {
       Sanh: 'HallWeddings',
-      catering: 'FoodDetail',
-      decorate: 'DecorDetail',
-      present: 'GiftDetail',
+      Catering: 'FoodDetail', // Updated to match FoodDetailScreen
+      Decorate: 'DecorDetail', // Updated to match DecorDetail
+      Present: 'GiftDetail',
     };
 
     const idParams = {
       Sanh: 'productIdHall',
-      catering: 'Id',
-      decorate: 'decorId',
-      present: 'GitflId',
+      Catering: 'Id',
+      Decorate: 'decorId',
+      Present: 'GitflId',
     };
 
     const screen = detailScreens[item.type] || 'ItemDetail';
@@ -379,9 +375,9 @@ const Favorites = ({ navigation }) => {
 
   const sections = [
     { title: 'Sảnh', items: groupedData['Sanh'] || [], type: 'Sanh' },
-    { title: 'Món ăn', items: groupedData['catering'] || [], type: 'catering' },
-    { title: 'Trang trí', items: groupedData['decorate'] || [], type: 'decorate' },
-    { title: 'Quà tặng', items: groupedData['present'] || [], type: 'present' },
+    { title: 'Món ăn', items: groupedData['Catering'] || [], type: 'Catering' }, // Updated to match FoodDetailScreen
+    { title: 'Trang trí', items: groupedData['Decorate'] || [], type: 'Decorate' }, // Updated to match DecorDetail
+    { title: 'Quà tặng', items: groupedData['Present'] || [], type: 'Present' },
   ];
 
   return (
@@ -405,7 +401,6 @@ const Favorites = ({ navigation }) => {
         </ScrollView>
       )}
 
-      {/* Custom Alert Component */}
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}
@@ -418,7 +413,7 @@ const Favorites = ({ navigation }) => {
   );
 };
 
-// Styles (merged with CustomAlert styles)
+// Styles (unchanged)
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -585,7 +580,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Playfair_me',
     fontWeight: '600',
   },
-  // Custom Icon Styles
   iconBase: {
     width: 50,
     height: 50,
@@ -614,7 +608,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  // Custom Alert Styles
   alertOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -682,6 +675,5 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 });
-
 
 export default Favorites;

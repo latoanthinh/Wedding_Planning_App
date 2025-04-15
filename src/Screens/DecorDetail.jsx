@@ -16,17 +16,17 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChitietDecor, resetChitietDecor } from '../redux/ChitietDecorSlice';
-import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice'; // Thêm removeFavoriteItem và fetchUserFavorites
+import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice';
 import { AppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
 
 const DecorDetail = (props) => {
   const { navigation, route } = props;
-  const { decorId, item } = route?.params || {}; // Lấy cả item từ params
+  const { decorId, item } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietDecorData, ChitietDecorStatus, error } = useSelector(state => state.chitietdecor);
-  const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset); // Lấy danh sách yêu thích từ Redux
+  const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset);
   const { user } = useContext(AppContext);
   const userId = user?._id;
 
@@ -37,12 +37,19 @@ const DecorDetail = (props) => {
 
   const [isFavorite, setIsFavorite] = useState(false);
   const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const [isFavoriteListLoading, setIsFavoriteListLoading] = useState(true); 
 
   // Tải danh sách yêu thích và kiểm tra trạng thái yêu thích khi component mount
   useEffect(() => {
     console.log('Route params:', JSON.stringify(route.params, null, 2));
     if (userId && decorId) {
-      dispatch(fetchUserFavorites(userId)); // Tải danh sách yêu thích của user
+      setIsFavoriteListLoading(true);
+      dispatch(fetchUserFavorites(userId))
+        .unwrap()
+        .catch((err) => {
+          ToastAndroid.show('Không thể tải danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .finally(() => setIsFavoriteListLoading(false));
     }
     if (!item && decorId) {
       console.log('Fetching detail for Id:', decorId);
@@ -57,12 +64,11 @@ const DecorDetail = (props) => {
   // Cập nhật trạng thái isFavorite dựa trên danh sách yêu thích
   useEffect(() => {
     if (favorites && decorId) {
-      const isFav = favorites.some((fav) => fav.itemId === decorId && fav.type === 'decorate');
+      const isFav = favorites.some((fav) => fav.itemId === decorId && fav.type === 'Decorate'); // Updated type
       setIsFavorite(isFav);
     }
   }, [favorites, decorId]);
 
-  // Animation khi dữ liệu sẵn sàng
   useEffect(() => {
     if ((ChitietDecorStatus === 'succeeded' && ChitietDecorData) || item) {
       Animated.stagger(300, [
@@ -75,7 +81,7 @@ const DecorDetail = (props) => {
   }, [ChitietDecorStatus, ChitietDecorData, item]);
 
   // Hàm xử lý bật/tắt yêu thích giống GiftDetail
-  const handleToggleFavorite = () => {
+  const handleToggleFavorite = async () => {
     if (!decorId || !user || !user._id) {
       ToastAndroid.show('Vui lòng đăng nhập để sử dụng tính năng này', ToastAndroid.SHORT);
       navigation.navigate('LoginScreen');
@@ -83,28 +89,23 @@ const DecorDetail = (props) => {
     }
 
     setIsFavoriteLoading(true);
-    if (isFavorite) {
-      dispatch(removeFavoriteItem({ userId: user._id, type: 'decorate', itemId: decorId }))
-        .unwrap()
-        .then(() => {
-          setIsFavorite(false);
-          ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
-        })
-        .catch((err) => {
-          ToastAndroid.show('Không thể xóa: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
-        })
-        .finally(() => setIsFavoriteLoading(false));
-    } else {
-      dispatch(addFavoriteItem({ userId: user._id, type: 'decorate', itemId: decorId }))
-        .unwrap()
-        .then(() => {
-          setIsFavorite(true);
-          ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
-        })
-        .catch((err) => {
-          ToastAndroid.show('Không thể thêm: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
-        })
-        .finally(() => setIsFavoriteLoading(false));
+    try {
+      console.log('Toggle favorite payload:', { userId: user._id, type: 'Decorate', itemId: decorId }); // Debug log
+      if (isFavorite) {
+        await dispatch(removeFavoriteItem({ userId: user._id, type: 'Decorate', itemId: decorId })).unwrap();
+        setIsFavorite(false);
+        ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
+      } else {
+        await dispatch(addFavoriteItem({ userId: user._id, type: 'Decorate', itemId: decorId })).unwrap();
+        setIsFavorite(true);
+        ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+      }
+      await dispatch(fetchUserFavorites(user._id)).unwrap();
+    } catch (err) {
+      console.error('Favorite error:', err); // Debug log
+      ToastAndroid.show(`Lỗi: ${err.message || 'Không thể thực hiện thao tác'}`, ToastAndroid.SHORT);
+    } finally {
+      setIsFavoriteLoading(false);
     }
   };
 
@@ -166,10 +167,10 @@ const DecorDetail = (props) => {
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.favoriteButton} 
-            onPress={handleToggleFavorite} // Sử dụng handleToggleFavorite thay vì handleAddToFavorites
-            disabled={isFavoriteLoading}
+            onPress={handleToggleFavorite}
+            disabled={isFavoriteLoading || isFavoriteListLoading} // Updated to match GiftDetail
           >
-            {isFavoriteLoading ? (
+            {isFavoriteLoading || isFavoriteListLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Icon 
@@ -222,14 +223,12 @@ const DecorDetail = (props) => {
             <Icon name="information-outline" size={22} color="#A67C52" />
             <Text style={styles.noteText}>Giá có thể thay đổi tùy theo mùa và số lượng hoa</Text>
           </View>
-          
         </ScrollView>
         <View style={styles.actionButtons}>
           <TouchableOpacity style={styles.contactButton} onPress={() => navigation.navigate('TabNavigation', { screen: 'Message' })}>
             <Icon name="phone" size={20} color="#A67C52" />
             <Text style={styles.contactButtonText}>Liên hệ</Text>
           </TouchableOpacity>
-          
         </View>
       </View>
     </SafeAreaView>

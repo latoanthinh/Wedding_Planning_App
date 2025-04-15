@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react'; // Thêm useState và useContext
+import React, { useRef, useEffect, useState, useContext } from 'react';
 import { 
   StyleSheet, 
   View, 
@@ -9,22 +9,22 @@ import {
   ScrollView, 
   StatusBar,
   ActivityIndicator,
-  ToastAndroid // Thêm ToastAndroid
+  ToastAndroid
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
 import { ChitietCatering, resetChitietCatering } from '../redux/ChitietCateringSlice';
-import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice'; // Thêm actions
-import { AppContext } from '../AppContext'; // Thêm AppContext
+import { addFavoriteItem, removeFavoriteItem, fetchUserFavorites } from '../redux/FavoriteDeanAddSlice';
+import { AppContext } from '../AppContext';
 
 const FoodDetailScreen = (props) => {
   const { navigation, route } = props;
   const { Id, item } = route?.params || {};
   const dispatch = useDispatch();
   const { ChitietCateringData, ChitietCateringStatus, error } = useSelector(state => state.chitietcatering);
-  const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset); // Lấy danh sách yêu thích
-  const { user } = useContext(AppContext); // Lấy thông tin user
+  const { data: favorites = [], status: favoritesStatus } = useSelector(state => state.favoriteset);
+  const { user } = useContext(AppContext);
   const userId = user?._id;
 
   const nameAnim = useRef(new Animated.Value(0)).current;
@@ -34,13 +34,20 @@ const FoodDetailScreen = (props) => {
   const proteinWidth = useRef(new Animated.Value(0)).current;
   const fatWidth = useRef(new Animated.Value(0)).current;
 
-  const [isFavorite, setIsFavorite] = useState(false); // Trạng thái yêu thích
-  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false); // Trạng thái đang xử lý
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [isFavoriteLoading, setIsFavoriteLoading] = useState(false);
+  const [isFavoriteListLoading, setIsFavoriteListLoading] = useState(true); // Added to match DecorDetail
 
   // Tải danh sách yêu thích và dữ liệu chi tiết
   useEffect(() => {
     if (userId && Id) {
-      dispatch(fetchUserFavorites(userId)); // Tải danh sách yêu thích
+      setIsFavoriteListLoading(true);
+      dispatch(fetchUserFavorites(userId))
+        .unwrap()
+        .catch((err) => {
+          ToastAndroid.show('Không thể tải danh sách yêu thích', ToastAndroid.SHORT);
+        })
+        .finally(() => setIsFavoriteListLoading(false));
     }
     if (!item && Id) {
       dispatch(ChitietCatering(Id));
@@ -53,7 +60,7 @@ const FoodDetailScreen = (props) => {
   // Cập nhật trạng thái yêu thích
   useEffect(() => {
     if (favorites && Id) {
-      const isFav = favorites.some((fav) => fav.itemId === Id && fav.type === 'catering');
+      const isFav = favorites.some((fav) => fav.itemId === Id && fav.type === 'Catering');
       setIsFavorite(isFav);
     }
   }, [favorites, Id]);
@@ -74,8 +81,8 @@ const FoodDetailScreen = (props) => {
     }
   }, [ChitietCateringStatus, ChitietCateringData, item]);
 
-  // Hàm xử lý bật/tắt yêu thích
-  const handleToggleFavorite = () => {
+  // Hàm xử lý bật/tắt yêu thích giống DecorDetail
+  const handleToggleFavorite = async () => {
     if (!Id || !user || !user._id) {
       ToastAndroid.show('Vui lòng đăng nhập để sử dụng tính năng này', ToastAndroid.SHORT);
       navigation.navigate('LoginScreen');
@@ -83,28 +90,23 @@ const FoodDetailScreen = (props) => {
     }
 
     setIsFavoriteLoading(true);
-    if (isFavorite) {
-      dispatch(removeFavoriteItem({ userId: user._id, type: 'catering', itemId: Id }))
-        .unwrap()
-        .then(() => {
-          setIsFavorite(false);
-          ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
-        })
-        .catch((err) => {
-          ToastAndroid.show('Không thể xóa: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
-        })
-        .finally(() => setIsFavoriteLoading(false));
-    } else {
-      dispatch(addFavoriteItem({ userId: user._id, type: 'catering', itemId: Id }))
-        .unwrap()
-        .then(() => {
-          setIsFavorite(true);
-          ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
-        })
-        .catch((err) => {
-          ToastAndroid.show('Không thể thêm: ' + (err.message || 'Lỗi'), ToastAndroid.SHORT);
-        })
-        .finally(() => setIsFavoriteLoading(false));
+    try {
+      console.log('Toggle favorite payload:', { userId: user._id, type: 'Catering', itemId: Id });
+      if (isFavorite) {
+        await dispatch(removeFavoriteItem({ userId: user._id, type: 'Catering', itemId: Id })).unwrap();
+        setIsFavorite(false);
+        ToastAndroid.show('Đã xóa khỏi danh sách yêu thích', ToastAndroid.SHORT);
+      } else {
+        await dispatch(addFavoriteItem({ userId: user._id, type: 'Catering', itemId: Id })).unwrap();
+        setIsFavorite(true);
+        ToastAndroid.show('Đã thêm vào danh sách yêu thích', ToastAndroid.SHORT);
+      }
+      await dispatch(fetchUserFavorites(user._id)).unwrap();
+    } catch (err) {
+      console.error('Favorite error:', err);
+      ToastAndroid.show(`Lỗi: ${err.message || 'Không thể thực hiện thao tác'}`, ToastAndroid.SHORT);
+    } finally {
+      setIsFavoriteLoading(false);
     }
   };
 
@@ -152,10 +154,10 @@ const FoodDetailScreen = (props) => {
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.favoriteButton} 
-            onPress={handleToggleFavorite} // Thêm sự kiện nhấn
-            disabled={isFavoriteLoading} // Vô hiệu hóa khi đang xử lý
+            onPress={handleToggleFavorite}
+            disabled={isFavoriteLoading || isFavoriteListLoading} // Updated to match DecorDetail
           >
-            {isFavoriteLoading ? (
+            {isFavoriteLoading || isFavoriteListLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
               <Icon 
