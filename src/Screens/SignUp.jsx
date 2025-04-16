@@ -5,14 +5,13 @@ import {
     TextInput, 
     TouchableOpacity, 
     Image, 
-    ActivityIndicator,
     Animated,
     Dimensions,
     StyleSheet,
     ScrollView,
 } from "react-native";
 import SignInPageStyles from "../Styles/SignInPageStyles";
-import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import { useNavigation } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { 
     DangKyTaiKhoan, 
@@ -30,10 +29,8 @@ const SignUp = ({ route }) => {
     const [isChecked, setIsChecked] = useState(false);
     const navigation = useNavigation();
     
-    // Check if we need to reset the form (from navigation params)
     const shouldResetForm = route?.params?.resetForm || false;
     
-    // OTP states
     const [showOtpInput, setShowOtpInput] = useState(false);
     const [otp, setOtp] = useState(['', '', '', '']);
     const [timer, setTimer] = useState(60);
@@ -41,29 +38,23 @@ const SignUp = ({ route }) => {
     const [otpError, setOtpError] = useState('');
     const [otpInputRefs] = useState(Array(4).fill().map(() => React.createRef()));
 
-    // User input states
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
 
-    // Error states
     const [nameError, setNameError] = useState('');
     const [emailError, setEmailError] = useState('');
     const [passwordError, setPasswordError] = useState('');
     const [confirmPasswordError, setConfirmPasswordError] = useState('');
     const [policyError, setPolicyError] = useState('');
 
-    // Status notification state
     const [statusMessage, setStatusMessage] = useState('');
-    const [statusType, setStatusType] = useState(''); // 'success', 'error', 'info'
+    const [statusType, setStatusType] = useState('');
 
-    // Animation states - initialize with 0 to show registration form initially
     const slideAnim = React.useRef(new Animated.Value(0)).current;
     const fadeAnim = React.useRef(new Animated.Value(0)).current;
     const notificationAnim = React.useRef(new Animated.Value(0)).current;
-
-    // Add shake animation for OTP inputs
     const shakeAnimation = React.useRef(new Animated.Value(0)).current;
 
     const dispatch = useDispatch();
@@ -76,34 +67,22 @@ const SignUp = ({ route }) => {
         error 
     } = useSelector((state) => state.register);
 
-    // Reset component state and Redux OTP state when component mounts
     useEffect(() => {
-        // Reset all form fields if coming from SignIn
         if (shouldResetForm) {
             resetForm();
         }
-        
-        // Reset OTP status in Redux
         dispatch(resetOtpStatus());
-        
-        // Reset register status as well
         dispatch(resetRegisterStatus());
-        
         return () => {
-            // Clean up on unmount
             dispatch(resetOtpStatus());
             dispatch(resetRegisterStatus());
         };
     }, [shouldResetForm]);
 
-    // Reset form function to clean all states
     const resetForm = () => {
-        // First reset animation values immediately
         slideAnim.setValue(0);
         fadeAnim.setValue(0);
         notificationAnim.setValue(0);
-        
-        // Then reset other state values
         setShowOtpInput(false);
         setOtp(['', '', '', '']);
         setTimer(60);
@@ -121,25 +100,20 @@ const SignUp = ({ route }) => {
         setIsChecked(false);
         setStatusMessage('');
         setStatusType('');
-        
-        // Reset Redux state
         dispatch(resetOtpStatus());
         dispatch(resetRegisterStatus());
     };
 
-    // Show notification with animation
     const showNotification = (message, type) => {
         setStatusMessage(message);
         setStatusType(type);
-        
-        // Animate notification display
         Animated.sequence([
             Animated.timing(notificationAnim, {
                 toValue: 1,
                 duration: 300,
                 useNativeDriver: true,
             }),
-            Animated.delay(4000), // Show for 4 seconds
+            Animated.delay(4000),
             Animated.timing(notificationAnim, {
                 toValue: 0,
                 duration: 300,
@@ -150,20 +124,16 @@ const SignUp = ({ route }) => {
         });
     };
 
-    // Use React Navigation's useFocusEffect to reset form when screen comes into focus
     React.useEffect(() => {
         const unsubscribe = navigation.addListener('focus', () => {
             resetForm();
-            // Ensure register status is reset when screen is focused
             dispatch(resetRegisterStatus());
         });
-        
         return unsubscribe;
     }, [navigation]);
 
     useEffect(() => {
         if (showOtpInput) {
-            // When showing OTP screen, animate forward
             Animated.parallel([
                 Animated.timing(slideAnim, {
                     toValue: 1,
@@ -177,8 +147,6 @@ const SignUp = ({ route }) => {
                 }),
             ]).start();
         }
-        // Note: We don't handle the else case here anymore
-        // as it's now managed by the handleBackToRegistration function
     }, [showOtpInput]);
 
     useEffect(() => {
@@ -205,27 +173,16 @@ const SignUp = ({ route }) => {
     useEffect(() => {
         if (otpVerifyStatus === 'succeeded') {
             showNotification(otpData?.message || 'Xác thực OTP thành công', 'success');
-            
-            // Set a short timeout to show the success message before navigating
             setTimeout(() => {
-                // Reset animations first
                 slideAnim.setValue(0);
                 fadeAnim.setValue(0);
-                
-                // Then reset form and navigate
                 resetForm();
                 navigation.navigate('SignIn');
             }, 1500);
         } else if (otpVerifyStatus === 'failed') {
             showNotification(error || 'Mã OTP không hợp lệ', 'error');
-            
-            // Clear OTP fields
             setOtp(['', '', '', '']);
-            
-            // Focus first input field
             otpInputRefs[0]?.current?.focus();
-            
-            // Shake animation for feedback
             shakeOtpInputs();
         }
     }, [otpVerifyStatus, otpData, error]);
@@ -233,7 +190,6 @@ const SignUp = ({ route }) => {
     useEffect(() => {
         if (registerStatus === 'succeeded') {
             showNotification(registerData?.message || 'Đăng ký tài khoản thành công! Vui lòng nhập mã OTP để kích hoạt tài khoản.', 'success');
-            
             setShowOtpInput(true);
             setTimer(60);
             setCanResend(false);
@@ -245,15 +201,12 @@ const SignUp = ({ route }) => {
     const validateInputs = () => {
         let valid = true;
         let errorMessage = '';
-        
-        // Reset all error states first
         setNameError('');
         setEmailError('');
         setPasswordError('');
         setConfirmPasswordError('');
         setPolicyError('');
 
-        // Validate name
         if (!name.trim()) {
             setNameError("Họ và tên không được để trống");
             errorMessage = "Họ và tên không được để trống";
@@ -261,7 +214,6 @@ const SignUp = ({ route }) => {
             return { valid, errorMessage };
         }
 
-        // Validate email
         if (!email.trim()) {
             setEmailError("Email không được để trống");
             errorMessage = "Email không được để trống";
@@ -274,7 +226,6 @@ const SignUp = ({ route }) => {
             return { valid, errorMessage };
         }
 
-        // Validate password
         if (!password.trim()) {
             setPasswordError("Mật khẩu không được để trống");
             errorMessage = "Mật khẩu không được để trống";
@@ -287,7 +238,6 @@ const SignUp = ({ route }) => {
             return { valid, errorMessage };
         }
 
-        // Validate confirm password
         if (!confirmPassword.trim()) {
             setConfirmPasswordError("Vui lòng nhập lại mật khẩu");
             errorMessage = "Vui lòng nhập lại mật khẩu";
@@ -300,9 +250,8 @@ const SignUp = ({ route }) => {
             return { valid, errorMessage };
         }
 
-        // Validate policy acceptance
         if (!isChecked) {
-            // setPolicyError("Bạn phải đồng ý với chính sách bảo mật");
+            setPolicyError("Bạn phải đồng ý với chính sách bảo mật");
             errorMessage = "Bạn phải đồng ý với chính sách bảo mật";
             valid = false;
             return { valid, errorMessage };
@@ -321,13 +270,8 @@ const SignUp = ({ route }) => {
         setOtpError('');
         dispatch(verifyRegisterOTP({ email, otp: fullOtp }))
             .unwrap()
-            .then(() => {
-                // Explicit reset of form here as an additional safety measure
-                // Navigation will happen in the useEffect
-            })
-            .catch(() => {
-                // Error handling is already done in the useEffect
-            });
+            .then(() => {})
+            .catch(() => {});
     };
 
     const handleOtpChange = (text, index) => {
@@ -335,10 +279,7 @@ const SignUp = ({ route }) => {
         const newOtp = [...otp];
         newOtp[index] = digitText;
         setOtp(newOtp);
-        
-        // Clear OTP error when user starts typing
         if (otpError) setOtpError('');
-        
         if (digitText && index < 3) {
             otpInputRefs[index + 1]?.current?.focus();
         }
@@ -375,17 +316,10 @@ const SignUp = ({ route }) => {
     };
 
     const handleSignInPress = () => {
-        // Reset animations first
         slideAnim.setValue(0);
         fadeAnim.setValue(0);
-        
-        // Reset form state before navigating back to SignIn
         resetForm();
-        
-        // Explicitly reset register status
         dispatch(resetRegisterStatus());
-        
-        // Navigate to sign in
         navigation.navigate('SignIn');
     };
 
@@ -399,7 +333,6 @@ const SignUp = ({ route }) => {
     };
 
     const handleBackToRegistration = () => {
-        // Animate back to registration form first
         Animated.parallel([
             Animated.timing(slideAnim, {
                 toValue: 0,
@@ -412,7 +345,6 @@ const SignUp = ({ route }) => {
                 useNativeDriver: true,
             }),
         ]).start(() => {
-            // After animation completes, reset OTP fields
             setShowOtpInput(false);
             setOtp(['', '', '', '']);
             setOtpError('');
@@ -422,7 +354,6 @@ const SignUp = ({ route }) => {
     return (
         <ScrollView contentContainerStyle={{ flexGrow: 1 }}>
             <View style={SignInPageStyles.container}>
-                {/* Animated Notification */}
                 {statusMessage ? (
                     <Animated.View style={[
                         styles.notification, 
@@ -442,7 +373,6 @@ const SignUp = ({ route }) => {
                     </Animated.View>
                 ) : null}
 
-                {/* Sign Up Form */}
                 <Animated.View style={{
                     transform: [{
                         translateX: slideAnim.interpolate({
@@ -460,9 +390,8 @@ const SignUp = ({ route }) => {
                     <Text style={SignInPageStyles.instructionText}>Vui lòng, đăng ký để tiếp tục.</Text>
 
                     <View>
-                        {nameError ? <Text style={styles.errorTextAbove}>{nameError}</Text> : null}
                         <TextInput
-                            style={[SignInPageStyles.input, nameError ? { borderColor: 'red', borderWidth: 1 } : {}]}
+                            style={SignInPageStyles.input}
                             placeholder="Họ và tên"
                             placeholderTextColor="#aaa"
                             value={name}
@@ -474,9 +403,8 @@ const SignUp = ({ route }) => {
                     </View>
                     
                     <View>
-                        {emailError ? <Text style={styles.errorTextAbove}>{emailError}</Text> : null}
                         <TextInput
-                            style={[SignInPageStyles.input, emailError ? { borderColor: 'red', borderWidth: 1 } : {}]}
+                            style={SignInPageStyles.input}
                             placeholder="Email"
                             placeholderTextColor="#aaa"
                             value={email}
@@ -489,9 +417,8 @@ const SignUp = ({ route }) => {
                     </View>
                     
                     <View>
-                        {passwordError ? <Text style={styles.errorTextAbove}>{passwordError}</Text> : null}
                         <TextInput
-                            style={[SignInPageStyles.input, passwordError ? { borderColor: 'red', borderWidth: 1 } : {}]}
+                            style={[SignInPageStyles.input, { paddingRight: 40 }]}
                             placeholder="Mật khẩu"
                             placeholderTextColor="#aaa"
                             secureTextEntry={!isPasswordVisible}
@@ -501,19 +428,22 @@ const SignUp = ({ route }) => {
                                 if (passwordError) setPasswordError('');
                             }}
                         />
-
-                        <TouchableOpacity onPress={togglePasswordVisibility} style={{ position: 'absolute', top: 15, right: 18 }}>
+                        <TouchableOpacity 
+                            onPress={togglePasswordVisibility} 
+                            style={styles.eyeIconContainer}
+                        >
                             <Image
-                                source={isPasswordVisible ? require('../Assets/Images/eye-open.png') : require('../Assets/Images/eye-close.png')}
-                                style={{ width: 20, height: 20 }}
+                                source={isPasswordVisible 
+                                    ? require('../Assets/Images/eye-close.png') 
+                                    : require('../Assets/Images/eye-open.png')}
+                                style={styles.eyeIcon}
                             />
                         </TouchableOpacity>
                     </View>
                     
                     <View>
-                        {confirmPasswordError ? <Text style={styles.errorTextAbove}>{confirmPasswordError}</Text> : null}
                         <TextInput
-                            style={[SignInPageStyles.input, confirmPasswordError ? { borderColor: 'red', borderWidth: 1 } : {}]}
+                            style={[SignInPageStyles.input, { paddingRight: 40 }]}
                             placeholder="Nhập lại mật khẩu"
                             placeholderTextColor="#aaa"
                             secureTextEntry={!isPasswordVisible}
@@ -523,11 +453,15 @@ const SignUp = ({ route }) => {
                                 if (confirmPasswordError) setConfirmPasswordError('');
                             }}
                         />
-
-                        <TouchableOpacity onPress={togglePasswordVisibility} style={{ position: 'absolute', top: 15, right: 18 }}>
+                        <TouchableOpacity 
+                            onPress={togglePasswordVisibility} 
+                            style={styles.eyeIconContainer}
+                        >
                             <Image
-                                source={isPasswordVisible ? require('../Assets/Images/eye-open.png') : require('../Assets/Images/eye-close.png')}
-                                style={{ width: 20, height: 20 }}
+                                source={isPasswordVisible 
+                                    ? require('../Assets/Images/eye-close.png') 
+                                    : require('../Assets/Images/eye-open.png')}
+                                style={styles.eyeIcon}
                             />
                         </TouchableOpacity>
                     </View>
@@ -546,7 +480,6 @@ const SignUp = ({ route }) => {
                         </TouchableOpacity>
                         <Text style={{ fontSize: 17, fontFamily: 'Playfair_me' }}>Tôi đồng ý với chính sách bảo mật</Text>
                     </View>
-                    {policyError ? <Text style={styles.errorTextCenter}>{policyError}</Text> : null}
                     
                     <ButtonLoading
                         text="Đăng ký"
@@ -557,16 +490,14 @@ const SignUp = ({ route }) => {
                         textStyle={SignInPageStyles.signInButtonText}
                     />
                     
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 15 }} >
-                        <Text style={SignInPageStyles.signUpPrompt}>
-                            Bạn đã có tài khoản? </Text>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', marginTop: 15 }}>
+                        <Text style={SignInPageStyles.signUpPrompt}>Bạn đã có tài khoản? </Text>
                         <TouchableOpacity onPress={handleSignInPress} style={{ marginLeft: 10 }}>
-                            <Text style={{ color: 'gray', fontFamily:'Playfair_me' }}>Đăng nhập ngay</Text>
+                            <Text style={{ color: 'gray', fontFamily: 'Playfair_me' }}>Đăng nhập ngay</Text>
                         </TouchableOpacity>
                     </View>
                 </Animated.View>
 
-                {/* OTP Verification Screen */}
                 <Animated.View style={{
                     position: 'absolute',
                     top: 0,
@@ -670,7 +601,7 @@ const styles = StyleSheet.create({
         zIndex: 10,
         elevation: 5,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.3,
         shadowRadius: 3,
     },
@@ -731,18 +662,12 @@ const styles = StyleSheet.create({
         fontFamily: 'Playfair_me',
         elevation: 2,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 1},
+        shadowOffset: { width: 0, height: 1 },
         shadowOpacity: 0.2,
         shadowRadius: 2,
     },
     otpInputError: {
         borderColor: 'red',
-    },
-    errorTextAbove: {
-        color: 'red',
-        fontSize: 13,
-        marginBottom: 5,
-        fontFamily: 'Playfair_me',
     },
     errorTextCenter: {
         color: 'red',
@@ -780,7 +705,7 @@ const styles = StyleSheet.create({
         marginTop: 20,
         elevation: 3,
         shadowColor: '#000',
-        shadowOffset: {width: 0, height: 2},
+        shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.2,
         shadowRadius: 3,
     },
@@ -827,7 +752,15 @@ const styles = StyleSheet.create({
         fontFamily: 'Playfair_me',
         flex: 1,
     },
+    eyeIconContainer: {
+        position: 'absolute',
+        right: 10,
+        top: 12,
+    },
+    eyeIcon: {
+        width: 20,
+        height: 20,
+    },
 });
 
 export default SignUp;
-
