@@ -178,8 +178,8 @@ const DetailPlan = ({ navigation, route }) => {
               )
             ))}
             <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
-            
-              
+
+
               <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
               <Text style={[styles.sectionTotal, { color: '#000000' }]}>
                 {sectionTotal.toLocaleString('vi-VN')} VNĐ
@@ -250,6 +250,11 @@ const DetailPlan = ({ navigation, route }) => {
       return;
     }
 
+    if (planData.status === 'Đã hủy') {
+      ToastAndroid.show('Kế hoạch đã bị hủy, không thể chỉnh sửa!', ToastAndroid.SHORT);
+      return;
+    }
+
     const userIdFromPlan = typeof planData.UserId === 'string' ? planData.UserId : planData.UserId?._id;
     const isOwner = userIdFromPlan && userIdFromPlan.toString() === userId.toString();
     const originalPlanId = planData.originalPlanId || planId;
@@ -315,6 +320,11 @@ const DetailPlan = ({ navigation, route }) => {
       return;
     }
 
+    if (planData.status === 'Đã hủy') {
+      ToastAndroid.show('Kế hoạch đã bị hủy, không thể đặt cọc!', ToastAndroid.SHORT);
+      return;
+    }
+
     if (planData.status === 'Đã đặt cọc') {
       ToastAndroid.show('Kế hoạch đã được đặt cọc, không thể đặt cọc!', ToastAndroid.SHORT);
     } else if (planData.status === 'Đang chờ') {
@@ -323,9 +333,8 @@ const DetailPlan = ({ navigation, route }) => {
       navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice || planData.totalPrice });
     }
   };
-
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
-  const isDepositDisabled = planData.status === 'Đã đặt cọc' || planData.status === 'Đang chờ';
+  const isButtonDisabled = planData.status === 'Đã đặt cọc' || planData.status === 'Đang chờ' || planData.status === 'Đã hủy';
 
   const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
   const depositPrice = totalPrice * 0.1;
@@ -354,7 +363,7 @@ const DetailPlan = ({ navigation, route }) => {
           <View style={styles.planInfoCard}>
             <Text style={styles.planTitle}>{planData.name || 'Kế hoạch không tên'}</Text>
             <View style={styles.priceContainer}>
-              
+
               <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
 
               <Text style={styles.planPrice}>
@@ -474,38 +483,48 @@ const DetailPlan = ({ navigation, route }) => {
       </ScrollView>
 
       <View style={styles.persistentBottomBar}>
+      <TouchableOpacity
+        style={[
+          styles.bottomBarButton,
+          !planData?.UserId && styles.fullWidthButton,
+          isButtonDisabled && styles.disabledBottomBarButton,
+        ]}
+        onPress={handleEditPlan}
+        disabled={isButtonDisabled}
+      >
+        <Text style={styles.bottomBarButtonText}>
+          {planData.status === 'Đã hủy' ? 'Đã hủy' : 'Chỉnh sửa'}
+        </Text>
+      </TouchableOpacity>
+      {planData?.UserId && (
         <TouchableOpacity
           style={[
             styles.bottomBarButton,
-            !planData?.UserId && styles.fullWidthButton,
+            styles.depositBottomBarButton,
+            isButtonDisabled && styles.disabledBottomBarButton,
           ]}
-          onPress={handleEditPlan}
+          onPress={handleDeposit}
+          disabled={isButtonDisabled}
         >
-          <Text style={styles.bottomBarButtonText}>Chỉnh sửa</Text>
-        </TouchableOpacity>
-        {planData?.UserId && (
-          <TouchableOpacity
-            style={[
-              styles.bottomBarButton,
-              styles.depositBottomBarButton,
-              isDepositDisabled && styles.disabledBottomBarButton,
-            ]}
-            onPress={handleDeposit}
-            disabled={isDepositDisabled}
-          >
-            <View style={styles.depositButtonContent}>
-              <View style={styles.depositTextContainer}>
-                <Text style={styles.bottomBarButtonText}>
-                  {planData.status === 'Đã đặt cọc' ? 'Đã đặt cọc' : planData.status === 'Đang chờ' ? 'Đang chờ' : 'Đặt cọc'}
-                </Text>
-                <Text style={styles.depositPriceText}>
-                  {depositPrice.toLocaleString('vi-VN')} VNĐ
-                </Text>
-              </View>
+          <View style={styles.depositButtonContent}>
+            <View style={styles.depositTextContainer}>
+              <Text style={styles.bottomBarButtonText}>
+                {planData.status === 'Đã hủy'
+                  ? 'Đã hủy'
+                  : planData.status === 'Đã đặt cọc'
+                  ? 'Đã đặt cọc'
+                  : planData.status === 'Đang chờ'
+                  ? 'Đang chờ'
+                  : 'Đặt cọc'}
+              </Text>
+              <Text style={styles.depositPriceText}>
+                {depositPrice.toLocaleString('vi-VN')} VNĐ
+              </Text>
             </View>
-          </TouchableOpacity>
-        )}
-      </View>
+          </View>
+        </TouchableOpacity>
+      )}
+    </View>
     </SafeAreaView>
   );
 };

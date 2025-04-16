@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import React, { useEffect, useState, useCallback, useContext, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Plan, deletePlan } from '../redux/GetAllPlanSlice';
+import { Plan, deletePlan, cancelPlan } from '../redux/GetAllPlanSlice';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppContext } from '../AppContext';
 import { useBackHandler } from '../hooks/useBackHandler';
@@ -19,7 +19,7 @@ import { useBackHandler } from '../hooks/useBackHandler';
 // Custom Icon Component
 const CustomIcon = ({ type }) => {
   const iconStyles = [styles.iconBase];
-  let iconContent = '!'; // Default icon content
+  let iconContent = '!';
 
   switch (type) {
     case 'success':
@@ -88,7 +88,6 @@ const CustomAlert = ({ visible, title, message, type, onClose, actions }) => {
     });
   };
 
-  // Background color based on alert type
   const getHeaderColor = () => {
     switch (type) {
       case 'success':
@@ -104,7 +103,6 @@ const CustomAlert = ({ visible, title, message, type, onClose, actions }) => {
     }
   };
 
-  // Button color based on alert type
   const getButtonColor = () => {
     switch (type) {
       case 'success':
@@ -179,19 +177,17 @@ const CustomAlert = ({ visible, title, message, type, onClose, actions }) => {
 
 const AllPlan = ({ navigation }) => {
   const dispatch = useDispatch();
-  const { AllPlanData = [], AllPlanStatus, deleteStatus, error } = useSelector((state) => state.plan);
+  const { AllPlanData = [], AllPlanStatus, deleteStatus, cancelStatus, error } = useSelector((state) => state.plan);
   const { user, isLoading: contextLoading } = useContext(AppContext);
   const userId = user?._id;
   const [loading, setLoading] = useState(false);
 
-  // State for CustomAlert
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [alertType, setAlertType] = useState('info');
   const [alertActions, setAlertActions] = useState(null);
 
-  // Custom alert function
   const showAlert = (title, message, type = 'info', actions = null) => {
     setAlertTitle(title);
     setAlertMessage(message);
@@ -230,6 +226,34 @@ const AllPlan = ({ navigation }) => {
     [dispatch, userId]
   );
 
+  const handleCancelPlan = useCallback(
+    (planId) => {
+      showAlert(
+        'Xác nhận hủy',
+        'Bạn có chắc muốn hủy kế hoạch này? Trạng thái sẽ được cập nhật thành "Đã hủy".',
+        'warning',
+        [
+          {
+            text: 'Đóng',
+            onPress: () => {},
+          },
+          {
+            text: 'Hủy kế hoạch',
+            onPress: async () => {
+              try {
+                await dispatch(cancelPlan(planId)).unwrap();
+                showAlert('Thành công', 'Kế hoạch đã được hủy', 'success');
+              } catch (error) {
+                showAlert('Lỗi', `Không thể hủy kế hoạch: ${error}`, 'error');
+              }
+            },
+          },
+        ]
+      );
+    },
+    [dispatch]
+  );
+
   useEffect(() => {
     if (!contextLoading && !user) {
       console.log('User không tồn tại, không tải dữ liệu');
@@ -265,7 +289,11 @@ const AllPlan = ({ navigation }) => {
   const PlanCard = useCallback(
     ({ item }) => {
       if (!user || !item || !item._id) return null;
-      const isDeleteDisabled = item.status && ['đang chờ', 'đã đặt cọc'].includes(item.status.toLowerCase());
+
+      // Determine which button to show based on status
+      const status = item.status ? item.status.toLowerCase() : '';
+      const showDeleteButton = status === 'chưa đặt cọc';
+      const showCancelButton = status === 'đang chờ';
 
       return (
         <TouchableOpacity
@@ -290,13 +318,24 @@ const AllPlan = ({ navigation }) => {
                 <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
               </View>
               <View style={styles.buttonsContainer}>
-                <TouchableOpacity
-                  style={[styles.deleteButton, isDeleteDisabled && styles.deleteButtonDisabled]}
-                  onPress={() => handleDeletePlan(item._id)}
-                  disabled={isDeleteDisabled || deleteStatus === 'loading'}
-                >
-                  <Text style={styles.deleteButtonText}>Xóa</Text>
-                </TouchableOpacity>
+                {showCancelButton && (
+                  <TouchableOpacity
+                    style={[styles.cancelButton, cancelStatus === 'loading' && styles.cancelButtonDisabled]}
+                    onPress={() => handleCancelPlan(item._id)}
+                    disabled={cancelStatus === 'loading'}
+                  >
+                    <Text style={styles.cancelButtonText}>Hủy</Text>
+                  </TouchableOpacity>
+                )}
+                {showDeleteButton && (
+                  <TouchableOpacity
+                    style={[styles.deleteButton, deleteStatus === 'loading' && styles.deleteButtonDisabled]}
+                    onPress={() => handleDeletePlan(item._id)}
+                    disabled={deleteStatus === 'loading'}
+                  >
+                    <Text style={styles.deleteButtonText}>Xóa</Text>
+                  </TouchableOpacity>
+                )}
                 <View style={styles.detailButton}>
                   <Text style={styles.detailButtonText}>Xem chi tiết</Text>
                 </View>
@@ -306,7 +345,7 @@ const AllPlan = ({ navigation }) => {
         </TouchableOpacity>
       );
     },
-    [navigation, user, handleDeletePlan, deleteStatus]
+    [navigation, user, handleDeletePlan, handleCancelPlan, deleteStatus, cancelStatus]
   );
 
   const formatPrice = (price) => {
@@ -316,7 +355,7 @@ const AllPlan = ({ navigation }) => {
   const getStatusColor = (status) => {
     if (!status) return '#9E9E9E';
     switch (status.toLowerCase()) {
-      case 'đã đặc cọc':
+      case 'đã đặt cọc':
         return '#4CAF50';
       case 'chưa đặt cọc':
         return '#2196F3';
@@ -426,7 +465,6 @@ const AllPlan = ({ navigation }) => {
           <Text style={styles.createPlanButtonText}>Tạo plan mới</Text>
         </TouchableOpacity>
       </View>
-      {/* Custom Alert Component */}
       <CustomAlert
         visible={alertVisible}
         title={alertTitle}
@@ -559,6 +597,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  cancelButton: {
+    backgroundColor: '#FF9800',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 24,
+    marginRight: 8,
+    shadowColor: '#222222',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  cancelButtonDisabled: {
+    backgroundColor: '#FF9800',
+    opacity: 0.5,
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
   deleteButton: {
     backgroundColor: '#F44336',
     paddingVertical: 10,
@@ -658,7 +717,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
-  // Custom Alert Styles
   alertOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -725,7 +783,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textAlign: 'center',
   },
-  // Custom Icon Styles
   iconBase: {
     width: 50,
     height: 50,

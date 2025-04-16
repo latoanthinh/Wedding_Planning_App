@@ -2,6 +2,37 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 
 
 
+// Async thunk for canceling a plan
+export const cancelPlan = createAsyncThunk(
+  'plan/cancel',
+  async (planId, { rejectWithValue }) => {
+    try {
+      if (!planId.match(/^[0-9a-fA-F]{24}$/)) {
+        throw new Error('Invalid planId');
+      }
+
+      const response = await fetch(`https://apidatn.onrender.com/plan/cancel/${planId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Failed to cancel plan: ${response.status} - ${errorText}`);
+      }
+
+      const data = await response.json();
+      return data.data; // Return the updated plan data
+    } catch (error) {
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
+
+
 // Add new async thunk for deleting a plan
 export const deletePlan = createAsyncThunk(
   'plan/delete',
@@ -67,7 +98,8 @@ export const GetAllPlanSlice = createSlice({
   initialState: {
     AllPlanData: [],
     AllPlanStatus: 'idle',
-    deleteStatus: 'idle', // Add delete status
+    deleteStatus: 'idle',
+    cancelStatus: 'idle', 
     error: null,
   },
   reducers: {
@@ -75,6 +107,7 @@ export const GetAllPlanSlice = createSlice({
       state.AllPlanData = [];
       state.AllPlanStatus = 'idle';
       state.deleteStatus = 'idle';
+      state.cancelStatus = 'idle';
       state.error = null;
     },
   },
@@ -108,6 +141,22 @@ export const GetAllPlanSlice = createSlice({
       })
       .addCase(deletePlan.rejected, (state, action) => {
         state.deleteStatus = 'failed';
+        state.error = action.payload;
+      })
+      // Cancel plan
+      .addCase(cancelPlan.pending, (state) => {
+        state.cancelStatus = 'loading';
+        state.error = null;
+      })
+      .addCase(cancelPlan.fulfilled, (state, action) => {
+        state.cancelStatus = 'succeeded';
+        // Update the plan in AllPlanData with the new status
+        state.AllPlanData = state.AllPlanData.map((plan) =>
+          plan._id === action.payload._id ? action.payload : plan
+        );
+      })
+      .addCase(cancelPlan.rejected, (state, action) => {
+        state.cancelStatus = 'failed';
         state.error = action.payload;
       });
   },
