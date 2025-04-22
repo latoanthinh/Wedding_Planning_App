@@ -257,7 +257,7 @@ const DetailPlan = ({ navigation, route }) => {
 
   const handleConfirmToPending = () => {
     if (!planId) {
-      ToastAndroid.show('Không thể chuyển trạng thái: Thiếu planId', ToastAndroid.SHORT);
+      ToastAndroid.show('Không thể liên hệ: Thiếu planId', ToastAndroid.SHORT);
       return;
     }
   
@@ -272,25 +272,8 @@ const DetailPlan = ({ navigation, route }) => {
         },
         {
           text: 'Xác nhận',
-          onPress: async () => {
-            try {
-              await dispatch(confirmToPending(planId)).unwrap();
-              showAlert(
-                'Thành công',
-                'Bạn sẽ được chuyển đến màn hình chat.',
-                'success',
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => {
-                      navigation.navigate('Chat', { planId: planId }); // Navigate directly to Chat screen
-                    },
-                  },
-                ]
-              );
-            } catch (error) {
-              showAlert('Lỗi', `Không thể chuyển trạng thái: ${error.message || error}`, 'error');
-            }
+          onPress: () => {
+            navigation.navigate('Chat', { planId: planId }); // Navigate directly to Chat screen
           },
         },
       ]

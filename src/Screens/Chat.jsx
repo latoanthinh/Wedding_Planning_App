@@ -376,17 +376,7 @@ Tôi muốn thảo luận về kế hoạch:
   
       const isUser = item.sender === 'user';
       const isImage = item.messageType === 'image';
-      const isPlan = item.messageType === 'plan';
       const senderName = isUser ? (user?.fullname || user?.name || 'Bạn') : 'Hỗ trợ khách hàng';
-  
-      let planData = null;
-      if (isPlan) {
-        try {
-          planData = JSON.parse(item.content);
-        } catch (e) {
-          console.error('Lỗi phân tích tin nhắn kế hoạch:', e);
-        }
-      }
   
       return (
         <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.adminMessageContainer]}>
@@ -395,20 +385,17 @@ Tôi muốn thảo luận về kế hoạch:
               {senderName}
             </Text>
           </View>
-  
           <View style={[styles.messageRow, isUser && styles.userMessageRow]}>
             {!isUser && (
               <View style={styles.avatarContainer}>
                 <Ionicons name="headset-outline" size={16} color="#fff" />
               </View>
             )}
-  
             <View
               style={[
                 styles.messageBubble,
                 isUser ? styles.userBubble : styles.adminBubble,
                 isImage && (isUser ? styles.userImageBubble : styles.adminImageBubble),
-                isPlan && styles.planBubble, // Thêm style cho tin nhắn kế hoạch
               ]}
             >
               {isImage ? (
@@ -427,43 +414,26 @@ Tôi muốn thảo luận về kế hoạch:
                     onError={(error) => console.log('Lỗi tải hình ảnh tin nhắn:', error.nativeEvent.error)}
                   />
                 </TouchableOpacity>
-              ) : isPlan && planData ? (
-                <View>
-                  <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
-                    Tôi muốn thảo luận về kế hoạch:
-                  </Text>
-                  <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
-                    - ID: {planData.planId}
-                  </Text>
-                  <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
-                    - Tên kế hoạch: {planData.planName}
-                  </Text>
-                  {/* Đối với ứng dụng di động, liên kết có thể không cần nhấn được, nhưng giao diện admin sẽ xử lý điều này */}
-                </View>
               ) : (
                 <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
                   {item.content}
                 </Text>
               )}
             </View>
-  
             {isUser && (
-              <>
-                {formattedAvatar ? (
-                  <Image
-                    source={{ uri: formattedAvatar }}
-                    style={styles.userAvatarImage}
-                    onError={(error) => console.log('Lỗi tải avatar người dùng:', error.nativeEvent.error)}
-                  />
-                ) : (
-                  <View style={styles.userAvatarContainer}>
-                    <Ionicons name="person" size={18} color="#fff" />
-                  </View>
-                )}
-              </>
+              formattedAvatar ? (
+                <Image
+                  source={{ uri: formattedAvatar }}
+                  style={styles.userAvatarImage}
+                  onError={(error) => console.log('Lỗi tải avatar người dùng:', error.nativeEvent.error)}
+                />
+              ) : (
+                <View style={styles.userAvatarContainer}>
+                  <Ionicons name="person" size={18} color="#fff" />
+                </View>
+              )
             )}
           </View>
-  
           <View style={[styles.timeContainer, isUser ? styles.userTimeContainer : styles.adminTimeContainer]}>
             <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.adminTimeText]}>
               {formatMessageTime(item.timestamp)}
