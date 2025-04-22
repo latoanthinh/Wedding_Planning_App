@@ -11,6 +11,7 @@ import {
   Platform,
   Image,
   Alert,
+  Modal,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useSelector, useDispatch } from 'react-redux';
@@ -36,15 +37,47 @@ const formatMessageTime = (timestamp) => {
   try {
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
+      console.error('Invalid timestamp:', timestamp);
       return 'Invalid Time';
     }
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
   } catch (error) {
-    console.error('Error formatting timestamp:', error);
+    console.error('Error formatting timestamp:', error, 'Timestamp:', timestamp);
     return 'Unknown Time';
   }
+};
+
+// Utility function to format message date for separators
+const formatMessageDate = (dateString) => {
+  const date = new Date(dateString);
+  const now = new Date();
+
+  if (date.toDateString() === now.toDateString()) {
+    return 'Hôm nay';
+  }
+
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (date.toDateString() === yesterday.toDateString()) {
+    return 'Hôm qua';
+  }
+
+  if (now.getTime() - date.getTime() < 7 * 24 * 60 * 60 * 1000) {
+    const days = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+    return days[date.getDay()];
+  }
+
+  return date.toLocaleDateString('vi-VN', { year: 'numeric', month: 'long', day: 'numeric' });
+};
+
+// Utility to check if date separator should be shown
+const shouldShowDate = (messages, index) => {
+  if (index === 0) return true;
+  const currentDate = new Date(messages[index].timestamp).toDateString();
+  const prevDate = new Date(messages[index - 1].timestamp).toDateString();
+  return currentDate !== prevDate;
 };
 
 // Utility to wait for socket connection
@@ -66,6 +99,20 @@ const waitForSocket = async (timeout = 5000) => {
   });
 };
 
+// Utility to fetch with timeout
+const fetchWithTimeout = async (url, options, timeout = 10000) => {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+  try {
+    const response = await fetch(url, { ...options, signal: controller.signal });
+    clearTimeout(id);
+    return response;
+  } catch (error) {
+    clearTimeout(id);
+    throw error;
+  }
+};
+
 const Chat = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const flatListRef = useRef(null);
@@ -77,6 +124,9 @@ const Chat = ({ navigation, route }) => {
   const [imageData, setImageData] = useState(null);
   const [hasSentPlanMessage, setHasSentPlanMessage] = useState(false);
   const [isReady, setIsReady] = useState(false);
+  const [showScrollButton, setShowScrollButton] = useState(false);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [modalImage, setModalImage] = useState('');
 
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(
@@ -86,6 +136,11 @@ const Chat = ({ navigation, route }) => {
 
   // Format user avatar if exists
   const formattedAvatar = user?.avatar ? formatAvatarUri(user.avatar) : null;
+
+  // Log route.params.planId
+  useEffect(() => {
+    console.log('route.params.planId:', planId);
+  }, [planId]);
 
   // Check user on mount or change
   useEffect(() => {
@@ -105,118 +160,113 @@ const Chat = ({ navigation, route }) => {
     }
   }, [user, contextLoading, ChitietPlanData]);
 
-  // Scroll to bottom when chat history updates
-  useEffect(() => {
-    if (chatHistory.length > 0) {
-      setTimeout(() => {
-        flatListRef.current?.scrollToEnd({ animated: true });
-      }, 100);
-    }
-  }, [chatHistory]);
-
-  // Initialize socket, fetch chat history, and send plan message
+  // Initialize WebSocket and handle real-time messages
   useEffect(() => {
     if (!user || contextLoading || !isReady) return;
 
     const initializeChat = async () => {
       try {
-        // Initialize socket service
+        // Initialize socket
         if (!socketService.socket || !socketService.isConnected()) {
           socketService.init(user);
           await waitForSocket();
         }
 
+        // Listen for new messages
+        socketService.socket.on('newMessage', (data) => {
+          const { message, userId } = data;
+          if (userId === user._id) {
+            dispatch({
+              type: 'chat/addSocketMessage',
+              payload: {
+                ...message,
+                _id: message._id || `temp-${Date.now()}`,
+                timestamp: message.createdAt || new Date().toISOString(),
+                sender: message.senderType === 'user' ? 'user' : 'admin',
+              },
+            });
+            socketService.socket.emit('markAsRead', { userId: user._id });
+          }
+        });
+
+        // Listen for message sent confirmation
+        socketService.socket.on('messageSent', (data) => {
+          const { message } = data;
+          dispatch({
+            type: 'chat/addSocketMessage',
+            payload: {
+              ...message,
+              _id: message._id || `temp-${Date.now()}`,
+              timestamp: message.createdAt || new Date().toISOString(),
+              sender: message.senderType === 'user' ? 'user' : 'admin',
+            },
+          });
+        });
+
         // Fetch chat history
         await dispatch(fetchChatHistory(user._id)).unwrap();
 
-        // Send automatic message if planId exists
+        // Send plan message if applicable
         if (planId && !hasSentPlanMessage && ChitietPlanData) {
-          console.log('ChitietPlanData:', ChitietPlanData);
           const planData = ChitietPlanData.plan || ChitietPlanData;
           const userName = user?.fullname || user?.name || '';
 
-          // Format text message
-          const messageContent = `
-Tôi muốn thảo luận về kế hoạch:
-- ID: ${planId}
-- Tên kế hoạch: ${planData.name || 'Không có tên'}
-`.trim();
+          const messageContent = JSON.stringify({
+            planId: planId,
+            details: {
+              name: planData.name || 'Không có tên',
+              sanh: planData.SanhId?.name || 'Chưa chọn sảnh',
+              caterings: planData.caterings?.map((item) => item.name) || [],
+              decorates: planData.decorates?.map((item) => item.name) || [],
+              presents: planData.presents?.map((item) => item.name) || [],
+            },
+          });
+
+          console.log('Chuẩn bị gửi tin nhắn plan:', messageContent);
 
           const tempId = `temp-${Date.now()}`;
-
-          // Add temporary text message
           const tempMessage = {
             _id: tempId,
-            tempId: tempId,
+            tempId,
             userId: user._id,
             receiverId: 'admin',
             content: messageContent,
             sender: 'user',
             timestamp: new Date().toISOString(),
-            messageType: 'text',
-            userName: userName,
+            messageType: 'plan',
+            userName,
           };
           dispatch({ type: 'chat/addSocketMessage', payload: tempMessage });
-          console.log('Sending text message:', messageContent);
 
-          // Send text message
-          if (socketService.socket && socketService.isConnected()) {
-            const socketSent = socketService.sendMessage('admin', messageContent, tempId, 'text');
-            if (!socketSent) {
+          try {
+            if (socketService.socket && socketService.isConnected()) {
+              const socketSent = socketService.sendMessage('admin', messageContent, tempId, 'plan');
+              if (!socketSent) {
+                throw new Error('Socket gửi thất bại');
+              }
+            } else {
               await dispatch(
                 sendMessage({
                   senderId: user._id,
                   receiverId: 'admin',
                   message: messageContent,
                   senderType: 'user',
-                  messageType: 'text',
-                  tempId: tempId,
-                  userName: userName,
+                  messageType: 'plan',
+                  tempId,
+                  userName,
                 })
               ).unwrap();
             }
-          } else {
-            await dispatch(
-              sendMessage({
-                senderId: user._id,
-                receiverId: 'admin',
-                message: messageContent,
-                senderType: 'user',
-                messageType: 'text',
-                tempId: tempId,
-                userName: userName,
-              })
-            ).unwrap();
+          } catch (error) {
+            console.error('Lỗi gửi tin nhắn plan:', error);
+            Alert.alert('Lỗi', 'Không thể gửi tin nhắn kế hoạch tự động.');
           }
 
-          // Collect and send images
           const images = [];
           if (planData.SanhId?.image) {
             images.push({ uri: formatAvatarUri(planData.SanhId.image), label: 'Sảnh cưới' });
           }
-          if (planData.caterings?.length > 0) {
-            planData.caterings.forEach((item) => {
-              if (item.image) {
-                images.push({ uri: formatAvatarUri(item.image), label: `Dịch vụ ăn uống: ${item.name || 'Không có tên'}` });
-              }
-            });
-          }
-          if (planData.decorates?.length > 0) {
-            planData.decorates.forEach((item) => {
-              if (item.image) {
-                images.push({ uri: formatAvatarUri(item.image), label: `Trang trí: ${item.name || 'Không có tên'}` });
-              }
-            });
-          }
-          if (planData.presents?.length > 0) {
-            planData.presents.forEach((item) => {
-              if (item.image) {
-                images.push({ uri: formatAvatarUri(item.image), label: `Quà tặng: ${item.name || 'Không có tên'}` });
-              }
-            });
-          }
 
-          // Send images
           for (const image of images) {
             const imageTempId = `temp-img-${Date.now()}-${Math.random()}`;
             const imageMessage = {
@@ -228,11 +278,9 @@ Tôi muốn thảo luận về kế hoạch:
               sender: 'user',
               timestamp: new Date().toISOString(),
               messageType: 'image',
-              userName: userName,
+              userName,
             };
-
             dispatch({ type: 'chat/addSocketMessage', payload: imageMessage });
-            console.log('Sending image:', image.uri);
 
             if (socketService.socket && socketService.isConnected()) {
               const socketSent = socketService.sendMessage('admin', image.uri, imageTempId, 'image');
@@ -247,28 +295,28 @@ Tôi muốn thảo luận về kế hoạch:
                 senderType: 'user',
                 messageType: 'image',
                 tempId: imageTempId,
-                userName: userName,
+                userName,
               })
             ).unwrap();
           }
 
-          // Refresh chat history to sync with server
           await dispatch(fetchChatHistory(user._id)).unwrap();
-          console.log('Chat history updated:', chatHistory);
-
           setHasSentPlanMessage(true);
         }
       } catch (err) {
-        console.error('Error initializing chat:', err);
-        if (planId && !hasSentPlanMessage) {
-          Alert.alert('Lỗi', 'Không thể gửi tin nhắn tự động về kế hoạch. Vui lòng thử lại.');
-        }
+        console.error('Lỗi khởi tạo chat:', err);
+        Alert.alert('Lỗi', 'Không thể khởi tạo chat.');
       }
     };
 
     initializeChat();
 
     return () => {
+      if (socketService.socket) {
+        socketService.socket.off('newMessage');
+        socketService.socket.off('messageSent');
+        socketService.disconnect();
+      }
       setMessageText('');
       setImageData(null);
     };
@@ -321,14 +369,14 @@ Tôi muốn thảo luận về kế hoạch:
       const userName = user?.fullname || user?.name || '';
       const tempMessage = {
         _id: tempId,
-        tempId: tempId,
+        tempId,
         userId: user._id,
         receiverId: 'admin',
         content: messageContent,
         sender: 'user',
         timestamp: new Date().toISOString(),
         messageType: isImageMessage ? 'image' : 'text',
-        userName: userName,
+        userName,
       };
 
       dispatch({ type: 'chat/addSocketMessage', payload: tempMessage });
@@ -341,7 +389,6 @@ Tôi muốn thảo luận về kế hoạch:
           isImageMessage ? 'image' : 'text'
         );
         if (socketSent) {
-          // Refresh chat history after socket send
           dispatch(fetchChatHistory(user._id));
           return;
         }
@@ -354,95 +401,357 @@ Tôi muốn thảo luận về kế hoạch:
           message: messageContent,
           senderType: 'user',
           messageType: isImageMessage ? 'image' : 'text',
-          tempId: tempId,
-          userName: userName,
+          tempId,
+          userName,
         })
-      ).then(() => {
-        // Refresh chat history after Redux send
-        dispatch(fetchChatHistory(user._id));
-      }).catch((error) => {
-        console.error('Exception sending message:', error);
-      });
+      )
+        .then(() => {
+          dispatch(fetchChatHistory(user._id));
+        })
+        .catch((error) => {
+          console.error('Exception sending message:', error);
+        });
     } catch (err) {
       console.error('Error in handleSendMessage:', err);
       Alert.alert('Lỗi gửi tin nhắn', 'Không thể gửi tin nhắn. Vui lòng thử lại sau.', [{ text: 'OK' }]);
     }
   }, [messageText, imageData, user, dispatch]);
 
+  // Handle scroll to check for scroll button visibility
+  const handleScroll = ({ nativeEvent }) => {
+    const { contentOffset, contentSize, layoutMeasurement } = nativeEvent;
+    const isScrolledUp = contentSize.height - contentOffset.y - layoutMeasurement.height > 300;
+    setShowScrollButton(isScrolledUp);
+  };
+
+  // Scroll to bottom
+  const scrollToBottom = () => {
+    flatListRef.current?.scrollToEnd({ animated: true });
+  };
+
   // Render message bubble
   const renderMessage = useCallback(
-    ({ item }) => {
+    ({ item, index }) => {
       if (!user) return null;
-  
+
       const isUser = item.sender === 'user';
       const isImage = item.messageType === 'image';
-      const senderName = isUser ? (user?.fullname || user?.name || 'Bạn') : 'Hỗ trợ khách hàng';
-  
+      const isConfirmation = item.messageType === 'confirmation';
+      const isPlan = item.messageType === 'plan';
+      const isNewPlan = item.messageType === 'new_plan';
+      const senderName = isUser ? user?.fullname || user?.name || 'Bạn' : 'Hỗ trợ khách hàng';
+
+      let messageContent = item.content;
+      let parsedContent = {};
+
+      // Only attempt JSON parsing for specific message types with valid JSON-like content
+      if ((isConfirmation || isPlan || isNewPlan) && typeof item.content === 'string') {
+        if (item.content.trim().startsWith('{') || item.content.trim().startsWith('[')) {
+          try {
+            parsedContent = JSON.parse(item.content);
+            messageContent = parsedContent.details
+              ? JSON.stringify(parsedContent.details, null, 2)
+              : parsedContent.newDetails
+              ? JSON.stringify(parsedContent.newDetails, null, 2)
+              : item.content;
+          } catch (e) {
+            console.error('Lỗi parse JSON:', {
+              content: item.content,
+              messageType: item.messageType,
+              error: e.message,
+            });
+            messageContent = item.content;
+            parsedContent = {};
+          }
+        } else {
+          console.warn('Non-JSON content:', { content: item.content, messageType: item.messageType });
+          messageContent = item.content;
+          parsedContent = {};
+        }
+      }
+
       return (
-        <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.adminMessageContainer]}>
-          <View style={[styles.nameContainer, isUser ? styles.userNameContainer : styles.adminNameContainer]}>
-            <Text style={[styles.senderName, isUser ? styles.userSenderName : styles.adminSenderName]}>
-              {senderName}
-            </Text>
-          </View>
-          <View style={[styles.messageRow, isUser && styles.userMessageRow]}>
-            {!isUser && (
-              <View style={styles.avatarContainer}>
-                <Ionicons name="headset-outline" size={16} color="#fff" />
-              </View>
-            )}
-            <View
-              style={[
-                styles.messageBubble,
-                isUser ? styles.userBubble : styles.adminBubble,
-                isImage && (isUser ? styles.userImageBubble : styles.adminImageBubble),
-              ]}
-            >
-              {isImage ? (
-                <TouchableOpacity
-                  onPress={() =>
-                    Alert.alert('Hình ảnh', '', [
-                      { text: 'Đóng', style: 'cancel' },
-                      { text: 'Xem đầy đủ', onPress: () => navigation.navigate('ImageViewer', { imageUri: item.content }) },
-                    ])
-                  }
-                >
-                  <Image
-                    source={{ uri: item.content }}
-                    style={styles.messageImage}
-                    resizeMode="cover"
-                    onError={(error) => console.log('Lỗi tải hình ảnh tin nhắn:', error.nativeEvent.error)}
-                  />
-                </TouchableOpacity>
-              ) : (
-                <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
-                  {item.content}
-                </Text>
-              )}
+        <>
+          {shouldShowDate(chatHistory, index) && (
+            <View style={styles.dateSeparator}>
+              <Text style={styles.dateSeparatorText}>{formatMessageDate(item.timestamp)}</Text>
             </View>
-            {isUser && (
-              formattedAvatar ? (
-                <Image
-                  source={{ uri: formattedAvatar }}
-                  style={styles.userAvatarImage}
-                  onError={(error) => console.log('Lỗi tải avatar người dùng:', error.nativeEvent.error)}
-                />
-              ) : (
-                <View style={styles.userAvatarContainer}>
-                  <Ionicons name="person" size={18} color="#fff" />
+          )}
+          <View
+            style={[
+              styles.messageContainer,
+              isUser ? styles.userMessageContainer : styles.adminMessageContainer,
+            ]}
+          >
+            <View
+              style={[styles.nameContainer, isUser ? styles.userNameContainer : styles.adminNameContainer]}
+            >
+              <Text
+                style={[styles.senderName, isUser ? styles.userSenderName : styles.adminSenderName]}
+              >
+                {senderName}
+              </Text>
+            </View>
+            <View style={[styles.messageRow, isUser && styles.userMessageRow]}>
+              {!isUser && (
+                <View style={styles.avatarContainer}>
+                  <Ionicons name="headset-outline" size={16} color="#fff" />
                 </View>
-              )
-            )}
+              )}
+              <View
+                style={[
+                  styles.messageBubble,
+                  isUser ? styles.userBubble : styles.adminBubble,
+                  isImage && (isUser ? styles.userImageBubble : styles.adminImageBubble),
+                  isConfirmation && styles.confirmationBubble,
+                  (isPlan || isNewPlan) && styles.planBubble,
+                ]}
+              >
+                {isImage ? (
+                  <TouchableOpacity
+                    onPress={() => {
+                      setModalImage(item.content);
+                      setShowImageModal(true);
+                    }}
+                  >
+                    <Image
+                      source={{ uri: item.content }}
+                      style={styles.messageImage}
+                      resizeMode="cover"
+                      onError={(error) =>
+                        console.log('Lỗi tải hình ảnh:', error.nativeEvent.error)
+                      }
+                    />
+                  </TouchableOpacity>
+                ) : isConfirmation && parsedContent.action === 'confirm' ? (
+                  <View>
+                    <Text style={[styles.messageText, styles.adminMessageText]}>
+                      Vui lòng xác nhận kế hoạch của bạn.
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.confirmButton}
+                      onPress={async () => {
+                        try {
+                          const tempId = `temp-${Date.now()}`;
+                          const userName = user?.fullname || user?.name || '';
+                          const confirmMessage = `Tôi xác nhận kế hoạch ${parsedContent.planId}`;
+                          dispatch({
+                            type: 'chat/addSocketMessage',
+                            payload: {
+                              _id: tempId,
+                              tempId,
+                              userId: user._id,
+                              receiverId: 'admin',
+                              content: confirmMessage,
+                              sender: 'user',
+                              timestamp: new Date().toISOString(),
+                              messageType: 'text',
+                              userName,
+                            },
+                          });
+
+                          if (socketService.socket && socketService.isConnected()) {
+                            socketService.sendMessage('admin', confirmMessage, tempId, 'text');
+                          } else {
+                            await dispatch(
+                              sendMessage({
+                                senderId: user._id,
+                                receiverId: 'admin',
+                                message: confirmMessage,
+                                senderType: 'user',
+                                messageType: 'text',
+                                tempId,
+                                userName,
+                              })
+                            ).unwrap();
+                          }
+
+                          const response = await fetchWithTimeout(
+                            `https://apidatn.onrender.com/plan/confirm-to-pending/${parsedContent.planId}`,
+                            {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'user-id': user._id,
+                              },
+                              body: JSON.stringify({ status: 'not_deposited' }),
+                            }
+                          );
+                          const result = await response.json();
+                          if (!response.ok) {
+                            throw new Error(result.message || 'Lỗi cập nhật trạng thái');
+                          }
+                          Alert.alert('Thành công', 'Kế hoạch đã được xác nhận.');
+                          dispatch(fetchChatHistory(user._id));
+                        } catch (error) {
+                          console.error('Lỗi xác nhận:', {
+                            planId: parsedContent.planId,
+                            error: error.message,
+                            stack: error.stack,
+                          });
+                          Alert.alert('Lỗi', `Không thể xác nhận kế hoạch: ${error.message}`);
+                        }
+                      }}
+                    >
+                      <Text style={styles.confirmButtonText}>Xác nhận</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : isNewPlan && parsedContent.action === 'new_plan' ? (
+                  <View>
+                    <Text style={[styles.messageText, styles.adminMessageText]}>
+                      Kế hoạch mới đã được đề xuất:
+                    </Text>
+                    <Text style={[styles.messageText, styles.adminMessageText]}>
+                      {messageContent}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.confirmButton}
+                      onPress={async () => {
+                        const originalPlanId = planId || (() => {
+                          const planMessage = chatHistory.find(
+                            (msg) => msg.messageType === 'plan' && msg.sender === 'user'
+                          );
+                          if (!planMessage) {
+                            console.warn('Không tìm thấy tin nhắn plan trong chatHistory');
+                            return null;
+                          }
+                          try {
+                            const parsed = JSON.parse(planMessage.content);
+                            console.log('Parsed planId:', parsed.planId);
+                            return parsed.planId || null;
+                          } catch (e) {
+                            console.error('Lỗi parse JSON plan message:', {
+                              content: planMessage.content,
+                              error: e.message,
+                            });
+                            return null;
+                          }
+                        })();
+                        console.log('Xác nhận kế hoạch mới:', {
+                          originalPlanId,
+                          newPlanId: parsedContent.planId,
+                        });
+
+                        if (!originalPlanId || !parsedContent.planId) {
+                          console.error('Thiếu planId hoặc newPlanId:', {
+                            originalPlanId,
+                            newPlanId: parsedContent.planId,
+                          });
+                          Alert.alert(
+                            'Lỗi',
+                            'Không tìm thấy thông tin kế hoạch để xác nhận. Vui lòng kiểm tra lại.'
+                          );
+                          return;
+                        }
+
+                        try {
+                          const tempId = `temp-${Date.now()}`;
+                          const userName = user?.fullname || user?.name || '';
+                          const confirmMessage = `Tôi xác nhận kế hoạch mới ${parsedContent.planId}`;
+                          dispatch({
+                            type: 'chat/addSocketMessage',
+                            payload: {
+                              _id: tempId,
+                              tempId,
+                              userId: user._id,
+                              receiverId: 'admin',
+                              content: confirmMessage,
+                              sender: 'user',
+                              timestamp: new Date().toISOString(),
+                              messageType: 'text',
+                              userName,
+                            },
+                          });
+
+                          if (socketService.socket && socketService.isConnected()) {
+                            socketService.sendMessage('admin', confirmMessage, tempId, 'text');
+                          } else {
+                            await dispatch(
+                              sendMessage({
+                                senderId: user._id,
+                                receiverId: 'admin',
+                                message: confirmMessage,
+                                senderType: 'user',
+                                messageType: 'text',
+                                tempId,
+                                userName,
+                              })
+                            ).unwrap();
+                          }
+
+                          const response = await fetchWithTimeout(
+                            `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
+                            {
+                              method: 'PUT',
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'user-id': user._id,
+                              },
+                              body: JSON.stringify({ newPlanId: parsedContent.planId }),
+                            }
+                          );
+                          const result = await response.json();
+                          if (!response.ok) {
+                            console.error('API override thất bại:', result);
+                            throw new Error(result.message || 'Lỗi ghi đè kế hoạch');
+                          }
+                          Alert.alert('Thành công', 'Kế hoạch đã được cập nhật.');
+                          dispatch(fetchChatHistory(user._id));
+                        } catch (error) {
+                          console.error('Lỗi xác nhận kế hoạch mới:', {
+                            originalPlanId,
+                            newPlanId: parsedContent.planId,
+                            error: error.message,
+                            stack: error.stack,
+                          });
+                          Alert.alert('Lỗi', `Không thể xác nhận kế hoạch mới: ${error.message}`);
+                        }
+                      }}
+                    >
+                      <Text style={styles.confirmButtonText}>Xác nhận kế hoạch mới</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : isPlan ? (
+                  <Text
+                    style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}
+                  >
+                    {messageContent}
+                  </Text>
+                ) : (
+                  <Text
+                    style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}
+                  >
+                    {messageContent}
+                  </Text>
+                )}
+              </View>
+              {isUser &&
+                (formattedAvatar ? (
+                  <Image
+                    source={{ uri: formattedAvatar }}
+                    style={styles.userAvatarImage}
+                    onError={(error) =>
+                      console.log('Lỗi tải avatar:', error.nativeEvent.error)
+                    }
+                  />
+                ) : (
+                  <View style={styles.userAvatarContainer}>
+                    <Ionicons name="person" size={18} color="#fff" />
+                  </View>
+                ))}
+            </View>
+            <View
+              style={[styles.timeContainer, isUser ? styles.userTimeContainer : styles.adminTimeContainer]}
+            >
+              <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.adminTimeText]}>
+                {formatMessageTime(item.timestamp)}
+              </Text>
+            </View>
           </View>
-          <View style={[styles.timeContainer, isUser ? styles.userTimeContainer : styles.adminTimeContainer]}>
-            <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.adminTimeText]}>
-              {formatMessageTime(item.timestamp)}
-            </Text>
-          </View>
-        </View>
+        </>
       );
     },
-    [user, formattedAvatar, formatMessageTime, navigation]
+    [user, formattedAvatar, chatHistory, planId, dispatch]
   );
 
   // Render message status indicators
@@ -487,27 +796,38 @@ Tôi muốn thảo luận về kế hoạch:
         <View style={styles.emptyContainer}>
           <Ionicons name="chatbubble-ellipses-outline" size={64} color="#7A60FF" />
           <Text style={styles.emptyText}>Chưa có tin nhắn nào</Text>
-          <Text style={styles.emptySubText}>Bắt đầu cuộc trò chuyện với đội hỗ trợ của chúng tôi ngay bây giờ!</Text>
+          <Text style={styles.emptySubText}>
+            Bắt đầu cuộc trò chuyện với đội hỗ trợ của chúng tôi ngay bây giờ!
+          </Text>
         </View>
       );
     } else {
       return (
-        <FlatList
-          ref={flatListRef}
-          data={chatHistory}
-          renderItem={renderMessage}
-          keyExtractor={(item) => item._id || item.tempId}
-          contentContainerStyle={styles.messagesList}
-          initialNumToRender={15}
-          maxToRenderPerBatch={10}
-          windowSize={10}
-          removeClippedSubviews={Platform.OS === 'android'}
-          maintainVisibleContentPosition={{
-            minIndexForVisible: 0,
-            autoscrollToTopThreshold: 10,
-          }}
-          extraData={chatHistory.length}
-        />
+        <>
+          <FlatList
+            ref={flatListRef}
+            data={chatHistory}
+            renderItem={renderMessage}
+            keyExtractor={(item) => item._id || item.tempId}
+            contentContainerStyle={styles.messagesList}
+            initialNumToRender={15}
+            maxToRenderPerBatch={10}
+            windowSize={10}
+            removeClippedSubviews={Platform.OS === 'android'}
+            maintainVisibleContentPosition={{
+              minIndexForVisible: 0,
+              autoscrollToTopThreshold: 10,
+            }}
+            extraData={chatHistory.length}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+          />
+          {showScrollButton && (
+            <TouchableOpacity style={styles.scrollBottomButton} onPress={scrollToBottom}>
+              <Ionicons name="arrow-down" size={24} color="#FFF" />
+            </TouchableOpacity>
+          )}
+        </>
       );
     }
   };
@@ -596,18 +916,28 @@ Tôi muốn thảo luận về kế hoạch:
           />
         </TouchableOpacity>
       </KeyboardAvoidingView>
+
+      <Modal visible={showImageModal} transparent={true} onRequestClose={() => setShowImageModal(false)}>
+        <View style={styles.imageModal}>
+          <View style={styles.imageModalContent}>
+            <Image source={{ uri: modalImage }} style={styles.imageModalImage} resizeMode="contain" />
+            <TouchableOpacity
+              style={styles.imageModalClose}
+              onPress={() => setShowImageModal(false)}
+            >
+              <Ionicons name="close" size={30} color="#FFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
 
 export default Chat;
 
-// Styles (unchanged)
+// Styles (giữ nguyên như mã gốc)
 const styles = StyleSheet.create({
-  planBubble: {
-    padding: 16,
-    backgroundColor: '#E6E6FA', // Màu tím nhạt cho tin nhắn kế hoạch
-  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
@@ -912,5 +1242,77 @@ const styles = StyleSheet.create({
   statusIndicator: {
     marginTop: 2,
     marginRight: 5,
+  },
+  dateSeparator: {
+    alignSelf: 'center',
+    backgroundColor: '#E5E5E5',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  dateSeparatorText: {
+    fontSize: 12,
+    color: '#666',
+    fontFamily: 'Playfair_me',
+  },
+  scrollBottomButton: {
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+    backgroundColor: '#7A60FF',
+    borderRadius: 24,
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+  },
+  imageModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  imageModalContent: {
+    position: 'relative',
+    width: '90%',
+    height: '80%',
+  },
+  imageModalImage: {
+    width: '100%',
+    height: '100%',
+  },
+  imageModalClose: {
+    position: 'absolute',
+    top: -40,
+    right: -40,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 20,
+    padding: 10,
+  },
+  confirmationBubble: {
+    backgroundColor: '#E6E6FA',
+    padding: 16,
+  },
+  confirmButton: {
+    backgroundColor: '#7A60FF',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontFamily: 'Playfair_me',
+  },
+  planBubble: {
+    padding: 16,
+    backgroundColor: '#E6E6FA',
   },
 });
