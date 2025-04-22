@@ -11,27 +11,197 @@ import {
   Dimensions,
   ActivityIndicator,
   ToastAndroid,
+  Modal,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch, useSelector } from 'react-redux';
-import { ChitietPlan, resetChitietPlan, duplicatePlan } from '../redux/ChitietPlanSlice';
+import { ChitietPlan, resetChitietPlan, duplicatePlan, confirmToPending } from '../redux/ChitietPlanSlice';
 import { AppContext } from '../AppContext';
 
 const { width } = Dimensions.get('window');
 
+// Custom Alert Component
+const CustomAlert = ({ visible, title, message, type, onClose, actions }) => {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(100)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 300,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    }
+  }, [visible]);
+
+  const closeModal = () => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 0,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 100,
+        duration: 200,
+        useNativeDriver: true,
+      }),
+    ]).start(() => {
+      onClose();
+    });
+  };
+
+  const getHeaderColor = () => {
+    switch (type) {
+      case 'success':
+        return '#E8F5E9';
+      case 'error':
+        return '#FFEBEE';
+      case 'warning':
+        return '#FFF8E1';
+      case 'info':
+        return '#E3F2FD';
+      default:
+        return '#F5F5F5';
+    }
+  };
+
+  const getButtonColor = () => {
+    switch (type) {
+      case 'success':
+        return '#4CAF50';
+      case 'error':
+        return '#F44336';
+      case 'warning':
+        return '#FF9800';
+      case 'info':
+        return '#2196F3';
+      default:
+        return '#757575';
+    }
+  };
+
+  const getIconStyle = () => {
+    switch (type) {
+      case 'success':
+        return { backgroundColor: '#4CAF50' };
+      case 'error':
+        return { backgroundColor: '#F44336' };
+      case 'warning':
+        return { backgroundColor: '#FF9800' };
+      case 'info':
+        return { backgroundColor: '#2196F3' };
+      default:
+        return { backgroundColor: '#757575' };
+    }
+  };
+
+  const getIconContent = () => {
+    switch (type) {
+      case 'success':
+        return '✓';
+      case 'error':
+        return '✕';
+      case 'warning':
+        return '!';
+      case 'info':
+        return 'i';
+      default:
+        return '!';
+    }
+  };
+
+  return (
+    <Modal
+      transparent
+      visible={visible}
+      animationType="none"
+      onRequestClose={closeModal}
+    >
+      <View style={styles.alertOverlay}>
+        <Animated.View
+          style={[
+            styles.alertContainer,
+            {
+              opacity: fadeAnim,
+              transform: [{ translateY: slideAnim }],
+            },
+          ]}
+        >
+          <View style={[styles.alertHeader, { backgroundColor: getHeaderColor() }]}>
+            <View style={[styles.alertIconContainer, getIconStyle()]}>
+              <Text style={styles.alertIconText}>{getIconContent()}</Text>
+            </View>
+          </View>
+
+          <View style={styles.alertContent}>
+            <Text style={styles.alertTitle}>{title}</Text>
+            <Text style={styles.alertMessage}>{message}</Text>
+
+            <View style={styles.alertActions}>
+              {actions ? (
+                actions.map((action, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[styles.alertButton, { backgroundColor: getButtonColor() }]}
+                    onPress={() => {
+                      closeModal();
+                      action.onPress && action.onPress();
+                    }}
+                  >
+                    <Text style={styles.alertButtonText}>{action.text}</Text>
+                  </TouchableOpacity>
+                ))
+              ) : (
+                <TouchableOpacity
+                  style={[styles.alertButton, { backgroundColor: getButtonColor() }]}
+                  onPress={closeModal}
+                >
+                  <Text style={styles.alertButtonText}>Đóng</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+        </Animated.View>
+      </View>
+    </Modal>
+  );
+};
+
 const DetailPlan = ({ navigation, route }) => {
   const { planId: routePlanId, planData: routePlanData, fromGenPlan } = route?.params || {};
   const dispatch = useDispatch();
-  const { ChitietPlanData, ChitietPlanStatus, error } = useSelector((state) => state.chitietplan);
+  const { ChitietPlanData, ChitietPlanStatus, confirmToPendingStatus, error } = useSelector((state) => state.chitietplan);
   const { user } = useContext(AppContext);
   const userId = user?._id;
   const [priceDifference, setPriceDifference] = useState(0);
   const [calculatedTotalPrice, setCalculatedTotalPrice] = useState(0);
+  const [alertVisible, setAlertVisible] = useState(false);
+  const [alertTitle, setAlertTitle] = useState('');
+  const [alertMessage, setAlertMessage] = useState('');
+  const [alertType, setAlertType] = useState('info');
+  const [alertActions, setAlertActions] = useState(null);
 
   const planId = routePlanId || (ChitietPlanData?._id || routePlanData?._id);
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const planData = routePlanData || (ChitietPlanData?.plan ? ChitietPlanData.plan : ChitietPlanData) || null;
+
+  const showAlert = (title, message, type = 'info', actions = null) => {
+    setAlertTitle(title);
+    setAlertMessage(message);
+    setAlertType(type);
+    setAlertActions(actions);
+    setAlertVisible(true);
+  };
 
   // Tính tổng giá và chênh lệch khi từ GenPlan
   useEffect(() => {
@@ -84,6 +254,48 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show(`Lỗi: ${error}`, ToastAndroid.SHORT);
     }
   }, [error]);
+
+  const handleConfirmToPending = () => {
+    if (!planId) {
+      ToastAndroid.show('Không thể chuyển trạng thái: Thiếu planId', ToastAndroid.SHORT);
+      return;
+    }
+  
+    showAlert(
+      'Xác nhận liên hệ',
+      'Bạn có muốn liên hệ với hỗ trợ để xác nhận kế hoạch này?',
+      'info',
+      [
+        {
+          text: 'Hủy',
+          onPress: () => {},
+        },
+        {
+          text: 'Xác nhận',
+          onPress: async () => {
+            try {
+              await dispatch(confirmToPending(planId)).unwrap();
+              showAlert(
+                'Thành công',
+                'Bạn sẽ được chuyển đến màn hình chat.',
+                'success',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => {
+                      navigation.navigate('Chat', { planId: planId }); // Navigate directly to Chat screen
+                    },
+                  },
+                ]
+              );
+            } catch (error) {
+              showAlert('Lỗi', `Không thể chuyển trạng thái: ${error.message || error}`, 'error');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (!planData && ChitietPlanStatus !== 'loading' && ChitietPlanStatus !== 'idle') {
     return (
@@ -178,8 +390,6 @@ const DetailPlan = ({ navigation, route }) => {
               )
             ))}
             <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
-
-
               <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
               <Text style={[styles.sectionTotal, { color: '#000000' }]}>
                 {sectionTotal.toLocaleString('vi-VN')} VNĐ
@@ -333,8 +543,10 @@ const DetailPlan = ({ navigation, route }) => {
       navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice || planData.totalPrice });
     }
   };
+
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
   const isButtonDisabled = planData.status === 'Đã đặt cọc' || planData.status === 'Đang chờ' || planData.status === 'Đã hủy';
+  const showConfirmButton = planData.status === 'Đang chờ xác nhận';
 
   const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
   const depositPrice = totalPrice * 0.1;
@@ -363,19 +575,14 @@ const DetailPlan = ({ navigation, route }) => {
           <View style={styles.planInfoCard}>
             <Text style={styles.planTitle}>{planData.name || 'Kế hoạch không tên'}</Text>
             <View style={styles.priceContainer}>
-
               <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
-
               <Text style={styles.planPrice}>
                 {totalPrice.toLocaleString('vi-VN')} VNĐ
               </Text>
             </View>
-
             <View style={styles.divider} />
-
             <View style={styles.infoContainer}>
               <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
-
               <View style={styles.infoRow}>
                 <Icon name="calendar-month" size={22} color="#000000" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
@@ -387,7 +594,6 @@ const DetailPlan = ({ navigation, route }) => {
                   </Text>
                 </View>
               </View>
-
               <View style={styles.infoRow}>
                 <Icon name="account-group" size={22} color="#000000" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
@@ -397,7 +603,6 @@ const DetailPlan = ({ navigation, route }) => {
                   </Text>
                 </View>
               </View>
-
               <View style={styles.infoRow}>
                 <Icon name="cash-multiple" size={22} color="#000000" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
@@ -407,7 +612,6 @@ const DetailPlan = ({ navigation, route }) => {
                   </Text>
                 </View>
               </View>
-
               <View style={styles.infoRow}>
                 <Icon name="scale-balance" size={22} color="#000000" style={styles.infoIcon} />
                 <View style={styles.infoContent}>
@@ -434,9 +638,7 @@ const DetailPlan = ({ navigation, route }) => {
                 </View>
               </View>
             </View>
-
             <View style={styles.divider} />
-
             {planData.SanhId && (
               <View style={styles.venueContainer}>
                 <View style={styles.venueTitleRow}>
@@ -473,58 +675,79 @@ const DetailPlan = ({ navigation, route }) => {
               </View>
             )}
           </View>
-
           <View style={styles.divider} />
-
           {renderServiceItem('Dịch vụ ăn uống', planData.caterings, 'food-fork-drink', '#000000', true)}
           {renderServiceItem('Trang trí', planData.decorates, 'flower', '#333333', false)}
           {renderServiceItem('Quà tặng', planData.presents, 'gift', '#000000', false)}
         </Animated.View>
       </ScrollView>
-
-      <View style={styles.persistentBottomBar}>
-      <TouchableOpacity
-        style={[
-          styles.bottomBarButton,
-          !planData?.UserId && styles.fullWidthButton,
-          isButtonDisabled && styles.disabledBottomBarButton,
-        ]}
-        onPress={handleEditPlan}
-        disabled={isButtonDisabled}
-      >
-        <Text style={styles.bottomBarButtonText}>
-          {planData.status === 'Đã hủy' ? 'Đã hủy' : 'Chỉnh sửa'}
-        </Text>
-      </TouchableOpacity>
-      {planData?.UserId && (
+      <View style={[styles.persistentBottomBar, showConfirmButton && styles.persistentBottomBarWithConfirm]}>
         <TouchableOpacity
           style={[
             styles.bottomBarButton,
-            styles.depositBottomBarButton,
+            !planData?.UserId && styles.fullWidthButton,
             isButtonDisabled && styles.disabledBottomBarButton,
           ]}
-          onPress={handleDeposit}
+          onPress={handleEditPlan}
           disabled={isButtonDisabled}
         >
-          <View style={styles.depositButtonContent}>
-            <View style={styles.depositTextContainer}>
-              <Text style={styles.bottomBarButtonText}>
-                {planData.status === 'Đã hủy'
-                  ? 'Đã hủy'
-                  : planData.status === 'Đã đặt cọc'
-                  ? 'Đã đặt cọc'
-                  : planData.status === 'Đang chờ'
-                  ? 'Đang chờ'
-                  : 'Đặt cọc'}
-              </Text>
-              <Text style={styles.depositPriceText}>
-                {depositPrice.toLocaleString('vi-VN')} VNĐ
-              </Text>
-            </View>
-          </View>
+          <Text style={styles.bottomBarButtonText}>
+            {planData.status === 'Đã hủy' ? 'Đã hủy' : 'Chỉnh sửa'}
+          </Text>
         </TouchableOpacity>
-      )}
-    </View>
+        {planData?.UserId && (
+          <>
+            {showConfirmButton ? (
+              <TouchableOpacity
+                style={[
+                  styles.bottomBarButton,
+                  styles.confirmBottomBarButton,
+                  confirmToPendingStatus === 'loading' && styles.disabledBottomBarButton,
+                ]}
+                onPress={handleConfirmToPending}
+                disabled={confirmToPendingStatus === 'loading'}
+              >
+                <Text style={styles.bottomBarButtonText}>Liên hệ</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity
+                style={[
+                  styles.bottomBarButton,
+                  styles.depositBottomBarButton,
+                  isButtonDisabled && styles.disabledBottomBarButton,
+                ]}
+                onPress={handleDeposit}
+                disabled={isButtonDisabled}
+              >
+                <View style={styles.depositButtonContent}>
+                  <View style={styles.depositTextContainer}>
+                    <Text style={styles.bottomBarButtonText}>
+                      {planData.status === 'Đã hủy'
+                        ? 'Đã hủy'
+                        : planData.status === 'Đã đặt cọc'
+                        ? 'Đã đặt cọc'
+                        : planData.status === 'Đang chờ'
+                        ? 'Đang chờ'
+                        : 'Đặt cọc'}
+                    </Text>
+                    <Text style={styles.depositPriceText}>
+                      {depositPrice.toLocaleString('vi-VN')} VNĐ
+                    </Text>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+          </>
+        )}
+      </View>
+      <CustomAlert
+        visible={alertVisible}
+        title={alertTitle}
+        message={alertMessage}
+        type={alertType}
+        onClose={() => setAlertVisible(false)}
+        actions={alertActions}
+      />
     </SafeAreaView>
   );
 };
@@ -928,6 +1151,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
   },
+  persistentBottomBarWithConfirm: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
   bottomBarButton: {
     flex: 1,
     backgroundColor: '#000000',
@@ -941,11 +1168,11 @@ const styles = StyleSheet.create({
   depositBottomBarButton: {
     backgroundColor: '#333333',
   },
+  confirmBottomBarButton: {
+    backgroundColor: '#FFC107',
+  },
   disabledBottomBarButton: {
     opacity: 0.5,
-  },
-  bottomBarButtonIcon: {
-    marginRight: 8,
   },
   bottomBarButtonText: {
     color: '#FFFFFF',
@@ -968,5 +1195,80 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '500',
     marginTop: 2,
+  },
+  alertOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertContainer: {
+    width: '85%',
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    overflow: 'hidden',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+  alertHeader: {
+    paddingVertical: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  alertIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  alertIconText: {
+    color: '#FFFFFF',
+    fontSize: 28,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  alertContent: {
+    padding: 20,
+  },
+  alertTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#333',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  alertMessage: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 20,
+    lineHeight: 22,
+  },
+  alertActions: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 10,
+  },
+  alertButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    minWidth: 120,
+    marginHorizontal: 5,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+  },
+  alertButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
   },
 });

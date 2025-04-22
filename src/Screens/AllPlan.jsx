@@ -290,7 +290,6 @@ const AllPlan = ({ navigation }) => {
     ({ item }) => {
       if (!user || !item || !item._id) return null;
 
-      // Determine which button to show based on status
       const status = item.status ? item.status.toLowerCase() : '';
       const showDeleteButton = status === 'chưa đặt cọc';
       const showCancelButton = status === 'đang chờ';
@@ -363,6 +362,8 @@ const AllPlan = ({ navigation }) => {
         return '#FF9800';
       case 'đã hủy':
         return '#F44336';
+      case 'đang chờ xác nhận':
+        return '#FFC107';
       default:
         return '#9E9E9E';
     }

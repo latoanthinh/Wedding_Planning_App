@@ -24,6 +24,7 @@ export const ChitietPlan = createAsyncThunk(
   }
 );
 
+// Thunk để tạo bản sao kế hoạch
 export const duplicatePlan = createAsyncThunk(
   'plan/duplicatePlan',
   async ({ planId, userId }, { rejectWithValue }) => {
@@ -61,10 +62,7 @@ export const duplicatePlan = createAsyncThunk(
   }
 );
 
-
-
-
-// Thunk để cập nhật kế hoạch (dùng sau khi chỉnh sửa bản sao)
+// Thunk để cập nhật kế hoạch
 export const updatePlan = createAsyncThunk(
   'plan/updatePlan',
   async ({ planId, updateData }, { rejectWithValue }) => {
@@ -89,17 +87,44 @@ export const updatePlan = createAsyncThunk(
   }
 );
 
+// Thunk để chuyển trạng thái kế hoạch sang "Chưa đặt cọc"
+export const confirmToPending = createAsyncThunk(
+  'plan/confirmToPending',
+  async (planId, { rejectWithValue }) => {
+    try {
+      const response = await fetch(`https://apidatn.onrender.com/plan/confirm-to-pending/${planId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'Chưa đặt cọc' }),
+      });
+      const text = await response.text();
+      if (!response.ok) {
+        throw new Error(`Chuyển trạng thái thất bại: ${response.status} - ${text}`);
+      }
+      if (!text) throw new Error('Phản hồi từ server rỗng');
+      const data = JSON.parse(text);
+      console.log('API Response (confirmToPending):', data);
+      return data.data;
+    } catch (error) {
+      console.error('Lỗi confirmToPending:', error.message);
+      return rejectWithValue(error.message);
+    }
+  }
+);
+
 const ChitietPlanSlice = createSlice({
   name: 'chitietplan',
   initialState: {
     ChitietPlanData: null,
     ChitietPlanStatus: 'idle',
+    confirmToPendingStatus: 'idle', // New status for confirmToPending
     error: null,
   },
   reducers: {
     resetChitietPlan: (state) => {
       state.ChitietPlanData = null;
       state.ChitietPlanStatus = 'idle';
+      state.confirmToPendingStatus = 'idle';
       state.error = null;
     },
   },
@@ -154,6 +179,20 @@ const ChitietPlanSlice = createSlice({
       })
       .addCase(updatePlan.rejected, (state, action) => {
         state.ChitietPlanStatus = 'failed';
+        state.error = action.payload;
+      })
+      // confirmToPending
+      .addCase(confirmToPending.pending, (state) => {
+        state.confirmToPendingStatus = 'loading';
+        state.error = null;
+      })
+      .addCase(confirmToPending.fulfilled, (state, action) => {
+        state.confirmToPendingStatus = 'succeeded';
+        state.ChitietPlanData = action.payload; // Update plan data with new status
+        state.error = null;
+      })
+      .addCase(confirmToPending.rejected, (state, action) => {
+        state.confirmToPendingStatus = 'failed';
         state.error = action.payload;
       });
   },

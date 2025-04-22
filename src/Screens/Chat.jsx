@@ -31,24 +31,63 @@ const formatAvatarUri = (avatar) => {
   return `data:image/jpeg;base64,${avatar}`;
 };
 
-const Chat = ({ navigation }) => {
+// Utility function to format message timestamp
+const formatMessageTime = (timestamp) => {
+  try {
+    const date = new Date(timestamp);
+    if (isNaN(date.getTime())) {
+      return 'Invalid Time';
+    }
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    return `${hours}:${minutes}`;
+  } catch (error) {
+    console.error('Error formatting timestamp:', error);
+    return 'Unknown Time';
+  }
+};
+
+// Utility to wait for socket connection
+const waitForSocket = async (timeout = 5000) => {
+  return new Promise((resolve) => {
+    if (socketService.socket && socketService.isConnected()) {
+      return resolve(true);
+    }
+    const interval = setInterval(() => {
+      if (socketService.socket && socketService.isConnected()) {
+        clearInterval(interval);
+        resolve(true);
+      }
+    }, 100);
+    setTimeout(() => {
+      clearInterval(interval);
+      resolve(false);
+    }, timeout);
+  });
+};
+
+const Chat = ({ navigation, route }) => {
   const dispatch = useDispatch();
   const flatListRef = useRef(null);
   const { user, isLoading: contextLoading } = useContext(AppContext);
+  const { planId } = route?.params || {};
 
   // States
   const [messageText, setMessageText] = useState('');
   const [imageData, setImageData] = useState(null);
+  const [hasSentPlanMessage, setHasSentPlanMessage] = useState(false);
+  const [isReady, setIsReady] = useState(false);
 
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(
     (state) => state.chat
   );
+  const { ChitietPlanData } = useSelector((state) => state.chitietplan);
 
   // Format user avatar if exists
   const formattedAvatar = user?.avatar ? formatAvatarUri(user.avatar) : null;
 
-  // Kiểm tra user khi component mount hoặc user thay đổi
+  // Check user on mount or change
   useEffect(() => {
     if (!contextLoading && !user) {
       console.log('User không tồn tại, chuyển hướng đến SignIn');
@@ -59,122 +98,208 @@ const Chat = ({ navigation }) => {
     }
   }, [user, contextLoading, navigation]);
 
-  // Initialize socket and fetch chat history
+  // Check readiness for sending messages
   useEffect(() => {
-    if (!user || contextLoading) return; // Không gọi nếu không có user hoặc đang loading
+    if (user && !contextLoading && ChitietPlanData) {
+      setIsReady(true);
+    }
+  }, [user, contextLoading, ChitietPlanData]);
+
+  // Scroll to bottom when chat history updates
+  useEffect(() => {
+    if (chatHistory.length > 0) {
+      setTimeout(() => {
+        flatListRef.current?.scrollToEnd({ animated: true });
+      }, 100);
+    }
+  }, [chatHistory]);
+
+  // Initialize socket, fetch chat history, and send plan message
+  useEffect(() => {
+    if (!user || contextLoading || !isReady) return;
 
     const initializeChat = async () => {
       try {
         // Initialize socket service
         if (!socketService.socket || !socketService.isConnected()) {
           socketService.init(user);
+          await waitForSocket();
         }
 
         // Fetch chat history
         await dispatch(fetchChatHistory(user._id)).unwrap();
+
+        // Send automatic message if planId exists
+        if (planId && !hasSentPlanMessage && ChitietPlanData) {
+          console.log('ChitietPlanData:', ChitietPlanData);
+          const planData = ChitietPlanData.plan || ChitietPlanData;
+          const userName = user?.fullname || user?.name || '';
+
+          // Format text message
+          const messageContent = `
+Tôi muốn thảo luận về kế hoạch:
+- ID: ${planId}
+- Tên kế hoạch: ${planData.name || 'Không có tên'}
+`.trim();
+
+          const tempId = `temp-${Date.now()}`;
+
+          // Add temporary text message
+          const tempMessage = {
+            _id: tempId,
+            tempId: tempId,
+            userId: user._id,
+            receiverId: 'admin',
+            content: messageContent,
+            sender: 'user',
+            timestamp: new Date().toISOString(),
+            messageType: 'text',
+            userName: userName,
+          };
+          dispatch({ type: 'chat/addSocketMessage', payload: tempMessage });
+          console.log('Sending text message:', messageContent);
+
+          // Send text message
+          if (socketService.socket && socketService.isConnected()) {
+            const socketSent = socketService.sendMessage('admin', messageContent, tempId, 'text');
+            if (!socketSent) {
+              await dispatch(
+                sendMessage({
+                  senderId: user._id,
+                  receiverId: 'admin',
+                  message: messageContent,
+                  senderType: 'user',
+                  messageType: 'text',
+                  tempId: tempId,
+                  userName: userName,
+                })
+              ).unwrap();
+            }
+          } else {
+            await dispatch(
+              sendMessage({
+                senderId: user._id,
+                receiverId: 'admin',
+                message: messageContent,
+                senderType: 'user',
+                messageType: 'text',
+                tempId: tempId,
+                userName: userName,
+              })
+            ).unwrap();
+          }
+
+          // Collect and send images
+          const images = [];
+          if (planData.SanhId?.image) {
+            images.push({ uri: formatAvatarUri(planData.SanhId.image), label: 'Sảnh cưới' });
+          }
+          if (planData.caterings?.length > 0) {
+            planData.caterings.forEach((item) => {
+              if (item.image) {
+                images.push({ uri: formatAvatarUri(item.image), label: `Dịch vụ ăn uống: ${item.name || 'Không có tên'}` });
+              }
+            });
+          }
+          if (planData.decorates?.length > 0) {
+            planData.decorates.forEach((item) => {
+              if (item.image) {
+                images.push({ uri: formatAvatarUri(item.image), label: `Trang trí: ${item.name || 'Không có tên'}` });
+              }
+            });
+          }
+          if (planData.presents?.length > 0) {
+            planData.presents.forEach((item) => {
+              if (item.image) {
+                images.push({ uri: formatAvatarUri(item.image), label: `Quà tặng: ${item.name || 'Không có tên'}` });
+              }
+            });
+          }
+
+          // Send images
+          for (const image of images) {
+            const imageTempId = `temp-img-${Date.now()}-${Math.random()}`;
+            const imageMessage = {
+              _id: imageTempId,
+              tempId: imageTempId,
+              userId: user._id,
+              receiverId: 'admin',
+              content: image.uri,
+              sender: 'user',
+              timestamp: new Date().toISOString(),
+              messageType: 'image',
+              userName: userName,
+            };
+
+            dispatch({ type: 'chat/addSocketMessage', payload: imageMessage });
+            console.log('Sending image:', image.uri);
+
+            if (socketService.socket && socketService.isConnected()) {
+              const socketSent = socketService.sendMessage('admin', image.uri, imageTempId, 'image');
+              if (socketSent) continue;
+            }
+
+            await dispatch(
+              sendMessage({
+                senderId: user._id,
+                receiverId: 'admin',
+                message: image.uri,
+                senderType: 'user',
+                messageType: 'image',
+                tempId: imageTempId,
+                userName: userName,
+              })
+            ).unwrap();
+          }
+
+          // Refresh chat history to sync with server
+          await dispatch(fetchChatHistory(user._id)).unwrap();
+          console.log('Chat history updated:', chatHistory);
+
+          setHasSentPlanMessage(true);
+        }
       } catch (err) {
         console.error('Error initializing chat:', err);
+        if (planId && !hasSentPlanMessage) {
+          Alert.alert('Lỗi', 'Không thể gửi tin nhắn tự động về kế hoạch. Vui lòng thử lại.');
+        }
       }
     };
 
     initializeChat();
 
-    // Cleanup
     return () => {
-      // Đóng socket khi component unmount (tùy chọn)
-      // socketService.disconnect();
       setMessageText('');
       setImageData(null);
     };
-  }, [dispatch, user, contextLoading]);
+  }, [dispatch, user, contextLoading, planId, hasSentPlanMessage, ChitietPlanData, isReady]);
 
-  // Show alert if message sending failed
-  useEffect(() => {
-    if (!user) return;
-
-    if (sendStatus === 'failed' && sendError) {
-      Alert.alert('Lỗi gửi tin nhắn', sendError, [
-        { text: 'OK', onPress: () => dispatch(resetSendStatus()) },
-      ]);
-    }
-  }, [sendStatus, sendError, dispatch, user]);
-
-  // Scroll to bottom when new messages are added
-  useEffect(() => {
-    if (!user || chatHistory.length === 0 || !flatListRef.current) return;
-
-    setTimeout(() => {
-      try {
-        flatListRef.current.scrollToEnd({ animated: true });
-      } catch (error) {
-        console.log('Error scrolling to end:', error);
-      }
-    }, 50);
-  }, [chatHistory, user]);
-
-  // Format date for messages
-  const formatMessageTime = (timestamp) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffDays = Math.floor((now - date) / (1000 * 60 * 60 * 24));
-
-    if (diffDays === 0) {
-      return date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
-    } else if (diffDays === 1) {
-      return `Hôm qua ${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
-    } else if (diffDays < 7) {
-      const days = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
-      return `${days[date.getDay()]} ${date.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}`;
-    } else {
-      return date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit', year: 'numeric' });
-    }
-  };
-
-  // Handle picking image
-  const pickImage = async () => {
-    if (!user) return;
-
-    try {
-      const options = {
+  // Handle image picking
+  const pickImage = useCallback(() => {
+    launchImageLibrary(
+      {
         mediaType: 'photo',
+        quality: 0.7,
         includeBase64: true,
-        maxHeight: 1200,
-        maxWidth: 1200,
-        quality: 0.8,
-      };
-
-      const result = await launchImageLibrary(options);
-
-      if (result.didCancel) return;
-      if (result.errorCode) {
-        Alert.alert('Lỗi', `Không thể chọn ảnh: ${result.errorMessage}`);
-        return;
-      }
-
-      if (result.assets && result.assets[0]) {
-        const asset = result.assets[0];
-
-        if (asset.fileSize && asset.fileSize > 5 * 1024 * 1024) {
-          Alert.alert('Kích thước ảnh quá lớn', 'Vui lòng chọn ảnh có kích thước nhỏ hơn 5MB.');
-          return;
+      },
+      (response) => {
+        if (response.didCancel) {
+          console.log('User cancelled image picker');
+        } else if (response.errorCode) {
+          console.error('ImagePicker Error:', response.errorMessage);
+          Alert.alert('Lỗi', 'Không thể chọn hình ảnh. Vui lòng thử lại.');
+        } else if (response.assets && response.assets.length > 0) {
+          const base64Image = `data:image/jpeg;base64,${response.assets[0].base64}`;
+          setImageData(base64Image);
         }
-
-        const imageType = asset.type.split('/')[1] || 'jpeg';
-        const formattedBase64 = `data:image/${imageType};base64,${asset.base64}`;
-        setImageData(formattedBase64);
-        setMessageText('');
       }
-    } catch (error) {
-      console.error('Error picking image:', error);
-      Alert.alert('Lỗi', 'Không thể chọn ảnh. Vui lòng thử lại sau.');
-    }
-  };
+    );
+  }, []);
 
-  // Cancel image upload
-  const cancelImage = () => {
-    if (!user) return;
+  // Cancel image selection
+  const cancelImage = useCallback(() => {
     setImageData(null);
-  };
+  }, []);
 
   // Handle sending messages
   const handleSendMessage = useCallback(() => {
@@ -208,14 +333,18 @@ const Chat = ({ navigation }) => {
 
       dispatch({ type: 'chat/addSocketMessage', payload: tempMessage });
 
-      if (socketService.socket && socketService.socket.connected) {
+      if (socketService.socket && socketService.isConnected()) {
         const socketSent = socketService.sendMessage(
           'admin',
           messageContent,
           tempId,
           isImageMessage ? 'image' : 'text'
         );
-        if (socketSent) return;
+        if (socketSent) {
+          // Refresh chat history after socket send
+          dispatch(fetchChatHistory(user._id));
+          return;
+        }
       }
 
       dispatch(
@@ -228,7 +357,10 @@ const Chat = ({ navigation }) => {
           tempId: tempId,
           userName: userName,
         })
-      ).catch((error) => {
+      ).then(() => {
+        // Refresh chat history after Redux send
+        dispatch(fetchChatHistory(user._id));
+      }).catch((error) => {
         console.error('Exception sending message:', error);
       });
     } catch (err) {
@@ -241,11 +373,21 @@ const Chat = ({ navigation }) => {
   const renderMessage = useCallback(
     ({ item }) => {
       if (!user) return null;
-
+  
       const isUser = item.sender === 'user';
       const isImage = item.messageType === 'image';
+      const isPlan = item.messageType === 'plan';
       const senderName = isUser ? (user?.fullname || user?.name || 'Bạn') : 'Hỗ trợ khách hàng';
-
+  
+      let planData = null;
+      if (isPlan) {
+        try {
+          planData = JSON.parse(item.content);
+        } catch (e) {
+          console.error('Lỗi phân tích tin nhắn kế hoạch:', e);
+        }
+      }
+  
       return (
         <View style={[styles.messageContainer, isUser ? styles.userMessageContainer : styles.adminMessageContainer]}>
           <View style={[styles.nameContainer, isUser ? styles.userNameContainer : styles.adminNameContainer]}>
@@ -253,19 +395,20 @@ const Chat = ({ navigation }) => {
               {senderName}
             </Text>
           </View>
-
+  
           <View style={[styles.messageRow, isUser && styles.userMessageRow]}>
             {!isUser && (
               <View style={styles.avatarContainer}>
                 <Ionicons name="headset-outline" size={16} color="#fff" />
               </View>
             )}
-
+  
             <View
               style={[
                 styles.messageBubble,
                 isUser ? styles.userBubble : styles.adminBubble,
                 isImage && (isUser ? styles.userImageBubble : styles.adminImageBubble),
+                isPlan && styles.planBubble, // Thêm style cho tin nhắn kế hoạch
               ]}
             >
               {isImage ? (
@@ -281,23 +424,36 @@ const Chat = ({ navigation }) => {
                     source={{ uri: item.content }}
                     style={styles.messageImage}
                     resizeMode="cover"
-                    onError={(error) => console.log('Error loading message image:', error.nativeEvent.error)}
+                    onError={(error) => console.log('Lỗi tải hình ảnh tin nhắn:', error.nativeEvent.error)}
                   />
                 </TouchableOpacity>
+              ) : isPlan && planData ? (
+                <View>
+                  <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
+                    Tôi muốn thảo luận về kế hoạch:
+                  </Text>
+                  <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
+                    - ID: {planData.planId}
+                  </Text>
+                  <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
+                    - Tên kế hoạch: {planData.planName}
+                  </Text>
+                  {/* Đối với ứng dụng di động, liên kết có thể không cần nhấn được, nhưng giao diện admin sẽ xử lý điều này */}
+                </View>
               ) : (
                 <Text style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}>
                   {item.content}
                 </Text>
               )}
             </View>
-
+  
             {isUser && (
               <>
                 {formattedAvatar ? (
                   <Image
                     source={{ uri: formattedAvatar }}
                     style={styles.userAvatarImage}
-                    onError={(error) => console.log('Error loading user avatar:', error.nativeEvent.error)}
+                    onError={(error) => console.log('Lỗi tải avatar người dùng:', error.nativeEvent.error)}
                   />
                 ) : (
                   <View style={styles.userAvatarContainer}>
@@ -307,7 +463,7 @@ const Chat = ({ navigation }) => {
               </>
             )}
           </View>
-
+  
           <View style={[styles.timeContainer, isUser ? styles.userTimeContainer : styles.adminTimeContainer]}>
             <Text style={[styles.timeText, isUser ? styles.userTimeText : styles.adminTimeText]}>
               {formatMessageTime(item.timestamp)}
@@ -370,7 +526,7 @@ const Chat = ({ navigation }) => {
           ref={flatListRef}
           data={chatHistory}
           renderItem={renderMessage}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => item._id || item.tempId}
           contentContainerStyle={styles.messagesList}
           initialNumToRender={15}
           maxToRenderPerBatch={10}
@@ -380,6 +536,7 @@ const Chat = ({ navigation }) => {
             minIndexForVisible: 0,
             autoscrollToTopThreshold: 10,
           }}
+          extraData={chatHistory.length}
         />
       );
     }
@@ -397,7 +554,7 @@ const Chat = ({ navigation }) => {
   }
 
   if (!user) {
-    return null; // Không render nếu user không tồn tại
+    return null;
   }
 
   return (
@@ -475,8 +632,12 @@ const Chat = ({ navigation }) => {
 
 export default Chat;
 
-// Styles giữ nguyên
+// Styles (unchanged)
 const styles = StyleSheet.create({
+  planBubble: {
+    padding: 16,
+    backgroundColor: '#E6E6FA', // Màu tím nhạt cho tin nhắn kế hoạch
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
