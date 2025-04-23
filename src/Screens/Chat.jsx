@@ -1,17 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet,
-  ActivityIndicator,
-  KeyboardAvoidingView,
-  Platform,
-  Image,
-  Alert,
-  Modal,
+  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator,
+  KeyboardAvoidingView, Platform, Image, Alert, Modal,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useSelector, useDispatch } from 'react-redux';
@@ -127,6 +117,8 @@ const Chat = ({ navigation, route }) => {
   const [showScrollButton, setShowScrollButton] = useState(false);
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImage, setModalImage] = useState('');
+  const [isConfirming, setIsConfirming] = useState(false);
+  const [confirmedMessages, setConfirmedMessages] = useState([]); // Track confirmed/canceled messages
 
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(
@@ -440,6 +432,7 @@ const Chat = ({ navigation, route }) => {
       const isPlan = item.messageType === 'plan';
       const isNewPlan = item.messageType === 'new_plan';
       const senderName = isUser ? user?.fullname || user?.name || 'Bạn' : 'Hỗ trợ khách hàng';
+      const isMessageConfirmed = confirmedMessages.includes(item._id); // Check if message is confirmed/canceled
 
       let messageContent = item.content;
       let parsedContent = {};
@@ -529,8 +522,17 @@ const Chat = ({ navigation, route }) => {
                       Vui lòng xác nhận kế hoạch của bạn.
                     </Text>
                     <TouchableOpacity
-                      style={styles.confirmButton}
+                      style={[
+                        styles.confirmButton,
+                        (isConfirming || isMessageConfirmed) && styles.confirmButtonDisabled,
+                      ]}
                       onPress={async () => {
+                        if (!parsedContent.planId) {
+                          Alert.alert('Lỗi', 'Không tìm thấy ID kế hoạch để xác nhận.');
+                          return;
+                        }
+
+                        setIsConfirming(true);
                         try {
                           const tempId = `temp-${Date.now()}`;
                           const userName = user?.fullname || user?.name || '';
@@ -581,6 +583,7 @@ const Chat = ({ navigation, route }) => {
                           if (!response.ok) {
                             throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                           }
+                          setConfirmedMessages((prev) => [...prev, item._id]); // Mark as confirmed
                           Alert.alert('Thành công', 'Kế hoạch đã được xác nhận.');
                           dispatch(fetchChatHistory(user._id));
                         } catch (error) {
@@ -590,8 +593,11 @@ const Chat = ({ navigation, route }) => {
                             stack: error.stack,
                           });
                           Alert.alert('Lỗi', `Không thể xác nhận kế hoạch: ${error.message}`);
+                        } finally {
+                          setIsConfirming(false);
                         }
                       }}
+                      disabled={isConfirming || isMessageConfirmed}
                     >
                       <Text style={styles.confirmButtonText}>Xác nhận</Text>
                     </TouchableOpacity>
@@ -604,112 +610,205 @@ const Chat = ({ navigation, route }) => {
                     <Text style={[styles.messageText, styles.adminMessageText]}>
                       {messageContent}
                     </Text>
-                    <TouchableOpacity
-                      style={styles.confirmButton}
-                      onPress={async () => {
-                        const originalPlanId = planId || (() => {
-                          const planMessage = chatHistory.find(
-                            (msg) => msg.messageType === 'plan' && msg.sender === 'user'
-                          );
-                          if (!planMessage) {
-                            console.warn('Không tìm thấy tin nhắn plan trong chatHistory');
-                            return null;
-                          }
-                          try {
-                            const parsed = JSON.parse(planMessage.content);
-                            console.log('Parsed planId:', parsed.planId);
-                            return parsed.planId || null;
-                          } catch (e) {
-                            console.error('Lỗi parse JSON plan message:', {
-                              content: planMessage.content,
-                              error: e.message,
-                            });
-                            return null;
-                          }
-                        })();
-                        console.log('Xác nhận kế hoạch mới:', {
-                          originalPlanId,
-                          newPlanId: parsedContent.planId,
-                        });
-
-                        if (!originalPlanId || !parsedContent.planId) {
-                          console.error('Thiếu planId hoặc newPlanId:', {
-                            originalPlanId,
-                            newPlanId: parsedContent.planId,
-                          });
-                          Alert.alert(
-                            'Lỗi',
-                            'Không tìm thấy thông tin kế hoạch để xác nhận. Vui lòng kiểm tra lại.'
-                          );
-                          return;
-                        }
-
-                        try {
-                          const tempId = `temp-${Date.now()}`;
-                          const userName = user?.fullname || user?.name || '';
-                          const confirmMessage = `Tôi xác nhận kế hoạch mới ${parsedContent.planId}`;
-                          dispatch({
-                            type: 'chat/addSocketMessage',
-                            payload: {
-                              _id: tempId,
-                              tempId,
-                              userId: user._id,
-                              receiverId: 'admin',
-                              content: confirmMessage,
-                              sender: 'user',
-                              timestamp: new Date().toISOString(),
-                              messageType: 'text',
-                              userName,
-                            },
-                          });
-
-                          if (socketService.socket && socketService.isConnected()) {
-                            socketService.sendMessage('admin', confirmMessage, tempId, 'text');
-                          } else {
-                            await dispatch(
-                              sendMessage({
-                                senderId: user._id,
-                                receiverId: 'admin',
-                                message: confirmMessage,
-                                senderType: 'user',
-                                messageType: 'text',
-                                tempId,
-                                userName,
-                              })
-                            ).unwrap();
-                          }
-
-                          const response = await fetchWithTimeout(
-                            `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
-                            {
-                              method: 'PUT',
-                              headers: {
-                                'Content-Type': 'application/json',
-                                'user-id': user._id,
-                              },
-                              body: JSON.stringify({ newPlanId: parsedContent.planId }),
+                    <View style={styles.buttonRow}>
+                      {/* Nút Xác nhận kế hoạch mới */}
+                      <TouchableOpacity
+                        style={[
+                          styles.confirmButton,
+                          (isConfirming || isMessageConfirmed) && styles.confirmButtonDisabled,
+                        ]}
+                        onPress={async () => {
+                          const originalPlanId = planId || (() => {
+                            const planMessage = chatHistory.find(
+                              (msg) => msg.messageType === 'plan' && msg.sender === 'user'
+                            );
+                            if (!planMessage) {
+                              console.warn('Không tìm thấy tin nhắn plan trong chatHistory');
+                              return null;
                             }
-                          );
-                          const result = await response.json();
-                          if (!response.ok) {
-                            console.error('API override thất bại:', result);
-                            throw new Error(result.message || 'Lỗi ghi đè kế hoạch');
+                            try {
+                              const parsed = JSON.parse(planMessage.content);
+                              return parsed.planId || null;
+                            } catch (e) {
+                              console.error('Lỗi parse JSON plan message:', {
+                                content: planMessage.content,
+                                error: e.message,
+                              });
+                              return null;
+                            }
+                          })();
+                          if (!originalPlanId || !parsedContent.planId) {
+                            Alert.alert(
+                              'Lỗi',
+                              'Không tìm thấy thông tin kế hoạch để xác nhận. Vui lòng kiểm tra lại.'
+                            );
+                            return;
                           }
-                          Alert.alert('Thành công', 'Kế hoạch đã được cập nhật.');
-                          dispatch(fetchChatHistory(user._id));
-                        } catch (error) {
-                          console.error('Lỗi xác nhận kế hoạch mới:', {
-                            originalPlanId,
-                            newPlanId: parsedContent.planId,
-                            error: error.message,
-                            stack: error.stack,
-                          });
-                          Alert.alert('Lỗi', `Không thể xác nhận kế hoạch mới: ${error.message}`);
-                        }
-                      }}
-                    >
-                      <Text style={styles.confirmButtonText}>Xác nhận kế hoạch mới</Text>
-                    </TouchableOpacity>
+
+                          setIsConfirming(true);
+                          try {
+                            const tempId = `temp-${Date.now()}`;
+                            const userName = user?.fullname || user?.name || '';
+                            const confirmMessage = `Tôi xác nhận kế hoạch mới ${parsedContent.planId}`;
+                            dispatch({
+                              type: 'chat/addSocketMessage',
+                              payload: {
+                                _id: tempId,
+                                tempId,
+                                userId: user._id,
+                                receiverId: 'admin',
+                                content: confirmMessage,
+                                sender: 'user',
+                                timestamp: new Date().toISOString(),
+                                messageType: 'text',
+                                userName,
+                              },
+                            });
+
+                            if (socketService.socket && socketService.isConnected()) {
+                              socketService.sendMessage('admin', confirmMessage, tempId, 'text');
+                            } else {
+                              await dispatch(
+                                sendMessage({
+                                  senderId: user._id,
+                                  receiverId: 'admin',
+                                  message: confirmMessage,
+                                  senderType: 'user',
+                                  messageType: 'text',
+                                  tempId,
+                                  userName,
+                                })
+                              ).unwrap();
+                            }
+
+                            const response = await fetchWithTimeout(
+                              `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
+                              {
+                                method: 'PUT',
+                                headers: {
+                                  'Content-Type': 'application/json',
+                                  'user-id': user._id,
+                                },
+                                body: JSON.stringify({ newPlanId: parsedContent.planId }),
+                              }
+                            );
+                            const result = await response.json();
+                            if (!response.ok) {
+                              throw new Error(result.message || 'Lỗi ghi đè kế hoạch');
+                            }
+                            setConfirmedMessages((prev) => [...prev, item._id]); // Mark as confirmed
+                            Alert.alert('Thành công', 'Kế hoạch đã được cập nhật.');
+                            dispatch(fetchChatHistory(user._id));
+                          } catch (error) {
+                            console.error('Lỗi xác nhận kế hoạch mới:', {
+                              originalPlanId,
+                              newPlanId: parsedContent.planId,
+                              error: error.message,
+                              stack: error.stack,
+                            });
+                            Alert.alert('Lỗi', `Không thể xác nhận kế hoạch mới: ${error.message}`);
+                          } finally {
+                            setIsConfirming(false);
+                          }
+                        }}
+                        disabled={isConfirming || isMessageConfirmed}
+                      >
+                        <Text style={styles.confirmButtonText}>Xác nhận</Text>
+                      </TouchableOpacity>
+
+                      {/* Nút Hủy kế hoạch mới */}
+                      <TouchableOpacity
+                        style={[
+                          styles.cancelButton,
+                          (isConfirming || isMessageConfirmed) && styles.cancelButtonDisabled,
+                        ]}
+                        onPress={() => {
+                          if (!parsedContent.planId) {
+                            Alert.alert('Lỗi', 'Không tìm thấy thông tin kế hoạch để hủy.');
+                            return;
+                          }
+
+                          Alert.alert(
+                            'Xác nhận hủy',
+                            'Bạn có chắc muốn hủy kế hoạch mới này?',
+                            [
+                              { text: 'Hủy', style: 'cancel' },
+                              {
+                                text: 'Đồng ý',
+                                onPress: async () => {
+                                  setIsConfirming(true);
+                                  try {
+                                    const tempId = `temp-${Date.now()}`;
+                                    const userName = user?.fullname || user?.name || '';
+                                    const cancelMessage = `Tôi hủy kế hoạch mới ${parsedContent.planId}`;
+                                    dispatch({
+                                      type: 'chat/addSocketMessage',
+                                      payload: {
+                                        _id: tempId,
+                                        tempId,
+                                        userId: user._id,
+                                        receiverId: 'admin',
+                                        content: cancelMessage,
+                                        sender: 'user',
+                                        timestamp: new Date().toISOString(),
+                                        messageType: 'text',
+                                        userName,
+                                      },
+                                    });
+
+                                    if (socketService.socket && socketService.isConnected()) {
+                                      socketService.sendMessage('admin', cancelMessage, tempId, 'text');
+                                    } else {
+                                      await dispatch(
+                                        sendMessage({
+                                          senderId: user._id,
+                                          receiverId: 'admin',
+                                          message: cancelMessage,
+                                          senderType: 'user',
+                                          messageType: 'text',
+                                          tempId,
+                                          userName,
+                                        })
+                                      ).unwrap();
+                                    }
+
+                                    const response = await fetchWithTimeout(
+                                      `https://apidatn.onrender.com/plan/cancel/${parsedContent.planId}`,
+                                      {
+                                        method: 'DELETE',
+                                        headers: {
+                                          'Content-Type': 'application/json',
+                                          'user-id': user._id,
+                                        },
+                                      }
+                                    );
+                                    const result = await response.json();
+                                    if (!response.ok) {
+                                      throw new Error(result.message || 'Lỗi hủy kế hoạch');
+                                    }
+                                    setConfirmedMessages((prev) => [...prev, item._id]); // Mark as canceled
+                                    Alert.alert('Thành công', 'Kế hoạch mới đã bị hủy.');
+                                    dispatch(fetchChatHistory(user._id));
+                                  } catch (error) {
+                                    console.error('Lỗi hủy kế hoạch mới:', {
+                                      newPlanId: parsedContent.planId,
+                                      error: error.message,
+                                      stack: error.stack,
+                                    });
+                                    Alert.alert('Lỗi', `Không thể hủy kế hoạch mới: ${error.message}`);
+                                  } finally {
+                                    setIsConfirming(false);
+                                  }
+                                },
+                              },
+                            ]
+                          );
+                        }}
+                        disabled={isConfirming || isMessageConfirmed}
+                      >
+                        <Text style={styles.cancelButtonText}>Hủy</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                 ) : isPlan ? (
                   <Text
@@ -751,7 +850,7 @@ const Chat = ({ navigation, route }) => {
         </>
       );
     },
-    [user, formattedAvatar, chatHistory, planId, dispatch]
+    [user, formattedAvatar, chatHistory, planId, dispatch, isConfirming, confirmedMessages]
   );
 
   // Render message status indicators
@@ -936,7 +1035,7 @@ const Chat = ({ navigation, route }) => {
 
 export default Chat;
 
-// Styles (giữ nguyên như mã gốc)
+// Styles
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -1299,20 +1398,46 @@ const styles = StyleSheet.create({
     backgroundColor: '#E6E6FA',
     padding: 16,
   },
+  planBubble: {
+    padding: 16,
+    backgroundColor: '#E6E6FA',
+  },
   confirmButton: {
     backgroundColor: '#7A60FF',
     borderRadius: 8,
     padding: 10,
     marginTop: 10,
     alignItems: 'center',
+    flex: 1,
+  },
+  confirmButtonDisabled: {
+    backgroundColor: '#B0A1FF',
   },
   confirmButtonText: {
     color: '#FFF',
     fontSize: 16,
     fontFamily: 'Playfair_me',
   },
-  planBubble: {
-    padding: 16,
-    backgroundColor: '#E6E6FA',
+  cancelButton: {
+    backgroundColor: '#FF6B6B',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    alignItems: 'center',
+    flex: 1,
+    marginLeft: 10,
+  },
+  cancelButtonDisabled: {
+    backgroundColor: '#FFB6B6',
+  },
+  cancelButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontFamily: 'Playfair_me',
+  },
+  buttonRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 10,
   },
 });
