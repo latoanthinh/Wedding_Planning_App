@@ -90,7 +90,7 @@ const waitForSocket = async (timeout = 5000) => {
 };
 
 // Utility to fetch with timeout
-const fetchWithTimeout = async (url, options, timeout = 10000) => {
+const fetchWithTimeout = async (url, options, timeout = 30000) => {
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeout);
   try {
@@ -166,6 +166,7 @@ const Chat = ({ navigation, route }) => {
 
         // Listen for new messages
         socketService.socket.on('newMessage', (data) => {
+          console.log('Received newMessage:', data);
           const { message, userId } = data;
           if (userId === user._id) {
             dispatch({
@@ -628,7 +629,11 @@ const Chat = ({ navigation, route }) => {
                             }
                             try {
                               const parsed = JSON.parse(planMessage.content);
-                              return parsed.planId || null;
+                              if (!parsed.planId) {
+                                console.warn('Tin nhắn plan không chứa planId:', planMessage.content);
+                                return null;
+                              }
+                              return parsed.planId;
                             } catch (e) {
                               console.error('Lỗi parse JSON plan message:', {
                                 content: planMessage.content,
@@ -637,10 +642,11 @@ const Chat = ({ navigation, route }) => {
                               return null;
                             }
                           })();
+                          
                           if (!originalPlanId || !parsedContent.planId) {
                             Alert.alert(
                               'Lỗi',
-                              'Không tìm thấy thông tin kế hoạch để xác nhận. Vui lòng kiểm tra lại.'
+                              'Không tìm thấy ID kế hoạch gốc hoặc kế hoạch mới. Vui lòng kiểm tra lại.'
                             );
                             return;
                           }
@@ -664,7 +670,7 @@ const Chat = ({ navigation, route }) => {
                                 userName,
                               },
                             });
-
+                          
                             if (socketService.socket && socketService.isConnected()) {
                               socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                             } else {
@@ -680,7 +686,7 @@ const Chat = ({ navigation, route }) => {
                                 })
                               ).unwrap();
                             }
-
+                          
                             const response = await fetchWithTimeout(
                               `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
                               {
@@ -690,15 +696,20 @@ const Chat = ({ navigation, route }) => {
                                   'user-id': user._id,
                                 },
                                 body: JSON.stringify({ newPlanId: parsedContent.planId }),
-                              }
+                              },
+                              30000 // Tăng timeout lên 30 giây
                             );
+                          
                             const result = await response.json();
+                            console.log('API Response:', { status: response.status, body: result });
+                          
                             if (!response.ok) {
-                              throw new Error(result.message || 'Lỗi ghi đè kế hoạch');
+                              throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                             }
-                            setConfirmedMessages((prev) => [...prev, item._id]); // Mark as confirmed
+                          
+                            setConfirmedMessages((prev) => [...prev, item._id]);
                             Alert.alert('Thành công', 'Kế hoạch đã được cập nhật.');
-                            dispatch(fetchChatHistory(user._id));
+                            dispatch(fetchChatHistory(user._id)); // Làm mới lịch sử chat
                           } catch (error) {
                             console.error('Lỗi xác nhận kế hoạch mới:', {
                               originalPlanId,
