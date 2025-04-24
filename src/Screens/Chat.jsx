@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import {
   View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator,
-  KeyboardAvoidingView, Platform, Image, Alert, Modal,
+  KeyboardAvoidingView, Platform, Image, Alert, Modal, ScrollView,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useSelector, useDispatch } from 'react-redux';
@@ -28,14 +28,14 @@ const formatMessageTime = (timestamp) => {
     const date = new Date(timestamp);
     if (isNaN(date.getTime())) {
       console.error('Invalid timestamp:', timestamp);
-      return 'Invalid Time';
+      return 'Giờ không hợp lệ';
     }
     const hours = date.getHours().toString().padStart(2, '0');
     const minutes = date.getMinutes().toString().padStart(2, '0');
     return `${hours}:${minutes}`;
   } catch (error) {
-    console.error('Error formatting timestamp:', error, 'Timestamp:', timestamp);
-    return 'Unknown Time';
+    console.error('Lỗi định dạng thời gian:', error, 'Timestamp:', timestamp);
+    return 'Giờ không xác định';
   }
 };
 
@@ -118,7 +118,10 @@ const Chat = ({ navigation, route }) => {
   const [showImageModal, setShowImageModal] = useState(false);
   const [modalImage, setModalImage] = useState('');
   const [isConfirming, setIsConfirming] = useState(false);
-  const [confirmedMessages, setConfirmedMessages] = useState([]); // Track confirmed/canceled messages
+  const [confirmedMessages, setConfirmedMessages] = useState([]);
+  const [showPlanModal, setShowPlanModal] = useState(false);
+  const [planDetails, setPlanDetails] = useState(null);
+  const [isLoadingPlan, setIsLoadingPlan] = useState(false);
 
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(
@@ -137,7 +140,7 @@ const Chat = ({ navigation, route }) => {
   // Check user on mount or change
   useEffect(() => {
     if (!contextLoading && !user) {
-      console.log('User không tồn tại, chuyển hướng đến SignIn');
+      console.log('Người dùng không tồn tại, chuyển hướng đến SignIn');
       navigation.reset({
         index: 0,
         routes: [{ name: 'SignIn' }],
@@ -166,7 +169,7 @@ const Chat = ({ navigation, route }) => {
 
         // Listen for new messages
         socketService.socket.on('newMessage', (data) => {
-          console.log('Received newMessage:', data);
+          console.log('Nhận được tin nhắn mới:', data);
           const { message, userId } = data;
           if (userId === user._id) {
             dispatch({
@@ -206,16 +209,10 @@ const Chat = ({ navigation, route }) => {
 
           const messageContent = JSON.stringify({
             planId: planId,
-            details: {
-              name: planData.name || 'Không có tên',
-              sanh: planData.SanhId?.name || 'Chưa chọn sảnh',
-              caterings: planData.caterings?.map((item) => item.name) || [],
-              decorates: planData.decorates?.map((item) => item.name) || [],
-              presents: planData.presents?.map((item) => item.name) || [],
-            },
+            name: planData.name || 'Không có tên',
           });
 
-          console.log('Chuẩn bị gửi tin nhắn plan:', messageContent);
+          console.log('Chuẩn bị gửi tin nhắn kế hoạch:', messageContent);
 
           const tempId = `temp-${Date.now()}`;
           const tempMessage = {
@@ -235,7 +232,7 @@ const Chat = ({ navigation, route }) => {
             if (socketService.socket && socketService.isConnected()) {
               const socketSent = socketService.sendMessage('admin', messageContent, tempId, 'plan');
               if (!socketSent) {
-                throw new Error('Socket gửi thất bại');
+                throw new Error('Gửi socket thất bại');
               }
             } else {
               await dispatch(
@@ -251,7 +248,7 @@ const Chat = ({ navigation, route }) => {
               ).unwrap();
             }
           } catch (error) {
-            console.error('Lỗi gửi tin nhắn plan:', error);
+            console.error('Lỗi gửi tin nhắn kế hoạch:', error);
             Alert.alert('Lỗi', 'Không thể gửi tin nhắn kế hoạch tự động.');
           }
 
@@ -325,9 +322,9 @@ const Chat = ({ navigation, route }) => {
       },
       (response) => {
         if (response.didCancel) {
-          console.log('User cancelled image picker');
+          console.log('Người dùng đã hủy chọn ảnh');
         } else if (response.errorCode) {
-          console.error('ImagePicker Error:', response.errorMessage);
+          console.error('Lỗi ImagePicker:', response.errorMessage);
           Alert.alert('Lỗi', 'Không thể chọn hình ảnh. Vui lòng thử lại.');
         } else if (response.assets && response.assets.length > 0) {
           const base64Image = `data:image/jpeg;base64,${response.assets[0].base64}`;
@@ -402,13 +399,46 @@ const Chat = ({ navigation, route }) => {
           dispatch(fetchChatHistory(user._id));
         })
         .catch((error) => {
-          console.error('Exception sending message:', error);
+          console.error('Lỗi gửi tin nhắn:', error);
         });
     } catch (err) {
-      console.error('Error in handleSendMessage:', err);
+      console.error('Lỗi trong handleSendMessage:', err);
       Alert.alert('Lỗi gửi tin nhắn', 'Không thể gửi tin nhắn. Vui lòng thử lại sau.', [{ text: 'OK' }]);
     }
   }, [messageText, imageData, user, dispatch]);
+
+  // Fetch plan details
+  const fetchPlanDetails = useCallback(async (planId) => {
+    if (!planId) {
+      Alert.alert('Lỗi', 'Không tìm thấy ID kế hoạch.');
+      return;
+    }
+
+    setIsLoadingPlan(true);
+    try {
+      const response = await fetchWithTimeout(
+        `https://apidatn.onrender.com/plan/${planId}`,
+        {
+          method: 'GET',
+          headers: {
+            'Content-Type': 'application/json',
+            'user-id': user._id,
+          },
+        }
+      );
+      const result = await response.json();
+      if (!response.ok) {
+        throw new Error(result.message || 'Lỗi khi lấy chi tiết kế hoạch');
+      }
+      setPlanDetails(result.data);
+      setShowPlanModal(true);
+    } catch (error) {
+      console.error('Lỗi khi lấy chi tiết kế hoạch:', error);
+      Alert.alert('Lỗi', `Không thể lấy chi tiết kế hoạch: ${error.message}`);
+    } finally {
+      setIsLoadingPlan(false);
+    }
+  }, [user]);
 
   // Handle scroll to check for scroll button visibility
   const handleScroll = ({ nativeEvent }) => {
@@ -433,12 +463,11 @@ const Chat = ({ navigation, route }) => {
       const isPlan = item.messageType === 'plan';
       const isNewPlan = item.messageType === 'new_plan';
       const senderName = isUser ? user?.fullname || user?.name || 'Bạn' : 'Hỗ trợ khách hàng';
-      const isMessageConfirmed = confirmedMessages.includes(item._id); // Check if message is confirmed/canceled
+      const isMessageConfirmed = confirmedMessages.includes(item._id);
 
       let messageContent = item.content;
       let parsedContent = {};
 
-      // Only attempt JSON parsing for specific message types with valid JSON-like content
       if ((isConfirmation || isPlan || isNewPlan) && typeof item.content === 'string') {
         if (item.content.trim().startsWith('{') || item.content.trim().startsWith('[')) {
           try {
@@ -449,7 +478,7 @@ const Chat = ({ navigation, route }) => {
               ? JSON.stringify(parsedContent.newDetails, null, 2)
               : item.content;
           } catch (e) {
-            console.error('Lỗi parse JSON:', {
+            console.error('Lỗi phân tích JSON:', {
               content: item.content,
               messageType: item.messageType,
               error: e.message,
@@ -458,7 +487,7 @@ const Chat = ({ navigation, route }) => {
             parsedContent = {};
           }
         } else {
-          console.warn('Non-JSON content:', { content: item.content, messageType: item.messageType });
+          console.warn('Nội dung không phải JSON:', { content: item.content, messageType: item.messageType });
           messageContent = item.content;
           parsedContent = {};
         }
@@ -584,7 +613,7 @@ const Chat = ({ navigation, route }) => {
                           if (!response.ok) {
                             throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                           }
-                          setConfirmedMessages((prev) => [...prev, item._id]); // Mark as confirmed
+                          setConfirmedMessages((prev) => [...prev, item._id]);
                           Alert.alert('Thành công', 'Kế hoạch đã được xác nhận.');
                           dispatch(fetchChatHistory(user._id));
                         } catch (error) {
@@ -612,7 +641,13 @@ const Chat = ({ navigation, route }) => {
                       {messageContent}
                     </Text>
                     <View style={styles.buttonRow}>
-                      {/* Nút Xác nhận kế hoạch mới */}
+                      <TouchableOpacity
+                        style={[styles.viewButton, isMessageConfirmed && styles.viewButtonDisabled]}
+                        onPress={() => fetchPlanDetails(parsedContent.planId)}
+                        disabled={isLoadingPlan || isMessageConfirmed}
+                      >
+                        <Text style={styles.viewButtonText}>Xem</Text>
+                      </TouchableOpacity>
                       <TouchableOpacity
                         style={[
                           styles.confirmButton,
@@ -624,29 +659,29 @@ const Chat = ({ navigation, route }) => {
                               (msg) => msg.messageType === 'plan' && msg.sender === 'user'
                             );
                             if (!planMessage) {
-                              console.warn('Không tìm thấy tin nhắn plan trong chatHistory');
+                              console.warn('Không tìm thấy tin nhắn kế hoạch trong lịch sử chat');
                               return null;
                             }
                             try {
                               const parsed = JSON.parse(planMessage.content);
                               if (!parsed.planId) {
-                                console.warn('Tin nhắn plan không chứa planId:', planMessage.content);
+                                console.warn('Tin nhắn kế hoạch không chứa planId:', planMessage.content);
                                 return null;
                               }
                               return parsed.planId;
                             } catch (e) {
-                              console.error('Lỗi parse JSON plan message:', {
+                              console.error('Lỗi phân tích JSON tin nhắn kế hoạch:', {
                                 content: planMessage.content,
                                 error: e.message,
                               });
                               return null;
                             }
                           })();
-                          
+
                           if (!originalPlanId || !parsedContent.planId) {
                             Alert.alert(
                               'Lỗi',
-                              'Không tìm thấy ID kế hoạch gốc hoặc kế hoạch mới. Vui lòng kiểm tra lại.'
+                              'Không tìm thấy ID kế hoạch gốc hoặc kế hoạch mới.'
                             );
                             return;
                           }
@@ -670,7 +705,7 @@ const Chat = ({ navigation, route }) => {
                                 userName,
                               },
                             });
-                          
+
                             if (socketService.socket && socketService.isConnected()) {
                               socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                             } else {
@@ -686,7 +721,7 @@ const Chat = ({ navigation, route }) => {
                                 })
                               ).unwrap();
                             }
-                          
+
                             const response = await fetchWithTimeout(
                               `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
                               {
@@ -697,19 +732,19 @@ const Chat = ({ navigation, route }) => {
                                 },
                                 body: JSON.stringify({ newPlanId: parsedContent.planId }),
                               },
-                              30000 // Tăng timeout lên 30 giây
+                              30000
                             );
-                          
+
                             const result = await response.json();
-                            console.log('API Response:', { status: response.status, body: result });
-                          
+                            console.log('Phản hồi API:', { status: response.status, body: result });
+
                             if (!response.ok) {
                               throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                             }
-                          
+
                             setConfirmedMessages((prev) => [...prev, item._id]);
                             Alert.alert('Thành công', 'Kế hoạch đã được cập nhật.');
-                            dispatch(fetchChatHistory(user._id)); // Làm mới lịch sử chat
+                            dispatch(fetchChatHistory(user._id));
                           } catch (error) {
                             console.error('Lỗi xác nhận kế hoạch mới:', {
                               originalPlanId,
@@ -726,8 +761,6 @@ const Chat = ({ navigation, route }) => {
                       >
                         <Text style={styles.confirmButtonText}>Xác nhận</Text>
                       </TouchableOpacity>
-
-                      {/* Nút Hủy kế hoạch mới */}
                       <TouchableOpacity
                         style={[
                           styles.cancelButton,
@@ -797,7 +830,7 @@ const Chat = ({ navigation, route }) => {
                                     if (!response.ok) {
                                       throw new Error(result.message || 'Lỗi hủy kế hoạch');
                                     }
-                                    setConfirmedMessages((prev) => [...prev, item._id]); // Mark as canceled
+                                    setConfirmedMessages((prev) => [...prev, item._id]);
                                     Alert.alert('Thành công', 'Kế hoạch mới đã bị hủy.');
                                     dispatch(fetchChatHistory(user._id));
                                   } catch (error) {
@@ -822,11 +855,20 @@ const Chat = ({ navigation, route }) => {
                     </View>
                   </View>
                 ) : isPlan ? (
-                  <Text
-                    style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}
-                  >
-                    {messageContent}
-                  </Text>
+                  <View>
+                    <Text
+                      style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}
+                    >
+                      {messageContent}
+                    </Text>
+                    <TouchableOpacity
+                      style={[styles.viewButton, isMessageConfirmed && styles.viewButtonDisabled]}
+                      onPress={() => fetchPlanDetails(parsedContent.planId)}
+                      disabled={isLoadingPlan || isMessageConfirmed}
+                    >
+                      <Text style={styles.viewButtonText}>Xem</Text>
+                    </TouchableOpacity>
+                  </View>
                 ) : (
                   <Text
                     style={[styles.messageText, isUser ? styles.userMessageText : styles.adminMessageText]}
@@ -861,7 +903,7 @@ const Chat = ({ navigation, route }) => {
         </>
       );
     },
-    [user, formattedAvatar, chatHistory, planId, dispatch, isConfirming, confirmedMessages]
+    [user, formattedAvatar, chatHistory, planId, dispatch, isConfirming, confirmedMessages, isLoadingPlan]
   );
 
   // Render message status indicators
@@ -942,6 +984,107 @@ const Chat = ({ navigation, route }) => {
     }
   };
 
+  // Render plan details modal
+  const renderPlanDetails = () => {
+    if (!planDetails) return null;
+  
+    return (
+      <View style={styles.planModalContent}>
+        <Text style={styles.planModalTitle}>Chi tiết kế hoạch</Text>
+        <ScrollView style={styles.planModalScroll}>
+          <Text style={styles.planModalLabel}>Tên kế hoạch:</Text>
+          <Text style={styles.planModalText}>{planDetails.name || 'Không có tên'}</Text>
+  
+          <Text style={styles.planModalLabel}>Sảnh cưới:</Text>
+          <Text style={styles.planModalText}>
+            {planDetails.SanhId?.name || 'Không có thông tin sảnh'}
+          </Text>
+          {planDetails.SanhId?.imageUrl && (
+            <Image
+              source={{ uri: formatAvatarUri(planDetails.SanhId.imageUrl) }}
+              style={styles.planModalImage}
+              resizeMode="cover"
+            />
+          )}
+  
+          <Text style={styles.planModalLabel}>Dịch vụ ăn uống:</Text>
+          {planDetails.caterings && planDetails.caterings.length > 0 ? (
+            planDetails.caterings.map((catering, index) => (
+              <View key={index}>
+                <Text style={styles.planModalText}>
+                  - {catering.name} (Loại: {catering.cate_cateringId?.name || 'N/A'})
+                </Text>
+                {catering.imageUrl && (
+                  <Image
+                    source={{ uri: formatAvatarUri(catering.imageUrl) }}
+                    style={styles.planModalImage}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={styles.planModalText}>Không có dịch vụ ăn uống</Text>
+          )}
+  
+          <Text style={styles.planModalLabel}>Trang trí:</Text>
+          {planDetails.decorates && planDetails.decorates.length > 0 ? (
+            planDetails.decorates.map((decorate, index) => (
+              <View key={index}>
+                <Text style={styles.planModalText}>
+                  - {decorate.name} (Loại: {decorate.Cate_decorateId?.name || 'N/A'})
+                </Text>
+                {decorate.imageUrl && (
+                  <Image
+                    source={{ uri: formatAvatarUri(decorate.imageUrl) }}
+                    style={styles.planModalImage}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={styles.planModalText}>Không có trang trí</Text>
+          )}
+  
+          <Text style={styles.planModalLabel}>Quà tặng:</Text>
+          {planDetails.presents && planDetails.presents.length > 0 ? (
+            planDetails.presents.map((present, index) => (
+              <View key={index}>
+                <Text style={styles.planModalText}>
+                  - {present.name || 'N/A'} (Số lượng: {present.quantity || 0})
+                </Text>
+                {present.imageUrl && (
+                  <Image
+                    source={{ uri: formatAvatarUri(present.imageUrl) }}
+                    style={styles.planModalImage}
+                    resizeMode="cover"
+                  />
+                )}
+              </View>
+            ))
+          ) : (
+            <Text style={styles.planModalText}>Không có quà tặng</Text>
+          )}
+  
+          <Text style={styles.planModalLabel}>Tổng giá:</Text>
+          <Text style={styles.planModalText}>
+            {planDetails.totalPrice ? `${planDetails.totalPrice.toLocaleString('vi-VN')} VND` : 'N/A'}
+          </Text>
+        </ScrollView>
+        <TouchableOpacity
+          style={styles.planModalClose}
+          onPress={() => {
+            setShowPlanModal(false);
+            setPlanDetails(null);
+          }}
+        >
+          <Ionicons name="close" size={30} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
+
   if (contextLoading) {
     return (
       <SafeAreaView style={styles.container}>
@@ -1008,7 +1151,7 @@ const Chat = ({ navigation, route }) => {
           style={styles.input}
           value={messageText}
           onChangeText={setMessageText}
-          placeholder={imageData ? 'Ấn nút gửi để gửi ảnh...' : 'Nhập tin nhắn...'}
+          placeholder={imageData ? 'Nhấn nút gửi để gửi ảnh...' : 'Nhập tin nhắn...'}
           placeholderTextColor="#999"
           multiline
           editable={!imageData}
@@ -1027,7 +1170,11 @@ const Chat = ({ navigation, route }) => {
         </TouchableOpacity>
       </KeyboardAvoidingView>
 
-      <Modal visible={showImageModal} transparent={true} onRequestClose={() => setShowImageModal(false)}>
+      <Modal
+        visible={showImageModal}
+        transparent={true}
+        onRequestClose={() => setShowImageModal(false)}
+      >
         <View style={styles.imageModal}>
           <View style={styles.imageModalContent}>
             <Image source={{ uri: modalImage }} style={styles.imageModalImage} resizeMode="contain" />
@@ -1038,6 +1185,26 @@ const Chat = ({ navigation, route }) => {
               <Ionicons name="close" size={30} color="#FFF" />
             </TouchableOpacity>
           </View>
+        </View>
+      </Modal>
+
+      <Modal
+        visible={showPlanModal}
+        transparent={true}
+        onRequestClose={() => {
+          setShowPlanModal(false);
+          setPlanDetails(null);
+        }}
+      >
+        <View style={styles.planModal}>
+          {isLoadingPlan ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#7A60FF" />
+              <Text style={styles.loadingText}>Đang tải chi tiết kế hoạch...</Text>
+            </View>
+          ) : (
+            renderPlanDetails()
+          )}
         </View>
       </Modal>
     </SafeAreaView>
@@ -1067,12 +1234,12 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     color: '#333',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   headerSubtitle: {
     fontSize: 12,
     color: '#888',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   backButton: {
     padding: 8,
@@ -1086,7 +1253,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
     color: '#666',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   errorContainer: {
     flex: 1,
@@ -1099,7 +1266,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#FF6B6B',
     textAlign: 'center',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   retryButton: {
     marginTop: 16,
@@ -1111,7 +1278,7 @@ const styles = StyleSheet.create({
   retryText: {
     color: 'white',
     fontWeight: 'bold',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   emptyContainer: {
     flex: 1,
@@ -1124,14 +1291,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#333',
     marginTop: 16,
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   emptySubText: {
     fontSize: 14,
     color: '#666',
     marginTop: 8,
     textAlign: 'center',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   messagesList: {
     paddingHorizontal: 16,
@@ -1182,7 +1349,7 @@ const styles = StyleSheet.create({
   },
   messageText: {
     fontSize: 16,
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   userMessageText: {
     color: '#FFFFFF',
@@ -1192,7 +1359,7 @@ const styles = StyleSheet.create({
   },
   senderName: {
     fontSize: 12,
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   userSenderName: {
     color: '#000222',
@@ -1216,7 +1383,7 @@ const styles = StyleSheet.create({
   },
   timeText: {
     fontSize: 9,
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
     color: '#999',
   },
   userTimeText: {
@@ -1235,7 +1402,7 @@ const styles = StyleSheet.create({
     marginLeft: 8,
     fontSize: 14,
     color: '#666',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   messageImage: {
     width: 200,
@@ -1275,7 +1442,7 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 12,
     color: '#666',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   imageButton: {
     padding: 10,
@@ -1300,7 +1467,7 @@ const styles = StyleSheet.create({
     marginRight: 10,
     fontSize: 16,
     color: '#333',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   sendButton: {
     width: 48,
@@ -1364,7 +1531,7 @@ const styles = StyleSheet.create({
   dateSeparatorText: {
     fontSize: 12,
     color: '#666',
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   scrollBottomButton: {
     position: 'absolute',
@@ -1405,6 +1572,57 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 10,
   },
+  planModal: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  planModalContent: {
+    backgroundColor: '#FFF',
+    borderRadius: 12,
+    padding: 20,
+    width: '90%',
+    maxHeight: '80%',
+    position: 'relative',
+  },
+  planModalScroll: {
+    marginTop: 10,
+  },
+  planModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    fontFamily: 'PlayfairDisplay-Regular',
+    textAlign: 'center',
+  },
+  planModalLabel: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#7A60FF',
+    marginTop: 10,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  planModalText: {
+    fontSize: 14,
+    color: '#333',
+    marginTop: 5,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  planModalImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: 8,
+    marginTop: 10,
+  },
+  planModalClose: {
+    position: 'absolute',
+    top: -40,
+    right: -10,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    borderRadius: 20,
+    padding: 10,
+  },
   confirmationBubble: {
     backgroundColor: '#E6E6FA',
     padding: 16,
@@ -1419,7 +1637,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 10,
     alignItems: 'center',
-    flex: 1,
   },
   confirmButtonDisabled: {
     backgroundColor: '#B0A1FF',
@@ -1427,7 +1644,7 @@ const styles = StyleSheet.create({
   confirmButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   cancelButton: {
     backgroundColor: '#FF6B6B',
@@ -1435,7 +1652,6 @@ const styles = StyleSheet.create({
     padding: 10,
     marginTop: 10,
     alignItems: 'center',
-    flex: 1,
     marginLeft: 10,
   },
   cancelButtonDisabled: {
@@ -1444,7 +1660,22 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: '#FFF',
     fontSize: 16,
-    fontFamily: 'Playfair_me',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  viewButton: {
+    backgroundColor: '#4CAF50',
+    borderRadius: 8,
+    padding: 10,
+    marginTop: 10,
+    alignItems: 'center',
+  },
+  viewButtonDisabled: {
+    backgroundColor: '#A5D6A7',
+  },
+  viewButtonText: {
+    color: '#FFF',
+    fontSize: 16,
+    fontFamily: 'PlayfairDisplay-Regular',
   },
   buttonRow: {
     flexDirection: 'row',
