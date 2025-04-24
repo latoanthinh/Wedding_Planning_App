@@ -271,9 +271,18 @@ const AllPlan = ({ navigation }) => {
     const fetchPlans = async () => {
       try {
         setLoading(true);
-        await dispatch(Plan(userId)).unwrap();
+        const result = await dispatch(Plan(userId)).unwrap();
+        console.log('Fetched Plans:', result);
       } catch (error) {
         console.error('Lỗi khi lấy danh sách kế hoạch:', error);
+        // Xử lý lỗi 404: Không có kế hoạch
+        if (error.message?.includes('404')) {
+          // Giả lập trạng thái rỗng
+          dispatch({
+            type: 'plan/getAllPlan/fulfilled',
+            payload: [],
+          });
+        }
       } finally {
         setLoading(false);
       }
@@ -288,61 +297,69 @@ const AllPlan = ({ navigation }) => {
 
   const PlanCard = useCallback(
     ({ item }) => {
-      if (!user || !item || !item._id) return null;
+      try {
+        if (!user || !item || !item._id) {
+          console.log('Invalid item or user, skipping render:', item);
+          return null;
+        }
 
-      const status = item.status ? item.status.toLowerCase() : '';
-      const showDeleteButton = status === 'chưa đặt cọc';
-      const showCancelButton = status === 'đang chờ';
+        const status = item.status ? item.status.toLowerCase() : '';
+        const showDeleteButton = status === 'chưa đặt cọc';
+        const showCancelButton = status === 'đang chờ';
 
-      return (
-        <TouchableOpacity
-          onPress={() => navigation.navigate('DetailPlan', { planId: item._id, fromGenPlan: false })}
-          style={styles.cardContainer}
-        >
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <Text style={styles.productName}>{(item.name || 'Kế hoạch không tên').slice(0, 20)}</Text>
-              <View style={styles.statusBadgeContainer}>
-                <View
-                  style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}
-                >
-                  <Text style={styles.statusText}>{item.status || 'Chưa có trạng thái'}</Text>
+        return (
+          <TouchableOpacity
+            onPress={() => navigation.navigate('DetailPlan', { planId: item._id, fromGenPlan: false })}
+            style={styles.cardContainer}
+          >
+            <View style={styles.card}>
+              <View style={styles.cardHeader}>
+                <Text style={styles.productName}>{(item.name || 'Kế hoạch không tên').slice(0, 20)}</Text>
+                <View style={styles.statusBadgeContainer}>
+                  <View
+                    style={[styles.statusBadge, { backgroundColor: getStatusColor(item.status) }]}
+                  >
+                    <Text style={styles.statusText}>{item.status || 'Chưa có trạng thái'}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.cardDivider} />
+              <View style={styles.cardFooter}>
+                <View style={styles.priceContainer}>
+                  <Text style={styles.priceLabel}>Tổng tiền:</Text>
+                  <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
+                </View>
+                <View style={styles.buttonsContainer}>
+                  {showCancelButton && (
+                    <TouchableOpacity
+                      style={[styles.cancelButton, cancelStatus === 'loading' && styles.cancelButtonDisabled]}
+                      onPress={() => handleCancelPlan(item._id)}
+                      disabled={cancelStatus === 'loading'}
+                    >
+                      <Text style={styles.cancelButtonText}>Hủy</Text>
+                    </TouchableOpacity>
+                  )}
+                  {showDeleteButton && (
+                    <TouchableOpacity
+                      style={[styles.deleteButton, deleteStatus === 'loading' && styles.deleteButtonDisabled]}
+                      onPress={() => handleDeletePlan(item._id)}
+                      disabled={deleteStatus === 'loading'}
+                    >
+                      <Text style={styles.deleteButtonText}>Xóa</Text>
+                    </TouchableOpacity>
+                  )}
+                  <View style={styles.detailButton}>
+                    <Text style={styles.detailButtonText}>Xem chi tiết</Text>
+                  </View>
                 </View>
               </View>
             </View>
-            <View style={styles.cardDivider} />
-            <View style={styles.cardFooter}>
-              <View style={styles.priceContainer}>
-                <Text style={styles.priceLabel}>Tổng tiền:</Text>
-                <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
-              </View>
-              <View style={styles.buttonsContainer}>
-                {showCancelButton && (
-                  <TouchableOpacity
-                    style={[styles.cancelButton, cancelStatus === 'loading' && styles.cancelButtonDisabled]}
-                    onPress={() => handleCancelPlan(item._id)}
-                    disabled={cancelStatus === 'loading'}
-                  >
-                    <Text style={styles.cancelButtonText}>Hủy</Text>
-                  </TouchableOpacity>
-                )}
-                {showDeleteButton && (
-                  <TouchableOpacity
-                    style={[styles.deleteButton, deleteStatus === 'loading' && styles.deleteButtonDisabled]}
-                    onPress={() => handleDeletePlan(item._id)}
-                    disabled={deleteStatus === 'loading'}
-                  >
-                    <Text style={styles.deleteButtonText}>Xóa</Text>
-                  </TouchableOpacity>
-                )}
-                <View style={styles.detailButton}>
-                  <Text style={styles.detailButtonText}>Xem chi tiết</Text>
-                </View>
-              </View>
-            </View>
-          </View>
-        </TouchableOpacity>
-      );
+          </TouchableOpacity>
+        );
+      } catch (error) {
+        console.error('Error rendering PlanCard:', error);
+        return null;
+      }
     },
     [navigation, user, handleDeletePlan, handleCancelPlan, deleteStatus, cancelStatus]
   );
@@ -388,40 +405,37 @@ const AllPlan = ({ navigation }) => {
   );
 
   const renderContent = useCallback(() => {
-    if (!user) return null;
-
-    if (loading || AllPlanStatus === 'loading') return renderLoading();
-    if (AllPlanStatus === 'failed') {
-      return (
-        <View style={styles.statusContainer}>
-          <Image
-            source={require('../Assets/Images/home48.png')}
-            style={[styles.statusIcon, { tintColor: '#F44336' }]}
-          />
-          <Text style={styles.errorText}>Không thể tải dữ liệu! Hãy thử lại sau.</Text>
-          <TouchableOpacity style={styles.retryButton} onPress={() => dispatch(Plan(userId))}>
-            <Text style={styles.retryButtonText}>Thử lại</Text>
-          </TouchableOpacity>
-        </View>
-      );
+    if (!user) {
+      console.log('No user, rendering null');
+      return null;
     }
 
-    const filteredPlanData = AllPlanData.filter(
+    if (loading || AllPlanStatus === 'loading') {
+      console.log('Rendering loading state');
+      return renderLoading();
+    }
+
+    const filteredPlanData = AllPlanData?.filter(
       (item) => item && item._id && typeof item._id === 'string'
-    );
+    ) || [];
+
+    console.log('Filtered Plan Data:', filteredPlanData);
 
     if (!filteredPlanData.length) {
+      console.log('No plans, rendering empty state');
       return (
         <View style={styles.statusContainer}>
           <Image
             source={require('../Assets/Images/home48.png')}
             style={[styles.statusIcon, { tintColor: '#9E9E9E' }]}
           />
-          <Text style={styles.statusMessage}>Bạn hãy tạo plan mới!</Text>
+          <Text style={styles.statusMessage}>Bạn hãy tạo kế hoạch mới!</Text>
+          
         </View>
       );
     }
 
+    console.log('Rendering plan list');
     return (
       <FlatList
         data={filteredPlanData}
@@ -463,7 +477,7 @@ const AllPlan = ({ navigation }) => {
       <View style={styles.listContainer}>
         {renderContent()}
         <TouchableOpacity style={styles.createPlanButton} onPress={handleCreateNewPlan}>
-          <Text style={styles.createPlanButtonText}>Tạo plan mới</Text>
+          <Text style={styles.createPlanButtonText}>Tạo kế hoạch mới</Text>
         </TouchableOpacity>
       </View>
       <CustomAlert
@@ -713,10 +727,24 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
   },
+  createPlanButtonEmpty: {
+    backgroundColor: '#4CAF50',
+    paddingVertical: 15,
+    paddingHorizontal: 25,
+    borderRadius: 30,
+    elevation: 5,
+    shadowColor: '#000000',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    marginTop: 10,
+    alignSelf: 'center',
+  },
   createPlanButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
+    textAlign: 'center',
   },
   alertOverlay: {
     flex: 1,
