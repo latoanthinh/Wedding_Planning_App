@@ -71,7 +71,7 @@ const shouldShowDate = (messages, index) => {
 };
 
 // Utility to wait for socket connection
-const waitForSocket = async (timeout = 5000) => {
+const waitForSocket = async (timeout = 100000) => {
   return new Promise((resolve) => {
     if (socketService.socket && socketService.isConnected()) {
       return resolve(true);
@@ -573,7 +573,7 @@ const Chat = ({ navigation, route }) => {
                         try {
                           const tempId = `temp-${Date.now()}`;
                           const userName = user?.fullname || user?.name || '';
-                          const confirmMessage = `Tôi xác nhận kế hoạch ${parsedContent.planId}`;
+                          const confirmMessage = `Tôi xác nhận kế hoạch `;
                           dispatch({
                             type: 'chat/addSocketMessage',
                             payload: {
@@ -694,7 +694,7 @@ const Chat = ({ navigation, route }) => {
                           try {
                             const tempId = `temp-${Date.now()}`;
                             const userName = user?.fullname || user?.name || '';
-                            const confirmMessage = `Tôi xác nhận kế hoạch mới ${parsedContent.planId}`;
+                            const confirmMessage = `Tôi xác nhận kế hoạch mới `;
                             dispatch({
                               type: 'chat/addSocketMessage',
                               payload: {
