@@ -691,7 +691,7 @@ const DetailPlan = ({ navigation, route }) => {
         </TouchableOpacity>
         {planData?.UserId && (
           <>
-            {showConfirmButton ? (
+            {showConfirmButton && (
               <TouchableOpacity
                 style={[
                   styles.bottomBarButton,
@@ -703,35 +703,28 @@ const DetailPlan = ({ navigation, route }) => {
               >
                 <Text style={styles.bottomBarButtonText}>Liên hệ</Text>
               </TouchableOpacity>
-            ) : null}
-            {!['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData.status) && (
-              <TouchableOpacity
-                style={[
-                  styles.bottomBarButton,
-                  styles.depositBottomBarButton,
-                  isButtonDisabled && styles.disabledBottomBarButton,
-                ]}
-                onPress={handleDeposit}
-                disabled={isButtonDisabled}
-              >
-                <View style={styles.depositButtonContent}>
-                  <View style={styles.depositTextContainer}>
-                    <Text style={styles.bottomBarButtonText}>
-                      {planData.status === 'Đã hủy'
-                        ? 'Đã hủy'
-                        : planData.status === 'Đã đặt cọc'
-                          ? 'Đã đặt cọc'
-                          : planData.status === 'Đang chờ'
-                            ? 'Đang chờ'
-                            : 'Đặt cọc'}
-                    </Text>
-                    <Text style={styles.depositPriceText}>
-                      {depositPrice.toLocaleString('vi-VN')} VNĐ
-                    </Text>
-                  </View>
-                </View>
-              </TouchableOpacity>
             )}
+            {planData.status !== 'Đang chờ xác nhận' &&
+              !['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData.status) && (
+                <TouchableOpacity
+                  style={[
+                    styles.bottomBarButton,
+                    styles.depositBottomBarButton,
+                    isButtonDisabled && styles.disabledBottomBarButton,
+                  ]}
+                  onPress={handleDeposit}
+                  disabled={isButtonDisabled}
+                >
+                  <View style={styles.depositButtonContent}>
+                    <View style={styles.depositTextContainer}>
+                      <Text style={styles.bottomBarButtonText}>Đặt cọc</Text>
+                      <Text style={styles.depositPriceText}>
+                        {depositPrice.toLocaleString('vi-VN')} VNĐ
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              )}
           </>
         )}
       </View>
