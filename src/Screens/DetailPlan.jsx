@@ -529,7 +529,7 @@ const DetailPlan = ({ navigation, route }) => {
 
   const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
   const isButtonDisabled = planData.status === 'Đã đặt cọc' || planData.status === 'Đang chờ' || planData.status === 'Đã hủy';
-  const showConfirmButton = planData.status === 'Đang chờ xác nhận';
+  const showConfirmButton = planData.status === 'Đang chờ xác nhận' || !['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData.status);
 
   const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
   const depositPrice = totalPrice * 0.1;
@@ -703,7 +703,8 @@ const DetailPlan = ({ navigation, route }) => {
               >
                 <Text style={styles.bottomBarButtonText}>Liên hệ</Text>
               </TouchableOpacity>
-            ) : (
+            ) : null}
+            {!['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData.status) && (
               <TouchableOpacity
                 style={[
                   styles.bottomBarButton,
