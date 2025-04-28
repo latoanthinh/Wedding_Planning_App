@@ -260,7 +260,7 @@ const DetailPlan = ({ navigation, route }) => {
       ToastAndroid.show('Không thể liên hệ: Thiếu planId', ToastAndroid.SHORT);
       return;
     }
-  
+
     showAlert(
       'Xác nhận liên hệ',
       'Bạn có muốn liên hệ với hỗ trợ để xác nhận kế hoạch này?',
@@ -268,7 +268,7 @@ const DetailPlan = ({ navigation, route }) => {
       [
         {
           text: 'Hủy',
-          onPress: () => {},
+          onPress: () => { },
         },
         {
           text: 'Xác nhận',
@@ -620,6 +620,17 @@ const DetailPlan = ({ navigation, route }) => {
                   </View>
                 </View>
               </View>
+              {planData.status === 'Đã đặt cọc' && (
+                <View style={styles.infoRow}>
+                  <Icon name="credit-card-check" size={22} color="#000000" style={styles.infoIcon} />
+                  <View style={styles.infoContent}>
+                    <Text style={styles.infoLabel}>Đã đặt cọc</Text>
+                    <Text style={styles.planDetail}>
+                      {depositPrice.toLocaleString('vi-VN')} VNĐ (10% tổng chi phí)
+                    </Text>
+                  </View>
+                </View>
+              )}
             </View>
             <View style={styles.divider} />
             {planData.SanhId && (
@@ -708,10 +719,10 @@ const DetailPlan = ({ navigation, route }) => {
                       {planData.status === 'Đã hủy'
                         ? 'Đã hủy'
                         : planData.status === 'Đã đặt cọc'
-                        ? 'Đã đặt cọc'
-                        : planData.status === 'Đang chờ'
-                        ? 'Đang chờ'
-                        : 'Đặt cọc'}
+                          ? 'Đã đặt cọc'
+                          : planData.status === 'Đang chờ'
+                            ? 'Đang chờ'
+                            : 'Đặt cọc'}
                     </Text>
                     <Text style={styles.depositPriceText}>
                       {depositPrice.toLocaleString('vi-VN')} VNĐ
