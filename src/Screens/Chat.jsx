@@ -456,7 +456,7 @@ const Chat = ({ navigation, route }) => {
   const renderMessage = useCallback(
     ({ item, index }) => {
       if (!user) return null;
-
+  
       const isUser = item.sender === 'user';
       const isImage = item.messageType === 'image';
       const isConfirmation = item.messageType === 'confirmation';
@@ -464,19 +464,26 @@ const Chat = ({ navigation, route }) => {
       const isNewPlan = item.messageType === 'new_plan';
       const senderName = isUser ? user?.fullname || user?.name || 'Bạn' : 'Hỗ trợ khách hàng';
       const isMessageConfirmed = confirmedMessages.includes(item._id);
-
+  
       let messageContent = item.content;
       let parsedContent = {};
-
+  
       if ((isConfirmation || isPlan || isNewPlan) && typeof item.content === 'string') {
         if (item.content.trim().startsWith('{') || item.content.trim().startsWith('[')) {
           try {
             parsedContent = JSON.parse(item.content);
-            messageContent = parsedContent.details
-              ? JSON.stringify(parsedContent.details, null, 2)
-              : parsedContent.newDetails
-              ? JSON.stringify(parsedContent.newDetails, null, 2)
-              : item.content;
+            // Xử lý nội dung cho plan và new_plan
+            if (isPlan) {
+              messageContent = `Tôi muốn thảo luận về kế hoạch này: ${parsedContent.name || 'Không có tên'}`;
+            } else if (isNewPlan) {
+              messageContent = `Kế hoạch mới được đề xuất: ${parsedContent.name || 'Không có tên'}`;
+            } else {
+              messageContent = parsedContent.details
+                ? JSON.stringify(parsedContent.details, null, 2)
+                : parsedContent.newDetails
+                ? JSON.stringify(parsedContent.newDetails, null, 2)
+                : item.content;
+            }
           } catch (e) {
             console.error('Lỗi phân tích JSON:', {
               content: item.content,
@@ -492,7 +499,7 @@ const Chat = ({ navigation, route }) => {
           parsedContent = {};
         }
       }
-
+  
       return (
         <>
           {shouldShowDate(chatHistory, index) && (
@@ -561,7 +568,7 @@ const Chat = ({ navigation, route }) => {
                           Alert.alert('Lỗi', 'Không tìm thấy ID kế hoạch để xác nhận.');
                           return;
                         }
-
+  
                         setIsConfirming(true);
                         try {
                           const tempId = `temp-${Date.now()}`;
@@ -581,7 +588,7 @@ const Chat = ({ navigation, route }) => {
                               userName,
                             },
                           });
-
+  
                           if (socketService.socket && socketService.isConnected()) {
                             socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                           } else {
@@ -597,7 +604,7 @@ const Chat = ({ navigation, route }) => {
                               })
                             ).unwrap();
                           }
-
+  
                           const response = await fetchWithTimeout(
                             `https://apidatn.onrender.com/plan/confirm-to-pending/${parsedContent.planId}`,
                             {
@@ -634,9 +641,6 @@ const Chat = ({ navigation, route }) => {
                   </View>
                 ) : isNewPlan && parsedContent.action === 'new_plan' ? (
                   <View>
-                    <Text style={[styles.messageText, styles.adminMessageText]}>
-                      Kế hoạch mới đã được đề xuất:
-                    </Text>
                     <Text style={[styles.messageText, styles.adminMessageText]}>
                       {messageContent}
                     </Text>
@@ -677,7 +681,7 @@ const Chat = ({ navigation, route }) => {
                               return null;
                             }
                           })();
-
+  
                           if (!originalPlanId || !parsedContent.planId) {
                             Alert.alert(
                               'Lỗi',
@@ -685,7 +689,7 @@ const Chat = ({ navigation, route }) => {
                             );
                             return;
                           }
-
+  
                           setIsConfirming(true);
                           try {
                             const tempId = `temp-${Date.now()}`;
@@ -705,7 +709,7 @@ const Chat = ({ navigation, route }) => {
                                 userName,
                               },
                             });
-
+  
                             if (socketService.socket && socketService.isConnected()) {
                               socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                             } else {
@@ -721,7 +725,7 @@ const Chat = ({ navigation, route }) => {
                                 })
                               ).unwrap();
                             }
-
+  
                             const response = await fetchWithTimeout(
                               `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
                               {
@@ -734,14 +738,14 @@ const Chat = ({ navigation, route }) => {
                               },
                               30000
                             );
-
+  
                             const result = await response.json();
                             console.log('Phản hồi API:', { status: response.status, body: result });
-
+  
                             if (!response.ok) {
                               throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                             }
-
+  
                             setConfirmedMessages((prev) => [...prev, item._id]);
                             Alert.alert('Thành công', 'Kế hoạch đã được cập nhật.');
                             dispatch(fetchChatHistory(user._id));
@@ -771,7 +775,7 @@ const Chat = ({ navigation, route }) => {
                             Alert.alert('Lỗi', 'Không tìm thấy thông tin kế hoạch để hủy.');
                             return;
                           }
-
+  
                           Alert.alert(
                             'Xác nhận hủy',
                             'Bạn có chắc muốn hủy kế hoạch mới này?',
@@ -799,7 +803,7 @@ const Chat = ({ navigation, route }) => {
                                         userName,
                                       },
                                     });
-
+  
                                     if (socketService.socket && socketService.isConnected()) {
                                       socketService.sendMessage('admin', cancelMessage, tempId, 'text');
                                     } else {
@@ -815,7 +819,7 @@ const Chat = ({ navigation, route }) => {
                                         })
                                       ).unwrap();
                                     }
-
+  
                                     const response = await fetchWithTimeout(
                                       `https://apidatn.onrender.com/plan/cancel/${parsedContent.planId}`,
                                       {
@@ -984,106 +988,225 @@ const Chat = ({ navigation, route }) => {
     }
   };
 
-  // Render plan details modal
-  const renderPlanDetails = () => {
-    if (!planDetails) return null;
-  
-    return (
-      <View style={styles.planModalContent}>
-        <Text style={styles.planModalTitle}>Chi tiết kế hoạch</Text>
-        <ScrollView style={styles.planModalScroll}>
-          <Text style={styles.planModalLabel}>Tên kế hoạch:</Text>
-          <Text style={styles.planModalText}>{planDetails.name || 'Không có tên'}</Text>
-  
-          <Text style={styles.planModalLabel}>Sảnh cưới:</Text>
-          <Text style={styles.planModalText}>
-            {planDetails.SanhId?.name || 'Không có thông tin sảnh'}
-          </Text>
-          {planDetails.SanhId?.imageUrl && (
-            <Image
-              source={{ uri: formatAvatarUri(planDetails.SanhId.imageUrl) }}
-              style={styles.planModalImage}
-              resizeMode="cover"
-            />
-          )}
-  
-          <Text style={styles.planModalLabel}>Dịch vụ ăn uống:</Text>
-          {planDetails.caterings && planDetails.caterings.length > 0 ? (
-            planDetails.caterings.map((catering, index) => (
-              <View key={index}>
-                <Text style={styles.planModalText}>
-                  - {catering.name} (Loại: {catering.cate_cateringId?.name || 'N/A'})
-                </Text>
-                {catering.imageUrl && (
-                  <Image
-                    source={{ uri: formatAvatarUri(catering.imageUrl) }}
-                    style={styles.planModalImage}
-                    resizeMode="cover"
-                  />
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.planModalText}>Không có dịch vụ ăn uống</Text>
-          )}
-  
-          <Text style={styles.planModalLabel}>Trang trí:</Text>
-          {planDetails.decorates && planDetails.decorates.length > 0 ? (
-            planDetails.decorates.map((decorate, index) => (
-              <View key={index}>
-                <Text style={styles.planModalText}>
-                  - {decorate.name} (Loại: {decorate.Cate_decorateId?.name || 'N/A'})
-                </Text>
-                {decorate.imageUrl && (
-                  <Image
-                    source={{ uri: formatAvatarUri(decorate.imageUrl) }}
-                    style={styles.planModalImage}
-                    resizeMode="cover"
-                  />
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.planModalText}>Không có trang trí</Text>
-          )}
-  
-          <Text style={styles.planModalLabel}>Quà tặng:</Text>
-          {planDetails.presents && planDetails.presents.length > 0 ? (
-            planDetails.presents.map((present, index) => (
-              <View key={index}>
-                <Text style={styles.planModalText}>
-                  - {present.name || 'N/A'} (Số lượng: {present.quantity || 0})
-                </Text>
-                {present.imageUrl && (
-                  <Image
-                    source={{ uri: formatAvatarUri(present.imageUrl) }}
-                    style={styles.planModalImage}
-                    resizeMode="cover"
-                  />
-                )}
-              </View>
-            ))
-          ) : (
-            <Text style={styles.planModalText}>Không có quà tặng</Text>
-          )}
-  
-          <Text style={styles.planModalLabel}>Tổng giá:</Text>
-          <Text style={styles.planModalText}>
-            {planDetails.totalPrice ? `${planDetails.totalPrice.toLocaleString('vi-VN')} VND` : 'N/A'}
-          </Text>
-        </ScrollView>
-        <TouchableOpacity
-          style={styles.planModalClose}
-          onPress={() => {
-            setShowPlanModal(false);
-            setPlanDetails(null);
-          }}
-        >
-          <Ionicons name="close" size={30} color="#FFF" />
-        </TouchableOpacity>
+
+  // Utility function to calculate total for a section
+const calculateSectionTotal = (services, multiplyByTables = false, numberOfTables) => {
+  if (!services || services.length === 0) return 0;
+  const total = services.reduce((sum, item) => {
+    const price = item && item.price ? parseFloat(item.price) : 0;
+    const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
+    return sum + (price * quantity);
+  }, 0);
+  return total;
+};
+
+// Utility function to render service items
+const renderServiceItem = (title, services, iconName, numberOfTables) => {
+  const sectionTotal = calculateSectionTotal(services, title === 'Dịch vụ ăn uống', numberOfTables);
+
+  return (
+    <View style={styles.section}>
+      <View style={styles.sectionHeader}>
+        <View style={[styles.sectionIconContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
+          <Ionicons name={iconName} size={24} color="#000000" />
+        </View>
+        <Text style={styles.sectionTitle}>{title}</Text>
       </View>
-    );
-  };
+      {services && services.length > 0 ? (
+        <>
+          {services.map((item, index) => (
+            item ? (
+              <View key={index} style={[styles.serviceCard, { borderLeftColor: '#000000' }]}>
+                {item.imageUrl ? (
+                  <Image source={{ uri: formatAvatarUri(item.imageUrl) }} style={styles.serviceImage} />
+                ) : (
+                  <View style={[styles.serviceImagePlaceholder, { backgroundColor: 'rgba(0, 0, 0, 0.03)' }]}>
+                    <Ionicons name={iconName} size={30} color="#000000" />
+                  </View>
+                )}
+                <View style={styles.serviceContent}>
+                  <Text style={styles.serviceText}>{item.name || 'Không có tên'}</Text>
+                  {item.price !== undefined && (
+                    <View style={styles.servicePriceContainer}>
+                      <Text style={[styles.servicePrice, { backgroundColor: 'rgba(0, 0, 0, 0.05)', color: '#000000' }]}>
+                        {item.price.toLocaleString('vi-VN')} VNĐ
+                      </Text>
+                      {title === 'Quà tặng' ? (
+                        <Text style={styles.serviceMultiply}>
+                          x {item.quantity || 1} = {(item.price * (item.quantity || 1)).toLocaleString('vi-VN')} VNĐ
+                        </Text>
+                      ) : title === 'Dịch vụ ăn uống' ? (
+                        <Text style={styles.serviceMultiply}>
+                          x {numberOfTables} bàn = {(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ
+                        </Text>
+                      ) : null}
+                    </View>
+                  )}
+                </View>
+              </View>
+            ) : (
+              <View key={index} style={styles.noDataContainer}>
+                <Ionicons name="alert-circle-outline" size={24} color="#000000" />
+                <Text style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
+              </View>
+            )
+          ))}
+          <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
+            <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
+            <Text style={[styles.sectionTotal, { color: '#000000' }]}>
+              {sectionTotal.toLocaleString('vi-VN')} VNĐ
+            </Text>
+          </View>
+        </>
+      ) : (
+        <View style={styles.noDataContainer}>
+          <Ionicons name="information-outline" size={32} color="#000000" />
+          <Text style={styles.noDataText}>Không có dữ liệu {title.toLowerCase()}</Text>
+        </View>
+      )}
+    </View>
+  );
+};
+
+  // Render plan details modal
+ // Render plan details modal
+const renderPlanDetails = () => {
+  if (!planDetails) return null;
+
+  const GUESTS_PER_TABLE = 10;
+  const numberOfTables = planDetails.plansoluongkhach
+    ? Math.ceil(planDetails.plansoluongkhach / GUESTS_PER_TABLE)
+    : 0;
+
+  const sanhTotal = planDetails.SanhId && planDetails.SanhId.price ? parseFloat(planDetails.SanhId.price) : 0;
+  const budget = parseFloat(planDetails.planprice || planDetails.budget) || 0;
+  const totalPrice = parseFloat(planDetails.totalPrice) || 0;
+  const priceDifference = budget - totalPrice;
+
+  return (
+    <View style={styles.planModalContent}>
+      <Text style={styles.planModalTitle}>Chi tiết kế hoạch</Text>
+      <ScrollView style={styles.planModalScroll}>
+        <View style={styles.planInfoCard}>
+          <Text style={styles.planTitle}>{planDetails.name || 'Kế hoạch không tên'}</Text>
+          <View style={styles.priceContainer}>
+            <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
+            <Text style={styles.planPrice}>
+              {totalPrice.toLocaleString('vi-VN')} VNĐ
+            </Text>
+          </View>
+          <View style={styles.divider} />
+          <View style={styles.infoContainer}>
+            <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
+            <View style={styles.infoRow}>
+              <Ionicons name="calendar-outline" size={22} color="#000000" style={styles.infoIcon} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Ngày sự kiện</Text>
+                <Text style={styles.planDetail}>
+                  {planDetails.plandateevent
+                    ? new Date(planDetails.plandateevent).toLocaleDateString('vi-VN')
+                    : 'Chưa xác định'}
+                </Text>
+              </View>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="people-outline" size={22} color="#000000" style={styles.infoIcon} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Số lượng khách</Text>
+                <Text style={styles.planDetail}>
+                  {planDetails.plansoluongkhach || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
+                </Text>
+              </View>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="cash-outline" size={22} color="#000000" style={styles.infoIcon} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Ngân sách</Text>
+                <Text style={styles.planDetail}>
+                  {(planDetails.planprice || 0).toLocaleString('vi-VN')} VNĐ
+                </Text>
+              </View>
+            </View>
+            <View style={styles.infoRow}>
+              <Ionicons name="swap-vertical-outline" size={22} color="#000000" style={styles.infoIcon} />
+              <View style={styles.infoContent}>
+                <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
+                <View style={styles.differenceContainer}>
+                  <Ionicons
+                    name={priceDifference >= 0 ? "arrow-down" : "arrow-up"}
+                    size={13}
+                    color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
+                    style={{ marginRight: 4 }}
+                  />
+                  <Text
+                    style={[
+                      styles.planDetail,
+                      {
+                        color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000',
+                        fontWeight: 'bold',
+                      },
+                    ]}
+                  >
+                    {Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+          <View style={styles.divider} />
+          {planDetails.SanhId && (
+            <View style={styles.venueContainer}>
+              <View style={styles.venueTitleRow}>
+                <Ionicons name="home-outline" size={26} color="#000000" />
+                <Text style={styles.venueTitle}>Thông tin sảnh cưới</Text>
+              </View>
+              {planDetails.SanhId.imageUrl && (
+                <Image source={{ uri: formatAvatarUri(planDetails.SanhId.imageUrl) }} style={styles.sanhImage} />
+              )}
+              <View style={styles.venueDetails}>
+                <View style={styles.venueDetailItem}>
+                  <Ionicons name="pricetag-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                  <Text style={styles.venueItemText}>{planDetails.SanhId.name || 'Chưa có tên'}</Text>
+                </View>
+                <View style={styles.venueDetailItem}>
+                  <Ionicons name="cash-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                  <Text style={styles.venueItemText}>
+                    Giá: {(planDetails.SanhId.price || 0).toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                </View>
+                <View style={styles.venueDetailItem}>
+                  <Ionicons name="people-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                  <Text style={styles.venueItemText}>
+                    Sức chứa: {planDetails.SanhId.SoLuongKhach || 'N/A'} khách
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.venueTotalContainer}>
+                <Text style={styles.venueTotal}>
+                  {sanhTotal.toLocaleString('vi-VN')} VNĐ
+                </Text>
+                <Text style={styles.venueTotalLabel}>Tổng chi phí sảnh</Text>
+              </View>
+            </View>
+          )}
+        </View>
+        <View style={styles.divider} />
+        {renderServiceItem('Dịch vụ ăn uống', planDetails.caterings, 'restaurant-outline', numberOfTables)}
+        {renderServiceItem('Trang trí', planDetails.decorates, 'flower-outline', numberOfTables)}
+        {renderServiceItem('Quà tặng', planDetails.presents, 'gift-outline', numberOfTables)}
+      </ScrollView>
+      <TouchableOpacity
+        style={styles.planModalClose}
+        onPress={() => {
+          setShowPlanModal(false);
+          setPlanDetails(null);
+        }}
+      >
+        <Ionicons name="close" size={30} color="#FFF" />
+      </TouchableOpacity>
+    </View>
+  );
+};
 
   if (contextLoading) {
     return (
@@ -1215,6 +1338,283 @@ export default Chat;
 
 // Styles
 const styles = StyleSheet.create({
+
+  planInfoCard: {
+    padding: 0,
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  planTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 20,
+    textAlign: 'center',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  priceContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    paddingVertical: 15,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  planPrice: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#000000',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  planPriceLabel: {
+    fontSize: 20,
+    color: '#000000',
+    marginTop: 4,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  infoContainer: {
+    padding: 0,
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  infoSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 20,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  infoRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#000000',
+  },
+  infoIcon: {
+    marginRight: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 6,
+    borderRadius: 8,
+  },
+  infoContent: {
+    flex: 1,
+  },
+  infoLabel: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 4,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  planDetail: {
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '500',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  differenceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  venueContainer: {
+    padding: 0,
+    marginBottom: 10,
+    marginTop: 10,
+  },
+  venueTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: 'rgba(0, 0, 0, 0.1)',
+  },
+  venueTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginLeft: 10,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  sanhImage: {
+    width: '100%',
+    height: 180,
+    borderRadius: 8,
+    marginBottom: 16,
+  },
+  venueDetails: {
+    marginBottom: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    padding: 15,
+  },
+  venueDetailItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  venueItemIcon: {
+    marginRight: 12,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 8,
+    borderRadius: 8,
+  },
+  venueItemText: {
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '500',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  venueTotalContainer: {
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    padding: 12,
+    borderRadius: 8,
+  },
+  venueTotal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    textAlign: 'right',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  venueTotalLabel: {
+    fontSize: 14,
+    color: '#000000',
+    textAlign: 'right',
+    marginBottom: 6,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  section: {
+    marginBottom: 20,
+    padding: 16,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EAEAEA',
+    paddingBottom: 12,
+  },
+  sectionIconContainer: {
+    marginRight: 12,
+    padding: 8,
+    borderRadius: 8,
+    width: 36,
+    height: 36,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#000000',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  serviceCard: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 12,
+    borderLeftWidth: 3,
+  },
+  serviceImage: {
+    width: 80,
+    height: 80,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  serviceContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  serviceText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#000000',
+    marginBottom: 6,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  servicePriceContainer: {
+    flexDirection: 'column',
+    marginBottom: 6,
+  },
+  servicePrice: {
+    fontSize: 14,
+    fontWeight: '600',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 4,
+    alignSelf: 'flex-start',
+    marginBottom: 4,
+  },
+  serviceMultiply: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#000000',
+    marginBottom: 2,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  serviceImagePlaceholder: {
+    width: 80,
+    height: 80,
+    borderRadius: 6,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  sectionTotalContainer: {
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 8,
+  },
+  sectionTotalLabel: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    marginBottom: 6,
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  sectionTotal: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'right',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  noDataContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+    backgroundColor: 'rgba(0, 0, 0, 0.03)',
+    borderRadius: 8,
+    marginBottom: 12,
+    borderStyle: 'dashed',
+    borderWidth: 1,
+    borderColor: '#EAEAEA',
+  },
+  noDataText: {
+    fontSize: 14,
+    color: '#757575',
+    marginLeft: 8,
+    fontStyle: 'italic',
+    fontFamily: 'PlayfairDisplay-Regular',
+  },
+  divider: {
+    height: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    marginVertical: 24,
+  },
   container: {
     flex: 1,
     backgroundColor: '#FFFFFF',
