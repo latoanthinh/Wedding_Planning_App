@@ -71,7 +71,7 @@ const shouldShowDate = (messages, index) => {
 };
 
 // Utility to wait for socket connection
-const waitForSocket = async (timeout = 100000) => {
+const waitForSocket = async (timeout = 30000) => {
   return new Promise((resolve) => {
     if (socketService.socket && socketService.isConnected()) {
       return resolve(true);
@@ -164,7 +164,10 @@ const Chat = ({ navigation, route }) => {
         // Initialize socket
         if (!socketService.socket || !socketService.isConnected()) {
           socketService.init(user);
-          await waitForSocket();
+          const connected = await waitForSocket(30000); // Tăng timeout lên 30s
+          if (!connected) {
+            throw new Error('Không thể kết nối socket sau thời gian chờ');
+          }
         }
 
         // Listen for new messages
@@ -188,13 +191,17 @@ const Chat = ({ navigation, route }) => {
         // Listen for message sent confirmation
         socketService.socket.on('messageSent', (data) => {
           const { message } = data;
+          // Cập nhật tin nhắn đã gửi với ID chính thức từ server
           dispatch({
-            type: 'chat/addSocketMessage',
+            type: 'chat/updateSocketMessage',
             payload: {
-              ...message,
-              _id: message._id || `temp-${Date.now()}`,
-              timestamp: message.createdAt || new Date().toISOString(),
-              sender: message.senderType === 'user' ? 'user' : 'admin',
+              tempId: message.tempId,
+              updatedMessage: {
+                ...message,
+                _id: message._id,
+                timestamp: message.createdAt || new Date().toISOString(),
+                sender: message.senderType === 'user' ? 'user' : 'admin',
+              },
             },
           });
         });
@@ -290,7 +297,6 @@ const Chat = ({ navigation, route }) => {
             ).unwrap();
           }
 
-          await dispatch(fetchChatHistory(user._id)).unwrap();
           setHasSentPlanMessage(true);
         }
       } catch (err) {
@@ -369,6 +375,7 @@ const Chat = ({ navigation, route }) => {
         userName,
       };
 
+      // Thêm tin nhắn vào state ngay lập tức
       dispatch({ type: 'chat/addSocketMessage', payload: tempMessage });
 
       if (socketService.socket && socketService.isConnected()) {
@@ -379,11 +386,12 @@ const Chat = ({ navigation, route }) => {
           isImageMessage ? 'image' : 'text'
         );
         if (socketSent) {
-          dispatch(fetchChatHistory(user._id));
+          // Không gọi fetchChatHistory, chờ socket xác nhận
           return;
         }
       }
 
+      // Fallback nếu socket không gửi được
       dispatch(
         sendMessage({
           senderId: user._id,
@@ -394,13 +402,10 @@ const Chat = ({ navigation, route }) => {
           tempId,
           userName,
         })
-      )
-        .then(() => {
-          dispatch(fetchChatHistory(user._id));
-        })
-        .catch((error) => {
-          console.error('Lỗi gửi tin nhắn:', error);
-        });
+      ).catch((error) => {
+        console.error('Lỗi gửi tin nhắn qua API:', error);
+        Alert.alert('Lỗi', 'Không thể gửi tin nhắn qua API.');
+      });
     } catch (err) {
       console.error('Lỗi trong handleSendMessage:', err);
       Alert.alert('Lỗi gửi tin nhắn', 'Không thể gửi tin nhắn. Vui lòng thử lại sau.', [{ text: 'OK' }]);
