@@ -206,10 +206,10 @@ const Payos = ({ route, navigation }) => {
 
   const Payment = async () => {
     const amount = 5000;
-    const cancelUrl = 'https://abc123.ngrok.io/cancel';
+    const cancelUrl = 'https://example.com/cancel'; // Placeholder URL for cancel
     const description = 'đặt cọc ';
     const newOrderCode = Date.now();
-    const returnUrl = 'https://abc123.ngrok.io/success';
+    const returnUrl = 'https://example.com/success'; // Placeholder URL for success
 
     const dataString = `amount=${amount}&cancelUrl=${cancelUrl}&description=${description}&orderCode=${newOrderCode}&returnUrl=${returnUrl}`;
     const signature = CryptoJS.HmacSHA256(dataString, checkSum).toString(CryptoJS.enc.Hex);
