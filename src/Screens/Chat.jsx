@@ -122,6 +122,9 @@ const Chat = ({ navigation, route }) => {
   const [showPlanModal, setShowPlanModal] = useState(false);
   const [planDetails, setPlanDetails] = useState(null);
   const [isLoadingPlan, setIsLoadingPlan] = useState(false);
+  const [retryQueue, setRetryQueue] = useState([]);
+  const [isRetrying, setIsRetrying] = useState(false);
+  const [lastMessageId, setLastMessageId] = useState(null);
 
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(
@@ -339,8 +342,8 @@ const Chat = ({ navigation, route }) => {
     setImageData(null);
   }, []);
 
-  // Handle sending messages
-  const handleSendMessage = useCallback(() => {
+  // Handle sending messages with improved UX
+  const handleSendMessage = useCallback(async () => {
     if (!user || !user._id) return;
 
     const isImageMessage = !!imageData;
@@ -350,6 +353,7 @@ const Chat = ({ navigation, route }) => {
 
     try {
       const tempId = `temp-${Date.now()}`;
+
       if (isImageMessage) {
         setImageData(null);
       } else {
@@ -369,43 +373,108 @@ const Chat = ({ navigation, route }) => {
         userName,
       };
 
+      // Add to chat history immediately for optimistic update
       dispatch({ type: 'chat/addSocketMessage', payload: tempMessage });
 
+      let messageSent = false;
+
+      // Try socket first
       if (socketService.socket && socketService.isConnected()) {
-        const socketSent = socketService.sendMessage(
-          'admin',
-          messageContent,
-          tempId,
-          isImageMessage ? 'image' : 'text'
-        );
-        if (socketSent) {
-          dispatch(fetchChatHistory(user._id));
-          return;
+        try {
+          const socketSent = await socketService.sendMessage(
+            'admin',
+            messageContent,
+            tempId,
+            isImageMessage ? 'image' : 'text'
+          );
+          if (socketSent) {
+            messageSent = true;
+            // Instead of fetching all messages, just update the status of this message
+            dispatch({ type: 'chat/updateMessageStatus', payload: { tempId, status: 'sent' } });
+          }
+        } catch (socketError) {
+          console.error('Socket send error:', socketError);
         }
       }
 
-      dispatch(
-        sendMessage({
-          senderId: user._id,
-          receiverId: 'admin',
-          message: messageContent,
-          senderType: 'user',
-          messageType: isImageMessage ? 'image' : 'text',
-          tempId,
-          userName,
-        })
-      )
-        .then(() => {
-          dispatch(fetchChatHistory(user._id));
-        })
-        .catch((error) => {
-          console.error('Lỗi gửi tin nhắn:', error);
-        });
+      // If socket failed, try HTTP
+      if (!messageSent) {
+        try {
+          await dispatch(
+            sendMessage({
+              senderId: user._id,
+              receiverId: 'admin',
+              message: messageContent,
+              senderType: 'user',
+              messageType: isImageMessage ? 'image' : 'text',
+              tempId,
+              userName,
+            })
+          ).unwrap();
+          
+          // Update message status instead of fetching all messages
+          dispatch({ type: 'chat/updateMessageStatus', payload: { tempId, status: 'sent' } });
+        } catch (error) {
+          console.error('HTTP send error:', error);
+          // Add to retry queue
+          setRetryQueue(prev => [...prev, {
+            message: tempMessage,
+            retryCount: 0,
+            lastAttempt: Date.now()
+          }]);
+        }
+      }
     } catch (err) {
-      console.error('Lỗi trong handleSendMessage:', err);
+      console.error('Error in handleSendMessage:', err);
       Alert.alert('Lỗi gửi tin nhắn', 'Không thể gửi tin nhắn. Vui lòng thử lại sau.', [{ text: 'OK' }]);
     }
   }, [messageText, imageData, user, dispatch]);
+
+  // Retry failed messages
+  useEffect(() => {
+    if (retryQueue.length > 0 && !isRetrying) {
+      const retryMessages = async () => {
+        setIsRetrying(true);
+        const queue = [...retryQueue];
+        setRetryQueue([]);
+
+        for (const item of queue) {
+          if (item.retryCount >= 3) {
+            // Max retries reached, show error
+            Alert.alert('Lỗi', 'Không thể gửi tin nhắn sau nhiều lần thử. Vui lòng kiểm tra kết nối mạng.');
+            continue;
+          }
+
+          try {
+            await dispatch(
+              sendMessage({
+                senderId: item.message.userId,
+                receiverId: item.message.receiverId,
+                message: item.message.content,
+                senderType: 'user',
+                messageType: item.message.messageType,
+                tempId: item.message.tempId,
+                userName: item.message.userName,
+              })
+            ).unwrap();
+            
+            // Update message status instead of fetching all messages
+            dispatch({ type: 'chat/updateMessageStatus', payload: { tempId: item.message.tempId, status: 'sent' } });
+          } catch (error) {
+            // Add back to queue with incremented retry count
+            setRetryQueue(prev => [...prev, {
+              ...item,
+              retryCount: item.retryCount + 1,
+              lastAttempt: Date.now()
+            }]);
+          }
+        }
+        setIsRetrying(false);
+      };
+
+      retryMessages();
+    }
+  }, [retryQueue, isRetrying, dispatch]);
 
   // Fetch plan details
   const fetchPlanDetails = useCallback(async (planId) => {
@@ -452,7 +521,7 @@ const Chat = ({ navigation, route }) => {
     flatListRef.current?.scrollToEnd({ animated: true });
   };
 
-  // Render message bubble
+  // Render message with improved status indicator
   const renderMessage = useCallback(
     ({ item, index }) => {
       if (!user) return null;
@@ -988,225 +1057,223 @@ const Chat = ({ navigation, route }) => {
     }
   };
 
-
   // Utility function to calculate total for a section
-const calculateSectionTotal = (services, multiplyByTables = false, numberOfTables) => {
-  if (!services || services.length === 0) return 0;
-  const total = services.reduce((sum, item) => {
-    const price = item && item.price ? parseFloat(item.price) : 0;
-    const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
-    return sum + (price * quantity);
-  }, 0);
-  return total;
-};
+  const calculateSectionTotal = (services, multiplyByTables = false, numberOfTables) => {
+    if (!services || services.length === 0) return 0;
+    const total = services.reduce((sum, item) => {
+      const price = item && item.price ? parseFloat(item.price) : 0;
+      const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
+      return sum + (price * quantity);
+    }, 0);
+    return total;
+  };
 
-// Utility function to render service items
-const renderServiceItem = (title, services, iconName, numberOfTables) => {
-  const sectionTotal = calculateSectionTotal(services, title === 'Dịch vụ ăn uống', numberOfTables);
+  // Utility function to render service items
+  const renderServiceItem = (title, services, iconName, numberOfTables) => {
+    const sectionTotal = calculateSectionTotal(services, title === 'Dịch vụ ăn uống', numberOfTables);
 
-  return (
-    <View style={styles.section}>
-      <View style={styles.sectionHeader}>
-        <View style={[styles.sectionIconContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
-          <Ionicons name={iconName} size={24} color="#000000" />
+    return (
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <View style={[styles.sectionIconContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
+            <Ionicons name={iconName} size={24} color="#000000" />
+          </View>
+          <Text style={styles.sectionTitle}>{title}</Text>
         </View>
-        <Text style={styles.sectionTitle}>{title}</Text>
-      </View>
-      {services && services.length > 0 ? (
-        <>
-          {services.map((item, index) => (
-            item ? (
-              <View key={index} style={[styles.serviceCard, { borderLeftColor: '#000000' }]}>
-                {item.imageUrl ? (
-                  <Image source={{ uri: formatAvatarUri(item.imageUrl) }} style={styles.serviceImage} />
-                ) : (
-                  <View style={[styles.serviceImagePlaceholder, { backgroundColor: 'rgba(0, 0, 0, 0.03)' }]}>
-                    <Ionicons name={iconName} size={30} color="#000000" />
-                  </View>
-                )}
-                <View style={styles.serviceContent}>
-                  <Text style={styles.serviceText}>{item.name || 'Không có tên'}</Text>
-                  {item.price !== undefined && (
-                    <View style={styles.servicePriceContainer}>
-                      <Text style={[styles.servicePrice, { backgroundColor: 'rgba(0, 0, 0, 0.05)', color: '#000000' }]}>
-                        {item.price.toLocaleString('vi-VN')} VNĐ
-                      </Text>
-                      {title === 'Quà tặng' ? (
-                        <Text style={styles.serviceMultiply}>
-                          x {item.quantity || 1} = {(item.price * (item.quantity || 1)).toLocaleString('vi-VN')} VNĐ
-                        </Text>
-                      ) : title === 'Dịch vụ ăn uống' ? (
-                        <Text style={styles.serviceMultiply}>
-                          x {numberOfTables} bàn = {(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ
-                        </Text>
-                      ) : null}
+        {services && services.length > 0 ? (
+          <>
+            {services.map((item, index) => (
+              item ? (
+                <View key={index} style={[styles.serviceCard, { borderLeftColor: '#000000' }]}>
+                  {item.imageUrl ? (
+                    <Image source={{ uri: formatAvatarUri(item.imageUrl) }} style={styles.serviceImage} />
+                  ) : (
+                    <View style={[styles.serviceImagePlaceholder, { backgroundColor: 'rgba(0, 0, 0, 0.03)' }]}>
+                      <Ionicons name={iconName} size={30} color="#000000" />
                     </View>
                   )}
+                  <View style={styles.serviceContent}>
+                    <Text style={styles.serviceText}>{item.name || 'Không có tên'}</Text>
+                    {item.price !== undefined && (
+                      <View style={styles.servicePriceContainer}>
+                        <Text style={[styles.servicePrice, { backgroundColor: 'rgba(0, 0, 0, 0.05)', color: '#000000' }]}>
+                          {item.price.toLocaleString('vi-VN')} VNĐ
+                        </Text>
+                        {title === 'Quà tặng' ? (
+                          <Text style={styles.serviceMultiply}>
+                            x {item.quantity || 1} = {(item.price * (item.quantity || 1)).toLocaleString('vi-VN')} VNĐ
+                          </Text>
+                        ) : title === 'Dịch vụ ăn uống' ? (
+                          <Text style={styles.serviceMultiply}>
+                            x {numberOfTables} bàn = {(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ
+                          </Text>
+                        ) : null}
+                      </View>
+                    )}
+                  </View>
                 </View>
-              </View>
-            ) : (
-              <View key={index} style={styles.noDataContainer}>
-                <Ionicons name="alert-circle-outline" size={24} color="#000000" />
-                <Text style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
-              </View>
-            )
-          ))}
-          <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
-            <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
-            <Text style={[styles.sectionTotal, { color: '#000000' }]}>
-              {sectionTotal.toLocaleString('vi-VN')} VNĐ
-            </Text>
+              ) : (
+                <View key={index} style={styles.noDataContainer}>
+                  <Ionicons name="alert-circle-outline" size={24} color="#000000" />
+                  <Text style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
+                </View>
+              )
+            ))}
+            <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
+              <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
+              <Text style={[styles.sectionTotal, { color: '#000000' }]}>
+                {sectionTotal.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </View>
+          </>
+        ) : (
+          <View style={styles.noDataContainer}>
+            <Ionicons name="information-outline" size={32} color="#000000" />
+            <Text style={styles.noDataText}>Không có dữ liệu {title.toLowerCase()}</Text>
           </View>
-        </>
-      ) : (
-        <View style={styles.noDataContainer}>
-          <Ionicons name="information-outline" size={32} color="#000000" />
-          <Text style={styles.noDataText}>Không có dữ liệu {title.toLowerCase()}</Text>
-        </View>
-      )}
-    </View>
-  );
-};
+        )}
+      </View>
+    );
+  };
 
   // Render plan details modal
- // Render plan details modal
-const renderPlanDetails = () => {
-  if (!planDetails) return null;
+  const renderPlanDetails = () => {
+    if (!planDetails) return null;
 
-  const GUESTS_PER_TABLE = 10;
-  const numberOfTables = planDetails.plansoluongkhach
-    ? Math.ceil(planDetails.plansoluongkhach / GUESTS_PER_TABLE)
-    : 0;
+    const GUESTS_PER_TABLE = 10;
+    const numberOfTables = planDetails.plansoluongkhach
+      ? Math.ceil(planDetails.plansoluongkhach / GUESTS_PER_TABLE)
+      : 0;
 
-  const sanhTotal = planDetails.SanhId && planDetails.SanhId.price ? parseFloat(planDetails.SanhId.price) : 0;
-  const budget = parseFloat(planDetails.planprice || planDetails.budget) || 0;
-  const totalPrice = parseFloat(planDetails.totalPrice) || 0;
-  const priceDifference = budget - totalPrice;
+    const sanhTotal = planDetails.SanhId && planDetails.SanhId.price ? parseFloat(planDetails.SanhId.price) : 0;
+    const budget = parseFloat(planDetails.planprice || planDetails.budget) || 0;
+    const totalPrice = parseFloat(planDetails.totalPrice) || 0;
+    const priceDifference = budget - totalPrice;
 
-  return (
-    <View style={styles.planModalContent}>
-      <Text style={styles.planModalTitle}>Chi tiết kế hoạch</Text>
-      <ScrollView style={styles.planModalScroll}>
-        <View style={styles.planInfoCard}>
-          <Text style={styles.planTitle}>{planDetails.name || 'Kế hoạch không tên'}</Text>
-          <View style={styles.priceContainer}>
-            <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
-            <Text style={styles.planPrice}>
-              {totalPrice.toLocaleString('vi-VN')} VNĐ
-            </Text>
+    return (
+      <View style={styles.planModalContent}>
+        <Text style={styles.planModalTitle}>Chi tiết kế hoạch</Text>
+        <ScrollView style={styles.planModalScroll}>
+          <View style={styles.planInfoCard}>
+            <Text style={styles.planTitle}>{planDetails.name || 'Kế hoạch không tên'}</Text>
+            <View style={styles.priceContainer}>
+              <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
+              <Text style={styles.planPrice}>
+                {totalPrice.toLocaleString('vi-VN')} VNĐ
+              </Text>
+            </View>
+            <View style={styles.divider} />
+            <View style={styles.infoContainer}>
+              <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
+              <View style={styles.infoRow}>
+                <Ionicons name="calendar-outline" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Ngày sự kiện</Text>
+                  <Text style={styles.planDetail}>
+                    {planDetails.plandateevent
+                      ? new Date(planDetails.plandateevent).toLocaleDateString('vi-VN')
+                      : 'Chưa xác định'}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="people-outline" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Số lượng khách</Text>
+                  <Text style={styles.planDetail}>
+                    {planDetails.plansoluongkhach || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="cash-outline" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Ngân sách</Text>
+                  <Text style={styles.planDetail}>
+                    {(planDetails.planprice || 0).toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.infoRow}>
+                <Ionicons name="swap-vertical-outline" size={22} color="#000000" style={styles.infoIcon} />
+                <View style={styles.infoContent}>
+                  <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
+                  <View style={styles.differenceContainer}>
+                    <Ionicons
+                      name={priceDifference >= 0 ? "arrow-down" : "arrow-up"}
+                      size={13}
+                      color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
+                      style={{ marginRight: 4 }}
+                    />
+                    <Text
+                      style={[
+                        styles.planDetail,
+                        {
+                          color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000',
+                          fontWeight: 'bold',
+                        },
+                      ]}
+                    >
+                      {Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ
+                    </Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+            <View style={styles.divider} />
+            {planDetails.SanhId && (
+              <View style={styles.venueContainer}>
+                <View style={styles.venueTitleRow}>
+                  <Ionicons name="home-outline" size={26} color="#000000" />
+                  <Text style={styles.venueTitle}>Thông tin sảnh cưới</Text>
+                </View>
+                {planDetails.SanhId.imageUrl && (
+                  <Image source={{ uri: formatAvatarUri(planDetails.SanhId.imageUrl) }} style={styles.sanhImage} />
+                )}
+                <View style={styles.venueDetails}>
+                  <View style={styles.venueDetailItem}>
+                    <Ionicons name="pricetag-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Text style={styles.venueItemText}>{planDetails.SanhId.name || 'Chưa có tên'}</Text>
+                  </View>
+                  <View style={styles.venueDetailItem}>
+                    <Ionicons name="cash-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Text style={styles.venueItemText}>
+                      Giá: {(planDetails.SanhId.price || 0).toLocaleString('vi-VN')} VNĐ
+                    </Text>
+                  </View>
+                  <View style={styles.venueDetailItem}>
+                    <Ionicons name="people-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Text style={styles.venueItemText}>
+                      Sức chứa: {planDetails.SanhId.SoLuongKhach || 'N/A'} khách
+                    </Text>
+                  </View>
+                </View>
+                <View style={styles.venueTotalContainer}>
+                  <Text style={styles.venueTotal}>
+                    {sanhTotal.toLocaleString('vi-VN')} VNĐ
+                  </Text>
+                  <Text style={styles.venueTotalLabel}>Tổng chi phí sảnh</Text>
+                </View>
+              </View>
+            )}
           </View>
           <View style={styles.divider} />
-          <View style={styles.infoContainer}>
-            <Text style={styles.infoSectionTitle}>Thông tin chung</Text>
-            <View style={styles.infoRow}>
-              <Ionicons name="calendar-outline" size={22} color="#000000" style={styles.infoIcon} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Ngày sự kiện</Text>
-                <Text style={styles.planDetail}>
-                  {planDetails.plandateevent
-                    ? new Date(planDetails.plandateevent).toLocaleDateString('vi-VN')
-                    : 'Chưa xác định'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="people-outline" size={22} color="#000000" style={styles.infoIcon} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Số lượng khách</Text>
-                <Text style={styles.planDetail}>
-                  {planDetails.plansoluongkhach || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
-                </Text>
-              </View>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="cash-outline" size={22} color="#000000" style={styles.infoIcon} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Ngân sách</Text>
-                <Text style={styles.planDetail}>
-                  {(planDetails.planprice || 0).toLocaleString('vi-VN')} VNĐ
-                </Text>
-              </View>
-            </View>
-            <View style={styles.infoRow}>
-              <Ionicons name="swap-vertical-outline" size={22} color="#000000" style={styles.infoIcon} />
-              <View style={styles.infoContent}>
-                <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
-                <View style={styles.differenceContainer}>
-                  <Ionicons
-                    name={priceDifference >= 0 ? "arrow-down" : "arrow-up"}
-                    size={13}
-                    color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text
-                    style={[
-                      styles.planDetail,
-                      {
-                        color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000',
-                        fontWeight: 'bold',
-                      },
-                    ]}
-                  >
-                    {Math.abs(priceDifference).toLocaleString('vi-VN')} VNĐ
-                  </Text>
-                </View>
-              </View>
-            </View>
-          </View>
-          <View style={styles.divider} />
-          {planDetails.SanhId && (
-            <View style={styles.venueContainer}>
-              <View style={styles.venueTitleRow}>
-                <Ionicons name="home-outline" size={26} color="#000000" />
-                <Text style={styles.venueTitle}>Thông tin sảnh cưới</Text>
-              </View>
-              {planDetails.SanhId.imageUrl && (
-                <Image source={{ uri: formatAvatarUri(planDetails.SanhId.imageUrl) }} style={styles.sanhImage} />
-              )}
-              <View style={styles.venueDetails}>
-                <View style={styles.venueDetailItem}>
-                  <Ionicons name="pricetag-outline" size={20} color="#000000" style={styles.venueItemIcon} />
-                  <Text style={styles.venueItemText}>{planDetails.SanhId.name || 'Chưa có tên'}</Text>
-                </View>
-                <View style={styles.venueDetailItem}>
-                  <Ionicons name="cash-outline" size={20} color="#000000" style={styles.venueItemIcon} />
-                  <Text style={styles.venueItemText}>
-                    Giá: {(planDetails.SanhId.price || 0).toLocaleString('vi-VN')} VNĐ
-                  </Text>
-                </View>
-                <View style={styles.venueDetailItem}>
-                  <Ionicons name="people-outline" size={20} color="#000000" style={styles.venueItemIcon} />
-                  <Text style={styles.venueItemText}>
-                    Sức chứa: {planDetails.SanhId.SoLuongKhach || 'N/A'} khách
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.venueTotalContainer}>
-                <Text style={styles.venueTotal}>
-                  {sanhTotal.toLocaleString('vi-VN')} VNĐ
-                </Text>
-                <Text style={styles.venueTotalLabel}>Tổng chi phí sảnh</Text>
-              </View>
-            </View>
-          )}
-        </View>
-        <View style={styles.divider} />
-        {renderServiceItem('Dịch vụ ăn uống', planDetails.caterings, 'restaurant-outline', numberOfTables)}
-        {renderServiceItem('Trang trí', planDetails.decorates, 'flower-outline', numberOfTables)}
-        {renderServiceItem('Quà tặng', planDetails.presents, 'gift-outline', numberOfTables)}
-      </ScrollView>
-      <TouchableOpacity
-        style={styles.planModalClose}
-        onPress={() => {
-          setShowPlanModal(false);
-          setPlanDetails(null);
-        }}
-      >
-        <Ionicons name="close" size={30} color="#FFF" />
-      </TouchableOpacity>
-    </View>
-  );
-};
+          {renderServiceItem('Dịch vụ ăn uống', planDetails.caterings, 'restaurant-outline', numberOfTables)}
+          {renderServiceItem('Trang trí', planDetails.decorates, 'flower-outline', numberOfTables)}
+          {renderServiceItem('Quà tặng', planDetails.presents, 'gift-outline', numberOfTables)}
+        </ScrollView>
+        <TouchableOpacity
+          style={styles.planModalClose}
+          onPress={() => {
+            setShowPlanModal(false);
+            setPlanDetails(null);
+          }}
+        >
+          <Ionicons name="close" size={30} color="#FFF" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   if (contextLoading) {
     return (
@@ -1338,7 +1405,6 @@ export default Chat;
 
 // Styles
 const styles = StyleSheet.create({
-
   planInfoCard: {
     padding: 0,
     marginBottom: 10,
@@ -2081,5 +2147,54 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginTop: 10,
+  },
+  sendingBubble: {
+    opacity: 0.8,
+    transform: [{ scale: 0.98 }],
+  },
+  sendingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 4,
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+  },
+  sendingText: {
+    marginLeft: 4,
+    fontSize: 10,
+    color: '#666',
+  },
+  userSendingText: {
+    color: '#FFF',
+  },
+  adminSendingText: {
+    color: '#666',
+  },
+  retryButton: {
+    position: 'absolute',
+    right: 8,
+    top: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 12,
+    padding: 4,
+  },
+  errorMessage: {
+    position: 'absolute',
+    bottom: -20,
+    left: 0,
+    right: 0,
+    backgroundColor: '#FF6B6B',
+    padding: 4,
+    borderRadius: 4,
+  },
+  errorText: {
+    color: '#FFF',
+    fontSize: 12,
+    textAlign: 'center',
   },
 });
