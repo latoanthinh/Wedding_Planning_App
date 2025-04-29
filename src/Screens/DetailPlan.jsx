@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState, useContext } from 'react';
+import React, { useRef, useEffect, useState, useContext, useMemo } from 'react';
 import {
   StyleSheet,
   View,
@@ -203,27 +203,39 @@ const DetailPlan = ({ navigation, route }) => {
     setAlertVisible(true);
   };
 
-  // Tính tổng giá và chênh lệch khi từ GenPlan
-  useEffect(() => {
-    if (fromGenPlan && planData) {
-      const sanhPrice = planData.SanhId?.price ? parseFloat(planData.SanhId.price) : 0;
-      const cateringTotal = calculateSectionTotal(planData.caterings, true);
-      const decorateTotal = calculateSectionTotal(planData.decorates, false);
-      const presentTotal = calculateSectionTotal(planData.presents, false);
-      const total = sanhPrice + cateringTotal + decorateTotal + presentTotal;
-      setCalculatedTotalPrice(total);
+  const calculateTotalPrice = (planData, numberOfTables) => {
+    if (!planData) return 0;
+    const sanhPrice = planData.SanhId?.price ? parseFloat(planData.SanhId.price) : 0;
+    const cateringTotal = calculateSectionTotal(planData.caterings, true, numberOfTables);
+    const decorateTotal = calculateSectionTotal(planData.decorates, false, numberOfTables);
+    const presentTotal = calculateSectionTotal(planData.presents, false, numberOfTables);
+    return sanhPrice + cateringTotal + decorateTotal + presentTotal;
+  };
 
-      const budget = parseFloat(planData.budget) || 0;
-      const difference = budget - total;
-      setPriceDifference(difference);
-    } else if (!fromGenPlan && planData) {
-      const budget = parseFloat(planData.planprice || planData.budget) || 0;
-      const totalPrice = parseFloat(planData.totalPrice) || 0;
-      const difference = planData.priceDifference !== undefined ? planData.priceDifference : budget - totalPrice;
-      setPriceDifference(difference);
-      setCalculatedTotalPrice(totalPrice);
-    }
-  }, [planData, fromGenPlan]);
+  const calculateSectionTotal = (services, multiplyByTables = false, numberOfTables) => {
+    if (!services || services.length === 0) return 0;
+    return services.reduce((sum, item) => {
+      const price = item && item.price ? parseFloat(item.price) : 0;
+      const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
+      return sum + (price * quantity);
+    }, 0);
+  };
+
+  const totalPrice = useMemo(() => {
+    if (!planData) return 0;
+    const GUESTS_PER_TABLE = 10;
+    const numberOfTables = planData.plansoluongkhach || planData.guestCount
+      ? Math.ceil((planData.plansoluongkhach || planData.guestCount) / GUESTS_PER_TABLE)
+      : 0;
+    return calculateTotalPrice(planData, numberOfTables);
+  }, [planData]);
+
+  useEffect(() => {
+    setCalculatedTotalPrice(totalPrice);
+    const budget = parseFloat(planData?.planprice || planData?.budget) || 0;
+    const difference = budget - totalPrice;
+    setPriceDifference(difference);
+  }, [totalPrice, planData]);
 
   useEffect(() => {
     if (routePlanData) {
@@ -243,11 +255,7 @@ const DetailPlan = ({ navigation, route }) => {
     }
   }, [dispatch, planId, routePlanData]);
 
-  useEffect(() => {
-    if (ChitietPlanStatus === 'succeeded' && !routePlanData) {
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }).start();
-    }
-  }, [ChitietPlanStatus, routePlanData]);
+  
 
   useEffect(() => {
     if (error) {
@@ -273,7 +281,7 @@ const DetailPlan = ({ navigation, route }) => {
         {
           text: 'Xác nhận',
           onPress: () => {
-            navigation.navigate('Chat', { planId: planId }); // Navigate directly to Chat screen
+            navigation.navigate('Chat', { planId: planId });
           },
         },
       ]
@@ -307,18 +315,8 @@ const DetailPlan = ({ navigation, route }) => {
     ? Math.ceil((planData.plansoluongkhach || planData.guestCount) / GUESTS_PER_TABLE)
     : 0;
 
-  const calculateSectionTotal = (services, multiplyByTables = false) => {
-    if (!services || services.length === 0) return 0;
-    const total = services.reduce((sum, item) => {
-      const price = item && item.price ? parseFloat(item.price) : 0;
-      const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
-      return sum + (price * quantity);
-    }, 0);
-    return total;
-  };
-
   const renderServiceItem = (title, services, iconName, color, multiplyByTables = false) => {
-    const sectionTotal = calculateSectionTotal(services, multiplyByTables);
+    const sectionTotal = calculateSectionTotal(services, multiplyByTables, numberOfTables);
 
     return (
       <View style={styles.section}>
@@ -408,7 +406,7 @@ const DetailPlan = ({ navigation, route }) => {
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
         <View style={styles.loadingContent}>
           <ActivityIndicator size="large" color="#000000" />
-          <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
+          <Text style={styles.loadingText}>Đang cập nhật dữ liệu...</Text>
           <Text style={styles.loadingSubText}>Chúng tôi đang lấy thông tin kế hoạch của bạn</Text>
         </View>
       </SafeAreaView>
@@ -523,16 +521,15 @@ const DetailPlan = ({ navigation, route }) => {
     } else if (planData.status === 'Đang chờ') {
       ToastAndroid.show('Kế hoạch đang chờ xử lý, không thể đặt cọc!', ToastAndroid.SHORT);
     } else {
-      navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice || planData.totalPrice });
+      navigation.navigate('Payos', { planId: planId, totalPrice: calculatedTotalPrice });
     }
   };
 
-  const sanhTotal = planData.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
-  const isButtonDisabled = planData.status === 'Đã đặt cọc' || planData.status === 'Đang chờ' || planData.status === 'Đã hủy';
-  const showConfirmButton = planData.status === 'Đang chờ xác nhận' || !['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData.status);
+  const sanhTotal = planData?.SanhId && planData.SanhId.price ? parseFloat(planData.SanhId.price) : 0;
+  const isButtonDisabled = planData?.status === 'Đã đặt cọc' || planData?.status === 'Đang chờ' || planData?.status === 'Đã hủy';
+  const showConfirmButton = planData?.status === 'Đang chờ xác nhận' || !['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData?.status);
 
-  const totalPrice = fromGenPlan ? calculatedTotalPrice : (planData.totalPrice || 0);
-  const depositPrice = totalPrice * 0.1;
+  const depositPrice = calculatedTotalPrice * 0.1;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -556,11 +553,11 @@ const DetailPlan = ({ navigation, route }) => {
       >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <View style={styles.planInfoCard}>
-            <Text style={styles.planTitle}>{planData.name || 'Kế hoạch không tên'}</Text>
+            <Text style={styles.planTitle}>{planData?.name || 'Kế hoạch không tên'}</Text>
             <View style={styles.priceContainer}>
               <Text style={styles.planPriceLabel}>Tổng chi phí</Text>
               <Text style={styles.planPrice}>
-                {totalPrice.toLocaleString('vi-VN')} VNĐ
+                {calculatedTotalPrice.toLocaleString('vi-VN')} VNĐ
               </Text>
             </View>
             <View style={styles.divider} />
@@ -571,7 +568,7 @@ const DetailPlan = ({ navigation, route }) => {
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Ngày sự kiện</Text>
                   <Text style={styles.planDetail}>
-                    {planData.eventDate || planData.plandateevent
+                    {planData?.eventDate || planData?.plandateevent
                       ? new Date(planData.eventDate || planData.plandateevent).toLocaleDateString('vi-VN')
                       : 'Chưa xác định'}
                   </Text>
@@ -582,7 +579,7 @@ const DetailPlan = ({ navigation, route }) => {
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Số lượng khách</Text>
                   <Text style={styles.planDetail}>
-                    {planData.plansoluongkhach || planData.guestCount || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
+                    {planData?.plansoluongkhach || planData?.guestCount || 'N/A'} khách (Dự kiến {numberOfTables} bàn)
                   </Text>
                 </View>
               </View>
@@ -591,7 +588,7 @@ const DetailPlan = ({ navigation, route }) => {
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Ngân sách</Text>
                   <Text style={styles.planDetail}>
-                    {(planData.planprice || planData.budget || 0).toLocaleString('vi-VN')} VNĐ
+                    {(planData?.planprice || planData?.budget || 0).toLocaleString('vi-VN')} VNĐ
                   </Text>
                 </View>
               </View>
@@ -620,7 +617,7 @@ const DetailPlan = ({ navigation, route }) => {
                   </View>
                 </View>
               </View>
-              {planData.status === 'Đã đặt cọc' && (
+              {planData?.status === 'Đã đặt cọc' && (
                 <View style={styles.infoRow}>
                   <Icon name="credit-card-check" size={22} color="#000000" style={styles.infoIcon} />
                   <View style={styles.infoContent}>
@@ -633,7 +630,7 @@ const DetailPlan = ({ navigation, route }) => {
               )}
             </View>
             <View style={styles.divider} />
-            {planData.SanhId && (
+            {planData?.SanhId && (
               <View style={styles.venueContainer}>
                 <View style={styles.venueTitleRow}>
                   <Icon name="home-variant" size={26} color="#000000" />
@@ -670,9 +667,9 @@ const DetailPlan = ({ navigation, route }) => {
             )}
           </View>
           <View style={styles.divider} />
-          {renderServiceItem('Dịch vụ ăn uống', planData.caterings, 'food-fork-drink', '#000000', true)}
-          {renderServiceItem('Trang trí', planData.decorates, 'flower', '#333333', false)}
-          {renderServiceItem('Quà tặng', planData.presents, 'gift', '#000000', false)}
+          {renderServiceItem('Dịch vụ ăn uống', planData?.caterings, 'food-fork-drink', '#000000', true)}
+          {renderServiceItem('Trang trí', planData?.decorates, 'flower', '#333333', false)}
+          {renderServiceItem('Quà tặng', planData?.presents, 'gift', '#000000', false)}
         </Animated.View>
       </ScrollView>
       <View style={[styles.persistentBottomBar, showConfirmButton && styles.persistentBottomBarWithConfirm]}>
@@ -686,7 +683,7 @@ const DetailPlan = ({ navigation, route }) => {
           disabled={isButtonDisabled}
         >
           <Text style={styles.bottomBarButtonText}>
-            {planData.status === 'Đã hủy' ? 'Đã hủy' : 'Chỉnh sửa'}
+            {planData?.status === 'Đã hủy' ? 'Đã hủy' : 'Chỉnh sửa'}
           </Text>
         </TouchableOpacity>
         {planData?.UserId && (
@@ -705,7 +702,7 @@ const DetailPlan = ({ navigation, route }) => {
               </TouchableOpacity>
             )}
             {planData.status !== 'Đang chờ xác nhận' &&
-              !['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData.status) && (
+              !['Đã đặt cọc', 'Đang chờ', 'Đã hủy'].includes(planData?.status) && (
                 <TouchableOpacity
                   style={[
                     styles.bottomBarButton,

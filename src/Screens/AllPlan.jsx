@@ -181,7 +181,6 @@ const AllPlan = ({ navigation }) => {
   const { user, isLoading: contextLoading } = useContext(AppContext);
   const userId = user?._id;
   const [loading, setLoading] = useState(false);
-
   const [alertVisible, setAlertVisible] = useState(false);
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
@@ -198,6 +197,32 @@ const AllPlan = ({ navigation }) => {
 
   useBackHandler(navigation, 'TabNavigation', { screen: 'Setting' });
 
+  // Hàm tính tổng giá (nếu server không cung cấp totalPrice)
+  const calculateTotalPrice = useCallback((plan) => {
+    if (!plan) return 0;
+    const GUESTS_PER_TABLE = 10;
+    const numberOfTables = plan.plansoluongkhach || plan.guestCount
+      ? Math.ceil((plan.plansoluongkhach || plan.guestCount) / GUESTS_PER_TABLE)
+      : 0;
+
+    const sanhPrice = plan.SanhId?.price ? parseFloat(plan.SanhId.price) : 0;
+    const cateringTotal = calculateSectionTotal(plan.caterings, true, numberOfTables);
+    const decorateTotal = calculateSectionTotal(plan.decorates, false, numberOfTables);
+    const presentTotal = calculateSectionTotal(plan.presents, false, numberOfTables);
+
+    return sanhPrice + cateringTotal + decorateTotal + presentTotal;
+  }, []);
+
+  const calculateSectionTotal = (services, multiplyByTables = false, numberOfTables) => {
+    if (!services || services.length === 0) return 0;
+    return services.reduce((sum, item) => {
+      const price = item && item.price ? parseFloat(item.price) : 0;
+      const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
+      return sum + (price * quantity);
+    }, 0);
+  };
+
+  // Xử lý xóa kế hoạch
   const handleDeletePlan = useCallback(
     (planId) => {
       showAlert(
@@ -216,7 +241,7 @@ const AllPlan = ({ navigation }) => {
                 await dispatch(deletePlan({ userId, planId })).unwrap();
                 showAlert('Thành công', 'Kế hoạch đã được xóa', 'success');
               } catch (error) {
-                showAlert('Lỗi', `Không thể xóa kế hoạch: ${error}`, 'error');
+                showAlert('Lỗi', `Không thể xóa kế hoạch: ${error.message || error}`, 'error');
               }
             },
           },
@@ -226,6 +251,7 @@ const AllPlan = ({ navigation }) => {
     [dispatch, userId]
   );
 
+  // Xử lý hủy kế hoạch
   const handleCancelPlan = useCallback(
     (planId) => {
       showAlert(
@@ -244,7 +270,7 @@ const AllPlan = ({ navigation }) => {
                 await dispatch(cancelPlan(planId)).unwrap();
                 showAlert('Thành công', 'Kế hoạch đã được hủy', 'success');
               } catch (error) {
-                showAlert('Lỗi', `Không thể hủy kế hoạch: ${error}`, 'error');
+                showAlert('Lỗi', `Không thể hủy kế hoạch: ${error.message || error}`, 'error');
               }
             },
           },
@@ -254,17 +280,7 @@ const AllPlan = ({ navigation }) => {
     [dispatch]
   );
 
-  useEffect(() => {
-    if (!contextLoading && !user) {
-      console.log('User không tồn tại, không tải dữ liệu');
-      setLoading(false);
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'SignIn' }],
-      });
-    }
-  }, [user, contextLoading, navigation]);
-
+  // Lấy danh sách kế hoạch khi userId thay đổi
   useEffect(() => {
     if (!userId) return;
 
@@ -275,9 +291,7 @@ const AllPlan = ({ navigation }) => {
         console.log('Fetched Plans:', result);
       } catch (error) {
         console.error('Lỗi khi lấy danh sách kế hoạch:', error);
-        // Xử lý lỗi 404: Không có kế hoạch
         if (error.message?.includes('404')) {
-          // Giả lập trạng thái rỗng
           dispatch({
             type: 'plan/getAllPlan/fulfilled',
             payload: [],
@@ -289,12 +303,23 @@ const AllPlan = ({ navigation }) => {
     };
 
     fetchPlans();
-
-    return () => {
-      setLoading(false);
-    };
   }, [dispatch, userId]);
 
+  
+
+  // Chuyển hướng nếu không có user
+  useEffect(() => {
+    if (!contextLoading && !user) {
+      console.log('User không tồn tại, chuyển hướng đến SignIn');
+      setLoading(false);
+      navigation.reset({
+        index: 0,
+        routes: [{ name: 'SignIn' }],
+      });
+    }
+  }, [user, contextLoading, navigation]);
+
+  // Component PlanCard
   const PlanCard = useCallback(
     ({ item }) => {
       try {
@@ -306,6 +331,7 @@ const AllPlan = ({ navigation }) => {
         const status = item.status ? item.status.toLowerCase() : '';
         const showDeleteButton = status === 'chưa đặt cọc';
         const showCancelButton = status === 'đang chờ';
+        const totalPrice = item.totalPrice || calculateTotalPrice(item);
 
         return (
           <TouchableOpacity
@@ -327,7 +353,7 @@ const AllPlan = ({ navigation }) => {
               <View style={styles.cardFooter}>
                 <View style={styles.priceContainer}>
                   <Text style={styles.priceLabel}>Tổng tiền:</Text>
-                  <Text style={styles.productPrice}>{formatPrice(item.totalPrice)}đ</Text>
+                  <Text style={styles.productPrice}>{formatPrice(totalPrice)}đ</Text>
                 </View>
                 <View style={styles.buttonsContainer}>
                   {showCancelButton && (
@@ -361,13 +387,15 @@ const AllPlan = ({ navigation }) => {
         return null;
       }
     },
-    [navigation, user, handleDeletePlan, handleCancelPlan, deleteStatus, cancelStatus]
+    [navigation, user, handleDeletePlan, handleCancelPlan, deleteStatus, cancelStatus, calculateTotalPrice]
   );
 
+  // Format giá
   const formatPrice = (price) => {
     return price?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.') || '0';
   };
 
+  // Lấy màu trạng thái
   const getStatusColor = (status) => {
     if (!status) return '#9E9E9E';
     switch (status.toLowerCase()) {
@@ -386,17 +414,20 @@ const AllPlan = ({ navigation }) => {
     }
   };
 
-  const handleRefresh = () => {
+  // Làm mới dữ liệu
+  const handleRefresh = useCallback(() => {
     if (userId) {
       dispatch(Plan(userId));
     }
-  };
+  }, [dispatch, userId]);
 
-  const handleCreateNewPlan = () => {
+  // Tạo kế hoạch mới
+  const handleCreateNewPlan = useCallback(() => {
     if (!user) return;
     navigation.navigate('Thongtincoban');
-  };
+  }, [user, navigation]);
 
+  // Render trạng thái tải
   const renderLoading = () => (
     <View style={styles.statusContainer}>
       <ActivityIndicator size="large" color="#2196F3" />
@@ -404,6 +435,7 @@ const AllPlan = ({ navigation }) => {
     </View>
   );
 
+  // Render nội dung
   const renderContent = useCallback(() => {
     if (!user) {
       console.log('No user, rendering null');
@@ -430,7 +462,9 @@ const AllPlan = ({ navigation }) => {
             style={[styles.statusIcon, { tintColor: '#9E9E9E' }]}
           />
           <Text style={styles.statusMessage}>Bạn hãy tạo kế hoạch mới!</Text>
-          
+          <TouchableOpacity style={styles.createPlanButtonEmpty} onPress={handleCreateNewPlan}>
+            <Text style={styles.createPlanButtonText}>Tạo kế hoạch mới</Text>
+          </TouchableOpacity>
         </View>
       );
     }
@@ -447,7 +481,7 @@ const AllPlan = ({ navigation }) => {
         onRefresh={handleRefresh}
       />
     );
-  }, [AllPlanData, AllPlanStatus, loading, user, userId, dispatch, PlanCard]);
+  }, [AllPlanData, AllPlanStatus, loading, user, handleCreateNewPlan, handleRefresh, PlanCard]);
 
   if (contextLoading) {
     return <SafeAreaView style={styles.container}>{renderLoading()}</SafeAreaView>;
