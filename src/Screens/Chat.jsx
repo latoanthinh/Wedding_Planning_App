@@ -1,7 +1,18 @@
 import React, { useState, useEffect, useRef, useCallback, useContext } from 'react';
 import {
-  View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator,
-  KeyboardAvoidingView, Platform, Image, Alert, Modal, ScrollView,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  ToastAndroid,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { launchImageLibrary } from 'react-native-image-picker';
 import { useSelector, useDispatch } from 'react-redux';
@@ -252,7 +263,7 @@ const Chat = ({ navigation, route }) => {
             }
           } catch (error) {
             console.error('Lỗi gửi tin nhắn kế hoạch:', error);
-            Alert.alert('Lỗi', 'Không thể gửi tin nhắn kế hoạch tự động.');
+            ToastAndroid.show('Không thể gửi tin nhắn kế hoạch tự động.', ToastAndroid.SHORT);
           }
 
           const images = [];
@@ -298,7 +309,7 @@ const Chat = ({ navigation, route }) => {
         }
       } catch (err) {
         console.error('Lỗi khởi tạo chat:', err);
-        Alert.alert('Lỗi', 'Không thể khởi tạo chat.');
+        ToastAndroid.show('Không thể khởi tạo chat.', ToastAndroid.SHORT);
       }
     };
 
@@ -328,7 +339,7 @@ const Chat = ({ navigation, route }) => {
           console.log('Người dùng đã hủy chọn ảnh');
         } else if (response.errorCode) {
           console.error('Lỗi ImagePicker:', response.errorMessage);
-          Alert.alert('Lỗi', 'Không thể chọn hình ảnh. Vui lòng thử lại.');
+          ToastAndroid.show('Không thể chọn hình ảnh. Vui lòng thử lại.', ToastAndroid.SHORT);
         } else if (response.assets && response.assets.length > 0) {
           const base64Image = `data:image/jpeg;base64,${response.assets[0].base64}`;
           setImageData(base64Image);
@@ -411,22 +422,25 @@ const Chat = ({ navigation, route }) => {
               userName,
             })
           ).unwrap();
-          
+
           // Update message status instead of fetching all messages
           dispatch({ type: 'chat/updateMessageStatus', payload: { tempId, status: 'sent' } });
         } catch (error) {
           console.error('HTTP send error:', error);
           // Add to retry queue
-          setRetryQueue(prev => [...prev, {
-            message: tempMessage,
-            retryCount: 0,
-            lastAttempt: Date.now()
-          }]);
+          setRetryQueue((prev) => [
+            ...prev,
+            {
+              message: tempMessage,
+              retryCount: 0,
+              lastAttempt: Date.now(),
+            },
+          ]);
         }
       }
     } catch (err) {
       console.error('Error in handleSendMessage:', err);
-      Alert.alert('Lỗi gửi tin nhắn', 'Không thể gửi tin nhắn. Vui lòng thử lại sau.', [{ text: 'OK' }]);
+      ToastAndroid.show('Không thể gửi tin nhắn. Vui lòng thử lại sau.', ToastAndroid.SHORT);
     }
   }, [messageText, imageData, user, dispatch]);
 
@@ -441,7 +455,10 @@ const Chat = ({ navigation, route }) => {
         for (const item of queue) {
           if (item.retryCount >= 3) {
             // Max retries reached, show error
-            Alert.alert('Lỗi', 'Không thể gửi tin nhắn sau nhiều lần thử. Vui lòng kiểm tra kết nối mạng.');
+            ToastAndroid.show(
+              'Không thể gửi tin nhắn sau nhiều lần thử. Vui lòng kiểm tra kết nối mạng.',
+              ToastAndroid.SHORT
+            );
             continue;
           }
 
@@ -457,16 +474,22 @@ const Chat = ({ navigation, route }) => {
                 userName: item.message.userName,
               })
             ).unwrap();
-            
+
             // Update message status instead of fetching all messages
-            dispatch({ type: 'chat/updateMessageStatus', payload: { tempId: item.message.tempId, status: 'sent' } });
+            dispatch({
+              type: 'chat/updateMessageStatus',
+              payload: { tempId: item.message.tempId, status: 'sent' },
+            });
           } catch (error) {
             // Add back to queue with incremented retry count
-            setRetryQueue(prev => [...prev, {
-              ...item,
-              retryCount: item.retryCount + 1,
-              lastAttempt: Date.now()
-            }]);
+            setRetryQueue((prev) => [
+              ...prev,
+              {
+                ...item,
+                retryCount: item.retryCount + 1,
+                lastAttempt: Date.now(),
+              },
+            ]);
           }
         }
         setIsRetrying(false);
@@ -477,37 +500,40 @@ const Chat = ({ navigation, route }) => {
   }, [retryQueue, isRetrying, dispatch]);
 
   // Fetch plan details
-  const fetchPlanDetails = useCallback(async (planId) => {
-    if (!planId) {
-      Alert.alert('Lỗi', 'Không tìm thấy ID kế hoạch.');
-      return;
-    }
-
-    setIsLoadingPlan(true);
-    try {
-      const response = await fetchWithTimeout(
-        `https://apidatn.onrender.com/plan/${planId}`,
-        {
-          method: 'GET',
-          headers: {
-            'Content-Type': 'application/json',
-            'user-id': user._id,
-          },
-        }
-      );
-      const result = await response.json();
-      if (!response.ok) {
-        throw new Error(result.message || 'Lỗi khi lấy chi tiết kế hoạch');
+  const fetchPlanDetails = useCallback(
+    async (planId) => {
+      if (!planId) {
+        ToastAndroid.show('Không tìm thấy ID kế hoạch.', ToastAndroid.SHORT);
+        return;
       }
-      setPlanDetails(result.data);
-      setShowPlanModal(true);
-    } catch (error) {
-      console.error('Lỗi khi lấy chi tiết kế hoạch:', error);
-      Alert.alert('Lỗi', `Không thể lấy chi tiết kế hoạch: ${error.message}`);
-    } finally {
-      setIsLoadingPlan(false);
-    }
-  }, [user]);
+
+      setIsLoadingPlan(true);
+      try {
+        const response = await fetchWithTimeout(
+          `https://apidatn.onrender.com/plan/${planId}`,
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'user-id': user._id,
+            },
+          }
+        );
+        const result = await response.json();
+        if (!response.ok) {
+          throw new Error(result.message || 'Lỗi khi lấy chi tiết kế hoạch');
+        }
+        setPlanDetails(result.data);
+        setShowPlanModal(true);
+      } catch (error) {
+        console.error('Lỗi khi lấy chi tiết kế hoạch:', error);
+        ToastAndroid.show(`Không thể lấy chi tiết kế hoạch: ${error.message}`, ToastAndroid.SHORT);
+      } finally {
+        setIsLoadingPlan(false);
+      }
+    },
+    [user]
+  );
 
   // Handle scroll to check for scroll button visibility
   const handleScroll = ({ nativeEvent }) => {
@@ -525,7 +551,7 @@ const Chat = ({ navigation, route }) => {
   const renderMessage = useCallback(
     ({ item, index }) => {
       if (!user) return null;
-  
+
       const isUser = item.sender === 'user';
       const isImage = item.messageType === 'image';
       const isConfirmation = item.messageType === 'confirmation';
@@ -533,15 +559,15 @@ const Chat = ({ navigation, route }) => {
       const isNewPlan = item.messageType === 'new_plan';
       const senderName = isUser ? user?.fullname || user?.name || 'Bạn' : 'Hỗ trợ khách hàng';
       const isMessageConfirmed = confirmedMessages.includes(item._id);
-  
+
       let messageContent = item.content;
       let parsedContent = {};
-  
+
       if ((isConfirmation || isPlan || isNewPlan) && typeof item.content === 'string') {
         if (item.content.trim().startsWith('{') || item.content.trim().startsWith('[')) {
           try {
             parsedContent = JSON.parse(item.content);
-            // Xử lý nội dung cho plan và new_plan
+            // Handle content for plan and new_plan
             if (isPlan) {
               messageContent = `Tôi muốn thảo luận về kế hoạch này: ${parsedContent.name || 'Không có tên'}`;
             } else if (isNewPlan) {
@@ -568,7 +594,7 @@ const Chat = ({ navigation, route }) => {
           parsedContent = {};
         }
       }
-  
+
       return (
         <>
           {shouldShowDate(chatHistory, index) && (
@@ -634,15 +660,15 @@ const Chat = ({ navigation, route }) => {
                       ]}
                       onPress={async () => {
                         if (!parsedContent.planId) {
-                          Alert.alert('Lỗi', 'Không tìm thấy ID kế hoạch để xác nhận.');
+                          ToastAndroid.show('Không tìm thấy ID kế hoạch để xác nhận.', ToastAndroid.SHORT);
                           return;
                         }
-  
+
                         setIsConfirming(true);
                         try {
                           const tempId = `temp-${Date.now()}`;
                           const userName = user?.fullname || user?.name || '';
-                          const confirmMessage = `Tôi xác nhận kế hoạch `;
+                          const confirmMessage = `Tôi xác nhận kế hoạch`;
                           dispatch({
                             type: 'chat/addSocketMessage',
                             payload: {
@@ -657,7 +683,7 @@ const Chat = ({ navigation, route }) => {
                               userName,
                             },
                           });
-  
+
                           if (socketService.socket && socketService.isConnected()) {
                             socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                           } else {
@@ -673,7 +699,7 @@ const Chat = ({ navigation, route }) => {
                               })
                             ).unwrap();
                           }
-  
+
                           const response = await fetchWithTimeout(
                             `https://apidatn.onrender.com/plan/confirm-to-pending/${parsedContent.planId}`,
                             {
@@ -690,7 +716,7 @@ const Chat = ({ navigation, route }) => {
                             throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                           }
                           setConfirmedMessages((prev) => [...prev, item._id]);
-                          Alert.alert('Thành công', 'Kế hoạch đã được xác nhận.');
+                          ToastAndroid.show('Kế hoạch đã được xác nhận.', ToastAndroid.SHORT);
                           dispatch(fetchChatHistory(user._id));
                         } catch (error) {
                           console.error('Lỗi xác nhận:', {
@@ -698,7 +724,10 @@ const Chat = ({ navigation, route }) => {
                             error: error.message,
                             stack: error.stack,
                           });
-                          Alert.alert('Lỗi', `Không thể xác nhận kế hoạch: ${error.message}`);
+                          ToastAndroid.show(
+                            `Không thể xác nhận kế hoạch: ${error.message}`,
+                            ToastAndroid.SHORT
+                          );
                         } finally {
                           setIsConfirming(false);
                         }
@@ -750,20 +779,20 @@ const Chat = ({ navigation, route }) => {
                               return null;
                             }
                           })();
-  
+
                           if (!originalPlanId || !parsedContent.planId) {
-                            Alert.alert(
-                              'Lỗi',
-                              'Không tìm thấy ID kế hoạch gốc hoặc kế hoạch mới.'
+                            ToastAndroid.show(
+                              'Không tìm thấy ID kế hoạch gốc hoặc kế hoạch mới.',
+                              ToastAndroid.SHORT
                             );
                             return;
                           }
-  
+
                           setIsConfirming(true);
                           try {
                             const tempId = `temp-${Date.now()}`;
                             const userName = user?.fullname || user?.name || '';
-                            const confirmMessage = `Tôi xác nhận kế hoạch mới `;
+                            const confirmMessage = `Tôi xác nhận kế hoạch mới`;
                             dispatch({
                               type: 'chat/addSocketMessage',
                               payload: {
@@ -778,7 +807,7 @@ const Chat = ({ navigation, route }) => {
                                 userName,
                               },
                             });
-  
+
                             if (socketService.socket && socketService.isConnected()) {
                               socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                             } else {
@@ -794,7 +823,7 @@ const Chat = ({ navigation, route }) => {
                                 })
                               ).unwrap();
                             }
-  
+
                             const response = await fetchWithTimeout(
                               `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
                               {
@@ -807,16 +836,16 @@ const Chat = ({ navigation, route }) => {
                               },
                               30000
                             );
-  
+
                             const result = await response.json();
                             console.log('Phản hồi API:', { status: response.status, body: result });
-  
+
                             if (!response.ok) {
                               throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                             }
-  
+
                             setConfirmedMessages((prev) => [...prev, item._id]);
-                            Alert.alert('Thành công', 'Kế hoạch đã được cập nhật.');
+                            ToastAndroid.show('Kế hoạch đã được cập nhật.', ToastAndroid.SHORT);
                             dispatch(fetchChatHistory(user._id));
                           } catch (error) {
                             console.error('Lỗi xác nhận kế hoạch mới:', {
@@ -825,7 +854,10 @@ const Chat = ({ navigation, route }) => {
                               error: error.message,
                               stack: error.stack,
                             });
-                            Alert.alert('Lỗi', `Không thể xác nhận kế hoạch mới: ${error.message}`);
+                            ToastAndroid.show(
+                              `Không thể xác nhận kế hoạch mới: ${error.message}`,
+                              ToastAndroid.SHORT
+                            );
                           } finally {
                             setIsConfirming(false);
                           }
@@ -841,85 +873,86 @@ const Chat = ({ navigation, route }) => {
                         ]}
                         onPress={() => {
                           if (!parsedContent.planId) {
-                            Alert.alert('Lỗi', 'Không tìm thấy thông tin kế hoạch để hủy.');
+                            ToastAndroid.show(
+                              'Không tìm thấy thông tin kế hoạch để hủy.',
+                              ToastAndroid.SHORT
+                            );
                             return;
                           }
-  
-                          Alert.alert(
-                            'Xác nhận hủy',
+
+                          ToastAndroid.showWithGravity(
                             'Bạn có chắc muốn hủy kế hoạch mới này?',
-                            [
-                              { text: 'Hủy', style: 'cancel' },
-                              {
-                                text: 'Đồng ý',
-                                onPress: async () => {
-                                  setIsConfirming(true);
-                                  try {
-                                    const tempId = `temp-${Date.now()}`;
-                                    const userName = user?.fullname || user?.name || '';
-                                    const cancelMessage = `Tôi hủy kế hoạch mới ${parsedContent.planId}`;
-                                    dispatch({
-                                      type: 'chat/addSocketMessage',
-                                      payload: {
-                                        _id: tempId,
-                                        tempId,
-                                        userId: user._id,
-                                        receiverId: 'admin',
-                                        content: cancelMessage,
-                                        sender: 'user',
-                                        timestamp: new Date().toISOString(),
-                                        messageType: 'text',
-                                        userName,
-                                      },
-                                    });
-  
-                                    if (socketService.socket && socketService.isConnected()) {
-                                      socketService.sendMessage('admin', cancelMessage, tempId, 'text');
-                                    } else {
-                                      await dispatch(
-                                        sendMessage({
-                                          senderId: user._id,
-                                          receiverId: 'admin',
-                                          message: cancelMessage,
-                                          senderType: 'user',
-                                          messageType: 'text',
-                                          tempId,
-                                          userName,
-                                        })
-                                      ).unwrap();
-                                    }
-  
-                                    const response = await fetchWithTimeout(
-                                      `https://apidatn.onrender.com/plan/cancel/${parsedContent.planId}`,
-                                      {
-                                        method: 'DELETE',
-                                        headers: {
-                                          'Content-Type': 'application/json',
-                                          'user-id': user._id,
-                                        },
-                                      }
-                                    );
-                                    const result = await response.json();
-                                    if (!response.ok) {
-                                      throw new Error(result.message || 'Lỗi hủy kế hoạch');
-                                    }
-                                    setConfirmedMessages((prev) => [...prev, item._id]);
-                                    Alert.alert('Thành công', 'Kế hoạch mới đã bị hủy.');
-                                    dispatch(fetchChatHistory(user._id));
-                                  } catch (error) {
-                                    console.error('Lỗi hủy kế hoạch mới:', {
-                                      newPlanId: parsedContent.planId,
-                                      error: error.message,
-                                      stack: error.stack,
-                                    });
-                                    Alert.alert('Lỗi', `Không thể hủy kế hoạch mới: ${error.message}`);
-                                  } finally {
-                                    setIsConfirming(false);
-                                  }
-                                },
-                              },
-                            ]
+                            ToastAndroid.LONG,
+                            ToastAndroid.CENTER
                           );
+                          setTimeout(async () => {
+                            setIsConfirming(true);
+                            try {
+                              const tempId = `temp-${Date.now()}`;
+                              const userName = user?.fullname || user?.name || '';
+                              const cancelMessage = `Tôi hủy kế hoạch mới ${parsedContent.planId}`;
+                              dispatch({
+                                type: 'chat/addSocketMessage',
+                                payload: {
+                                  _id: tempId,
+                                  tempId,
+                                  userId: user._id,
+                                  receiverId: 'admin',
+                                  content: cancelMessage,
+                                  sender: 'user',
+                                  timestamp: new Date().toISOString(),
+                                  messageType: 'text',
+                                  userName,
+                                },
+                              });
+
+                              if (socketService.socket && socketService.isConnected()) {
+                                socketService.sendMessage('admin', cancelMessage, tempId, 'text');
+                              } else {
+                                await dispatch(
+                                  sendMessage({
+                                    senderId: user._id,
+                                    receiverId: 'admin',
+                                    message: cancelMessage,
+                                    senderType: 'user',
+                                    messageType: 'text',
+                                    tempId,
+                                    userName,
+                                  })
+                                ).unwrap();
+                              }
+
+                              const response = await fetchWithTimeout(
+                                `https://apidatn.onrender.com/plan/cancel/${parsedContent.planId}`,
+                                {
+                                  method: 'DELETE',
+                                  headers: {
+                                    'Content-Type': 'application/json',
+                                    'user-id': user._id,
+                                  },
+                                }
+                              );
+                              const result = await response.json();
+                              if (!response.ok) {
+                                throw new Error(result.message || 'Lỗi hủy kế hoạch');
+                              }
+                              setConfirmedMessages((prev) => [...prev, item._id]);
+                              ToastAndroid.show('Kế hoạch mới đã bị hủy.', ToastAndroid.SHORT);
+                              dispatch(fetchChatHistory(user._id));
+                            } catch (error) {
+                              console.error('Lỗi hủy kế hoạch mới:', {
+                                newPlanId: parsedContent.planId,
+                                error: error.message,
+                                stack: error.stack,
+                              });
+                              ToastAndroid.show(
+                                `Không thể hủy kế hoạch mới: ${error.message}`,
+                                ToastAndroid.SHORT
+                              );
+                            } finally {
+                              setIsConfirming(false);
+                            }
+                          }, 2000); // Delay to simulate confirmation
                         }}
                         disabled={isConfirming || isMessageConfirmed}
                       >
@@ -1062,8 +1095,8 @@ const Chat = ({ navigation, route }) => {
     if (!services || services.length === 0) return 0;
     const total = services.reduce((sum, item) => {
       const price = item && item.price ? parseFloat(item.price) : 0;
-      const quantity = multiplyByTables ? numberOfTables : (item.quantity || 1);
-      return sum + (price * quantity);
+      const quantity = multiplyByTables ? numberOfTables : item.quantity || 1;
+      return sum + price * quantity;
     }, 0);
     return total;
   };
@@ -1082,13 +1115,18 @@ const Chat = ({ navigation, route }) => {
         </View>
         {services && services.length > 0 ? (
           <>
-            {services.map((item, index) => (
+            {services.map((item, index) =>
               item ? (
                 <View key={index} style={[styles.serviceCard, { borderLeftColor: '#000000' }]}>
                   {item.imageUrl ? (
-                    <Image source={{ uri: formatAvatarUri(item.imageUrl) }} style={styles.serviceImage} />
+                    <Image
+                      source={{ uri: formatAvatarUri(item.imageUrl) }}
+                      style={styles.serviceImage}
+                    />
                   ) : (
-                    <View style={[styles.serviceImagePlaceholder, { backgroundColor: 'rgba(0, 0, 0, 0.03)' }]}>
+                    <View
+                      style={[styles.serviceImagePlaceholder, { backgroundColor: 'rgba(0, 0, 0, 0.03)' }]}
+                    >
                       <Ionicons name={iconName} size={30} color="#000000" />
                     </View>
                   )}
@@ -1096,16 +1134,23 @@ const Chat = ({ navigation, route }) => {
                     <Text style={styles.serviceText}>{item.name || 'Không có tên'}</Text>
                     {item.price !== undefined && (
                       <View style={styles.servicePriceContainer}>
-                        <Text style={[styles.servicePrice, { backgroundColor: 'rgba(0, 0, 0, 0.05)', color: '#000000' }]}>
+                        <Text
+                          style={[
+                            styles.servicePrice,
+                            { backgroundColor: 'rgba(0, 0, 0, 0.05)', color: '#000000' },
+                          ]}
+                        >
                           {item.price.toLocaleString('vi-VN')} VNĐ
                         </Text>
                         {title === 'Quà tặng' ? (
                           <Text style={styles.serviceMultiply}>
-                            x {item.quantity || 1} = {(item.price * (item.quantity || 1)).toLocaleString('vi-VN')} VNĐ
+                            x {item.quantity || 1} ={' '}
+                            {(item.price * (item.quantity || 1)).toLocaleString('vi-VN')} VNĐ
                           </Text>
                         ) : title === 'Dịch vụ ăn uống' ? (
                           <Text style={styles.serviceMultiply}>
-                            x {numberOfTables} bàn = {(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ
+                            x {numberOfTables} bàn ={' '}
+                            {(item.price * numberOfTables).toLocaleString('vi-VN')} VNĐ
                           </Text>
                         ) : null}
                       </View>
@@ -1118,7 +1163,7 @@ const Chat = ({ navigation, route }) => {
                   <Text style={styles.noDataText}>Dữ liệu không hợp lệ</Text>
                 </View>
               )
-            ))}
+            )}
             <View style={[styles.sectionTotalContainer, { backgroundColor: 'rgba(0, 0, 0, 0.05)' }]}>
               <Text style={[styles.sectionTotalLabel, { color: '#000000' }]}>Tổng chi phí</Text>
               <Text style={[styles.sectionTotal, { color: '#000000' }]}>
@@ -1195,12 +1240,17 @@ const Chat = ({ navigation, route }) => {
                 </View>
               </View>
               <View style={styles.infoRow}>
-                <Ionicons name="swap-vertical-outline" size={22} color="#000000" style={styles.infoIcon} />
+                <Ionicons
+                  name="swap-vertical-outline"
+                  size={22}
+                  color="#000000"
+                  style={styles.infoIcon}
+                />
                 <View style={styles.infoContent}>
                   <Text style={styles.infoLabel}>Chênh lệch ngân sách</Text>
                   <View style={styles.differenceContainer}>
                     <Ionicons
-                      name={priceDifference >= 0 ? "arrow-down" : "arrow-up"}
+                      name={priceDifference >= 0 ? 'arrow-down' : 'arrow-up'}
                       size={13}
                       color={priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000'}
                       style={{ marginRight: 4 }}
@@ -1209,7 +1259,12 @@ const Chat = ({ navigation, route }) => {
                       style={[
                         styles.planDetail,
                         {
-                          color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#000000',
+                          color:
+                            priceDifference > 0
+                              ? '#4CAF50'
+                              : priceDifference < 0
+                              ? '#FF4444'
+                              : '#000000',
                           fontWeight: 'bold',
                         },
                       ]}
@@ -1228,11 +1283,19 @@ const Chat = ({ navigation, route }) => {
                   <Text style={styles.venueTitle}>Thông tin sảnh cưới</Text>
                 </View>
                 {planDetails.SanhId.imageUrl && (
-                  <Image source={{ uri: formatAvatarUri(planDetails.SanhId.imageUrl) }} style={styles.sanhImage} />
+                  <Image
+                    source={{ uri: formatAvatarUri(planDetails.SanhId.imageUrl) }}
+                    style={styles.sanhImage}
+                  />
                 )}
                 <View style={styles.venueDetails}>
                   <View style={styles.venueDetailItem}>
-                    <Ionicons name="pricetag-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Ionicons
+                      name="pricetag-outline"
+                      size={20}
+                      color="#000000"
+                      style={styles.venueItemIcon}
+                    />
                     <Text style={styles.venueItemText}>{planDetails.SanhId.name || 'Chưa có tên'}</Text>
                   </View>
                   <View style={styles.venueDetailItem}>
@@ -1242,7 +1305,12 @@ const Chat = ({ navigation, route }) => {
                     </Text>
                   </View>
                   <View style={styles.venueDetailItem}>
-                    <Ionicons name="people-outline" size={20} color="#000000" style={styles.venueItemIcon} />
+                    <Ionicons
+                      name="people-outline"
+                      size={20}
+                      color="#000000"
+                      style={styles.venueItemIcon}
+                    />
                     <Text style={styles.venueItemText}>
                       Sức chứa: {planDetails.SanhId.SoLuongKhach || 'N/A'} khách
                     </Text>
@@ -1303,7 +1371,7 @@ const Chat = ({ navigation, route }) => {
           <Text style={styles.headerTitle}>Hỗ trợ khách hàng</Text>
           <View style={styles.statusRow}>
             <UserStatusIndicator style={styles.statusIndicator} isOnline={true} />
-            <Text style={styles.headerSubtitle}>Đang hoạt động</Text>
+            <Text style={styles.statusText}>Đang hoạt động</Text>
           </View>
         </View>
       </View>
@@ -1367,7 +1435,11 @@ const Chat = ({ navigation, route }) => {
       >
         <View style={styles.imageModal}>
           <View style={styles.imageModalContent}>
-            <Image source={{ uri: modalImage }} style={styles.imageModalImage} resizeMode="contain" />
+            <Image
+              source={{ uri: modalImage }}
+              style={styles.imageModalImage}
+              resizeMode="contain"
+            />
             <TouchableOpacity
               style={styles.imageModalClose}
               onPress={() => setShowImageModal(false)}
