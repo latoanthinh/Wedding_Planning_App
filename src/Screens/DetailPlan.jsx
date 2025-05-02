@@ -205,6 +205,12 @@ const DetailPlan = ({ navigation, route }) => {
 
   const calculateTotalPrice = (planData, numberOfTables) => {
     if (!planData) return 0;
+
+    // Nếu kế hoạch đã đặt cọc, trả về totalPrice từ dữ liệu (không cần tính toán lại)
+    if (planData.status === 'Đã đặt cọc') {
+      return parseFloat(planData.totalPrice || 0);
+    }
+
     const sanhPrice = planData.SanhId?.price ? parseFloat(planData.SanhId.price) : 0;
     const cateringTotal = calculateSectionTotal(planData.caterings, true, numberOfTables);
     const decorateTotal = calculateSectionTotal(planData.decorates, false, numberOfTables);
@@ -223,6 +229,13 @@ const DetailPlan = ({ navigation, route }) => {
 
   const totalPrice = useMemo(() => {
     if (!planData) return 0;
+
+    // Nếu kế hoạch ở trạng thái "Đã đặt cọc", sử dụng totalPrice từ planData
+    if (planData.status === 'Đã đặt cọc') {
+      return parseFloat(planData.totalPrice || 0);
+    }
+
+    // Nếu không, tính toán lại như hiện tại
     const GUESTS_PER_TABLE = 10;
     const numberOfTables = planData.plansoluongkhach || planData.guestCount
       ? Math.ceil((planData.plansoluongkhach || planData.guestCount) / GUESTS_PER_TABLE)
@@ -255,7 +268,10 @@ const DetailPlan = ({ navigation, route }) => {
     }
   }, [dispatch, planId, routePlanData]);
 
-  
+
+
+
+
 
   useEffect(() => {
     if (error) {
