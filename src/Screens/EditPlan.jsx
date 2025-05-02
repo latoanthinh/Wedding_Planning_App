@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState, useContext } from 'react';
 import {
   StyleSheet, View, Text, Animated, Image, TouchableOpacity, ScrollView, StatusBar,
-  Dimensions, TextInput, ToastAndroid, Modal, FlatList, ActivityIndicator,
+  Dimensions, TextInput, ToastAndroid, Modal, FlatList, ActivityIndicator, Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -110,6 +110,143 @@ const EditPlan = ({ navigation, route }) => {
     return decoratesList.some(item => item.Cate_decorateId === cateId);
   };
 
+
+
+
+
+  // Trong component EditPlan
+
+  // Hàm kiểm tra dữ liệu hợp lệ
+  const isDataValid = () => {
+    return (
+      userId &&
+      planId &&
+      name.trim() &&
+      !isNaN(parseInt(plansoluongkhach, 10)) &&
+      !isNaN(parseFloat(planprice))
+    );
+  };
+
+  
+
+  // Xử lý khi thoát màn hình
+   // Xử lý khi thoát màn hình
+   useEffect(() => {
+    const unsubscribe = navigation.addListener('beforeRemove', (e) => {
+      if (!isSaving && isDataValid()) {
+        if (autoSaveEnabled) {
+          // Ngăn chặn thoát ngay lập tức để lưu
+          e.preventDefault();
+          const updateData = {
+            UserId: userId,
+            name,
+            plandateevent: plandateevent.toISOString(),
+            plansoluongkhach: parseInt(plansoluongkhach, 10) || undefined,
+            planprice: parseFloat(planprice) || undefined,
+            totalPrice: totalPrice,
+            SanhId: sanhId || undefined,
+            caterings: cateringsList.map(item => item._id).filter(Boolean),
+            decorates: decoratesList.map(item => item._id).filter(Boolean),
+            presents: presentsList.map(item => ({
+              id: item._id,
+              quantity: item.quantity || 1
+            })).filter(item => item.id),
+            isCopy: planData.isCopy || false,
+            originalPlanId: planData.originalPlanId || planId,
+          };
+
+          if (priceDifference < 0) {
+            // Hiển thị modal xác nhận nếu chi phí vượt ngân sách
+            setConfirmModalVisible(true);
+            return;
+          }
+
+          setIsSaving(true);
+          dispatch(updatePlan({ planId, updateData }))
+            .unwrap()
+            .then((updatedPlan) => {
+              ToastAndroid.show('Đã tự động lưu kế hoạch trước khi thoát!', ToastAndroid.SHORT);
+              const combinedPlanData = {
+                ...updatedPlan,
+                UserId: updatedPlan.UserId || userId,
+                SanhId: selectedSanh || updatedPlan.SanhId || null,
+                caterings: cateringsList.length > 0 ? cateringsList : updatedPlan.caterings || [],
+                decorates: decoratesList.length > 0 ? decoratesList : updatedPlan.decorates || [],
+                presents: presentsList.length > 0 ? presentsList : updatedPlan.presents || [],
+                plansoluongkhach: updateData.plansoluongkhach || updatedPlan.plansoluongkhach || 0,
+                planprice: updateData.planprice || updatedPlan.planprice || 0,
+                totalPrice: totalPrice,
+                plandateevent: updateData.plandateevent || updatedPlan.plandateevent,
+                name: updateData.name || updatedPlan.name || 'Kế hoạch không tên',
+                eventDate: planData.eventDate,
+                guestCount: planData.guestCount,
+                budget: planData.budget,
+                priceDifference: updatedPlan.priceDifference || priceDifference,
+                isCopy: updateData.isCopy,
+                originalPlanId: updateData.originalPlanId,
+              };
+              console.log('Navigating to DetailPlan with data:', combinedPlanData); // Debug log
+              navigation.navigate('DetailPlan', { planId, planData: combinedPlanData });
+            })
+            .catch((err) => {
+              console.error('Error saving plan on exit:', err); // Debug log
+              ToastAndroid.show(`Lỗi tự động lưu khi thoát: ${err.message || err}`, ToastAndroid.SHORT);
+              navigation.dispatch(e.data.action);
+            })
+            .finally(() => {
+              setIsSaving(false);
+            });
+        } else {
+          // Hiển thị modal xác nhận nếu tự động lưu bị tắt
+          e.preventDefault();
+          Alert.alert(
+            'Bạn có muốn lưu trước khi thoát?',
+            'Các thay đổi chưa được lưu. Bạn có muốn lưu trước khi thoát không?',
+            [
+              { text: 'Hủy', style: 'cancel' },
+              {
+                text: 'Không lưu',
+                onPress: () => navigation.dispatch(e.data.action)
+              },
+              {
+                text: 'Lưu',
+                onPress: () => {
+                  handleSave();
+                  // handleSave sẽ điều hướng về DetailPlan nếu lưu thành công
+                }
+              }
+            ]
+          );
+        }
+      } else {
+        // Nếu dữ liệu không hợp lệ hoặc đang lưu, cho phép thoát
+        navigation.dispatch(e.data.action);
+      }
+    });
+
+    return unsubscribe;
+  }, [
+    autoSaveEnabled,
+    isSaving,
+    name,
+    plandateevent,
+    plansoluongkhach,
+    planprice,
+    totalPrice,
+    sanhId,
+    cateringsList,
+    decoratesList,
+    presentsList,
+    userId,
+    planId,
+    navigation,
+    dispatch,
+    handleSave,
+    planData.isCopy,
+    planData.originalPlanId,
+    priceDifference
+  ]);
+
   useEffect(() => {
     if (modalVisible) {
       let items = [];
@@ -187,7 +324,7 @@ const EditPlan = ({ navigation, route }) => {
     setShowFavorites(false);
     setSelectedItemDetail(null);
     setPresentQuantities({});
-  
+
     // Initialize selectedItems based on currentType
     if (type === 'caterings') {
       setSelectedItems([...cateringsList]);
@@ -413,6 +550,11 @@ const EditPlan = ({ navigation, route }) => {
   };
 
   const savePlan = (updateData) => {
+    if (priceDifference < 0) {
+      setConfirmModalVisible(true);
+      return;
+    }
+
     setIsSaving(true);
     dispatch(updatePlan({ planId, updateData }))
       .unwrap()
@@ -739,13 +881,15 @@ const EditPlan = ({ navigation, route }) => {
             </View>
             <View style={styles.inputRow}>
               <Text style={styles.label}>Chênh lệch:</Text>
-              
+
               <Text
-              
+
                 style={[
-                  styles.input,,
-                  { color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#666',
-                    fontWeight: 'bold',}
+                  styles.input, ,
+                  {
+                    color: priceDifference > 0 ? '#4CAF50' : priceDifference < 0 ? '#FF4444' : '#666',
+                    fontWeight: 'bold',
+                  }
                 ]}
               >
                 {priceDifference.toLocaleString('vi-VN')} VNĐ
@@ -851,9 +995,9 @@ const EditPlan = ({ navigation, route }) => {
             ) : (
               <>
                 {(currentType === 'caterings' && cateringStatus === 'loading') ||
-                (currentType === 'decorates' && decorateStatus === 'loading') ||
-                (currentType === 'presents' && presentStatus === 'loading') ||
-                (showFavorites && favoriteStatus === 'loading') ? (
+                  (currentType === 'decorates' && decorateStatus === 'loading') ||
+                  (currentType === 'presents' && presentStatus === 'loading') ||
+                  (showFavorites && favoriteStatus === 'loading') ? (
                   <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#007AFF" />
                     <Text style={styles.loadingText}>Đang tải dữ liệu...</Text>
@@ -974,7 +1118,8 @@ const EditPlan = ({ navigation, route }) => {
                 textStyle={styles.confirmButtonText}
                 onPress={() => {
                   setConfirmModalVisible(false);
-                  savePlan({
+                  setIsSaving(true);
+                  const updateData = {
                     UserId: userId,
                     name,
                     plandateevent: plandateevent.toISOString(),
@@ -990,7 +1135,37 @@ const EditPlan = ({ navigation, route }) => {
                     })).filter(item => item.id),
                     isCopy: planData.isCopy || false,
                     originalPlanId: planData.originalPlanId || planId,
-                  });
+                  };
+                  dispatch(updatePlan({ planId, updateData }))
+                    .unwrap()
+                    .then((updatedPlan) => {
+                      ToastAndroid.show('Cập nhật kế hoạch thành công!', ToastAndroid.SHORT);
+                      const combinedPlanData = {
+                        ...updatedPlan,
+                        UserId: updatedPlan.UserId || userId,
+                        SanhId: selectedSanh || updatedPlan.SanhId || null,
+                        caterings: cateringsList.length > 0 ? cateringsList : updatedPlan.caterings || [],
+                        decorates: decoratesList.length > 0 ? decoratesList : updatedPlan.decorates || [],
+                        presents: presentsList.length > 0 ? presentsList : updatedPlan.presents || [],
+                        plansoluongkhach: updateData.plansoluongkhach || updatedPlan.plansoluongkhach || 0,
+                        planprice: updateData.planprice || updatedPlan.planprice || 0,
+                        totalPrice: totalPrice,
+                        plandateevent: updateData.plandateevent || updatedPlan.plandateevent,
+                        name: updateData.name || updatedPlan.name || 'Kế hoạch không tên',
+                        eventDate: planData.eventDate,
+                        guestCount: planData.guestCount,
+                        budget: planData.budget,
+                        priceDifference: updatedPlan.priceDifference || priceDifference,
+                        isCopy: updateData.isCopy,
+                        originalPlanId: updateData.originalPlanId,
+                      };
+                      setIsSaving(false);
+                      navigation.navigate('DetailPlan', { planId, planData: combinedPlanData });
+                    })
+                    .catch((err) => {
+                      setIsSaving(false);
+                      ToastAndroid.show(`Lỗi cập nhật kế hoạch: ${err.message || err}`, ToastAndroid.SHORT);
+                    });
                 }}
               />
             </View>
@@ -1002,6 +1177,21 @@ const EditPlan = ({ navigation, route }) => {
 };
 
 const styles = StyleSheet.create({
+
+
+  savingIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    position: 'absolute',
+    top: 10,
+    right: 20,
+    zIndex: 10,
+  },
+  savingText: {
+    fontSize: 14,
+    color: '#007AFF',
+    marginLeft: 8,
+  },
   confirmModalContent: {
     width: '80%',
     backgroundColor: '#FFF',
