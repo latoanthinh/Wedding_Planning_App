@@ -24,6 +24,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import UserStatusIndicator from '../components/UserStatusIndicator';
 import { useBackHandler } from '../hooks/useBackHandler';
 
+import AsyncStorage from '@react-native-async-storage/async-storage';
+
 // Utility function to ensure avatar URL is properly formatted
 const formatAvatarUri = (avatar) => {
   if (!avatar) return null;
@@ -136,6 +138,37 @@ const Chat = ({ navigation, route }) => {
   const [retryQueue, setRetryQueue] = useState([]);
   const [isRetrying, setIsRetrying] = useState(false);
   const [lastMessageId, setLastMessageId] = useState(null);
+
+
+
+  // Lưu confirmedMessages
+const saveConfirmedMessages = async (messages) => {
+  try {
+    await AsyncStorage.setItem('confirmedMessages', JSON.stringify(messages));
+  } catch (e) {
+    console.error('Lỗi lưu confirmedMessages:', e);
+  }
+};
+
+// Tải confirmedMessages khi component mount
+useEffect(() => {
+  const loadConfirmedMessages = async () => {
+    try {
+      const saved = await AsyncStorage.getItem('confirmedMessages');
+      if (saved) {
+        setConfirmedMessages(JSON.parse(saved));
+      }
+    } catch (e) {
+      console.error('Lỗi tải confirmedMessages:', e);
+    }
+  };
+  loadConfirmedMessages();
+}, []);
+
+// Cập nhật AsyncStorage mỗi khi confirmedMessages thay đổi
+useEffect(() => {
+  saveConfirmedMessages(confirmedMessages);
+}, [confirmedMessages]);
 
   // Redux states
   const { chatHistory, chatStatus, sendStatus, error, sendError, socketConnected } = useSelector(
@@ -551,7 +584,7 @@ const Chat = ({ navigation, route }) => {
   const renderMessage = useCallback(
     ({ item, index }) => {
       if (!user) return null;
-
+  
       const isUser = item.sender === 'user';
       const isImage = item.messageType === 'image';
       const isConfirmation = item.messageType === 'confirmation';
@@ -559,15 +592,14 @@ const Chat = ({ navigation, route }) => {
       const isNewPlan = item.messageType === 'new_plan';
       const senderName = isUser ? user?.fullname || user?.name || 'Bạn' : 'Hỗ trợ khách hàng';
       const isMessageConfirmed = confirmedMessages.includes(item._id);
-
+  
       let messageContent = item.content;
       let parsedContent = {};
-
+  
       if ((isConfirmation || isPlan || isNewPlan) && typeof item.content === 'string') {
         if (item.content.trim().startsWith('{') || item.content.trim().startsWith('[')) {
           try {
             parsedContent = JSON.parse(item.content);
-            // Handle content for plan and new_plan
             if (isPlan) {
               messageContent = `Tôi muốn thảo luận về kế hoạch này: ${parsedContent.name || 'Không có tên'}`;
             } else if (isNewPlan) {
@@ -594,7 +626,7 @@ const Chat = ({ navigation, route }) => {
           parsedContent = {};
         }
       }
-
+  
       return (
         <>
           {shouldShowDate(chatHistory, index) && (
@@ -656,14 +688,15 @@ const Chat = ({ navigation, route }) => {
                     <TouchableOpacity
                       style={[
                         styles.confirmButton,
-                        (isConfirming || isMessageConfirmed) && styles.confirmButtonDisabled,
+                        isMessageConfirmed && styles.confirmButtonDisabled,
                       ]}
                       onPress={async () => {
+                        if (isMessageConfirmed) return; // Ngăn hành động nếu đã xác nhận
                         if (!parsedContent.planId) {
                           ToastAndroid.show('Không tìm thấy ID kế hoạch để xác nhận.', ToastAndroid.SHORT);
                           return;
                         }
-
+  
                         setIsConfirming(true);
                         try {
                           const tempId = `temp-${Date.now()}`;
@@ -683,7 +716,7 @@ const Chat = ({ navigation, route }) => {
                               userName,
                             },
                           });
-
+  
                           if (socketService.socket && socketService.isConnected()) {
                             socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                           } else {
@@ -699,7 +732,7 @@ const Chat = ({ navigation, route }) => {
                               })
                             ).unwrap();
                           }
-
+  
                           const response = await fetchWithTimeout(
                             `https://apidatn.onrender.com/plan/confirm-to-pending/${parsedContent.planId}`,
                             {
@@ -732,9 +765,11 @@ const Chat = ({ navigation, route }) => {
                           setIsConfirming(false);
                         }
                       }}
-                      disabled={isConfirming || isMessageConfirmed}
+                      disabled={isMessageConfirmed}
                     >
-                      <Text style={styles.confirmButtonText}>Xác nhận</Text>
+                      <Text style={styles.confirmButtonText}>
+                        {isMessageConfirmed ? 'Đã xác nhận' : 'Xác nhận'}
+                      </Text>
                     </TouchableOpacity>
                   </View>
                 ) : isNewPlan && parsedContent.action === 'new_plan' ? (
@@ -745,17 +780,21 @@ const Chat = ({ navigation, route }) => {
                     <View style={styles.buttonRow}>
                       <TouchableOpacity
                         style={[styles.viewButton, isMessageConfirmed && styles.viewButtonDisabled]}
-                        onPress={() => fetchPlanDetails(parsedContent.planId)}
-                        disabled={isLoadingPlan || isMessageConfirmed}
+                        onPress={() => {
+                          if (isMessageConfirmed) return; // Ngăn hành động nếu đã xác nhận hoặc hủy
+                          fetchPlanDetails(parsedContent.planId);
+                        }}
+                        disabled={isMessageConfirmed || isLoadingPlan}
                       >
                         <Text style={styles.viewButtonText}>Xem</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[
                           styles.confirmButton,
-                          (isConfirming || isMessageConfirmed) && styles.confirmButtonDisabled,
+                          isMessageConfirmed && styles.confirmButtonDisabled,
                         ]}
                         onPress={async () => {
+                          if (isMessageConfirmed) return; // Ngăn hành động nếu đã xác nhận hoặc hủy
                           const originalPlanId = planId || (() => {
                             const planMessage = chatHistory.find(
                               (msg) => msg.messageType === 'plan' && msg.sender === 'user'
@@ -779,7 +818,7 @@ const Chat = ({ navigation, route }) => {
                               return null;
                             }
                           })();
-
+  
                           if (!originalPlanId || !parsedContent.planId) {
                             ToastAndroid.show(
                               'Không tìm thấy ID kế hoạch gốc hoặc kế hoạch mới.',
@@ -787,7 +826,7 @@ const Chat = ({ navigation, route }) => {
                             );
                             return;
                           }
-
+  
                           setIsConfirming(true);
                           try {
                             const tempId = `temp-${Date.now()}`;
@@ -807,7 +846,7 @@ const Chat = ({ navigation, route }) => {
                                 userName,
                               },
                             });
-
+  
                             if (socketService.socket && socketService.isConnected()) {
                               socketService.sendMessage('admin', confirmMessage, tempId, 'text');
                             } else {
@@ -823,7 +862,7 @@ const Chat = ({ navigation, route }) => {
                                 })
                               ).unwrap();
                             }
-
+  
                             const response = await fetchWithTimeout(
                               `https://apidatn.onrender.com/plan/override/${originalPlanId}`,
                               {
@@ -836,14 +875,14 @@ const Chat = ({ navigation, route }) => {
                               },
                               30000
                             );
-
+  
                             const result = await response.json();
                             console.log('Phản hồi API:', { status: response.status, body: result });
-
+  
                             if (!response.ok) {
                               throw new Error(result.message || 'Lỗi cập nhật trạng thái');
                             }
-
+  
                             setConfirmedMessages((prev) => [...prev, item._id]);
                             ToastAndroid.show('Kế hoạch đã được cập nhật.', ToastAndroid.SHORT);
                             dispatch(fetchChatHistory(user._id));
@@ -862,16 +901,19 @@ const Chat = ({ navigation, route }) => {
                             setIsConfirming(false);
                           }
                         }}
-                        disabled={isConfirming || isMessageConfirmed}
+                        disabled={isMessageConfirmed}
                       >
-                        <Text style={styles.confirmButtonText}>Xác nhận</Text>
+                        <Text style={styles.confirmButtonText}>
+                          {isMessageConfirmed ? 'Đã xử lý' : 'Xác nhận'}
+                        </Text>
                       </TouchableOpacity>
                       <TouchableOpacity
                         style={[
                           styles.cancelButton,
-                          (isConfirming || isMessageConfirmed) && styles.cancelButtonDisabled,
+                          isMessageConfirmed && styles.cancelButtonDisabled,
                         ]}
                         onPress={() => {
+                          if (isMessageConfirmed) return; // Ngăn hành động nếu đã xác nhận hoặc hủy
                           if (!parsedContent.planId) {
                             ToastAndroid.show(
                               'Không tìm thấy thông tin kế hoạch để hủy.',
@@ -879,7 +921,7 @@ const Chat = ({ navigation, route }) => {
                             );
                             return;
                           }
-
+  
                           ToastAndroid.showWithGravity(
                             'Bạn có chắc muốn hủy kế hoạch mới này?',
                             ToastAndroid.LONG,
@@ -905,7 +947,7 @@ const Chat = ({ navigation, route }) => {
                                   userName,
                                 },
                               });
-
+  
                               if (socketService.socket && socketService.isConnected()) {
                                 socketService.sendMessage('admin', cancelMessage, tempId, 'text');
                               } else {
@@ -921,7 +963,7 @@ const Chat = ({ navigation, route }) => {
                                   })
                                 ).unwrap();
                               }
-
+  
                               const response = await fetchWithTimeout(
                                 `https://apidatn.onrender.com/plan/cancel/${parsedContent.planId}`,
                                 {
@@ -954,9 +996,11 @@ const Chat = ({ navigation, route }) => {
                             }
                           }, 2000); // Delay to simulate confirmation
                         }}
-                        disabled={isConfirming || isMessageConfirmed}
+                        disabled={isMessageConfirmed}
                       >
-                        <Text style={styles.cancelButtonText}>Hủy</Text>
+                        <Text style={styles.cancelButtonText}>
+                          {isMessageConfirmed ? 'Đã hủy' : 'Hủy'}
+                        </Text>
                       </TouchableOpacity>
                     </View>
                   </View>
@@ -969,8 +1013,11 @@ const Chat = ({ navigation, route }) => {
                     </Text>
                     <TouchableOpacity
                       style={[styles.viewButton, isMessageConfirmed && styles.viewButtonDisabled]}
-                      onPress={() => fetchPlanDetails(parsedContent.planId)}
-                      disabled={isLoadingPlan || isMessageConfirmed}
+                      onPress={() => {
+                        if (isMessageConfirmed) return; // Ngăn hành động nếu đã xác nhận
+                        fetchPlanDetails(parsedContent.planId);
+                      }}
+                      disabled={isMessageConfirmed || isLoadingPlan}
                     >
                       <Text style={styles.viewButtonText}>Xem</Text>
                     </TouchableOpacity>

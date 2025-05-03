@@ -407,6 +407,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 15,
     borderRadius: 8,
+    height:40
   },
 
   surveyButtonIcon: {
