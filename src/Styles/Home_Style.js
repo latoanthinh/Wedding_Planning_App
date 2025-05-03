@@ -411,15 +411,15 @@ const styles = StyleSheet.create({
   },
 
   surveyButtonIcon: {
-    width: 18,
-    height: 18,
+    width: 20,
+    height: 20,
     tintColor: '#fff',
     marginRight: 8,
   },
 
   surveyButtonText: {
     color: '#fff',
-    fontSize: 12,
+    fontSize: 15,
     fontFamily: 'Playfair_me',
   },
 
