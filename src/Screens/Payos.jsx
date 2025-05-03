@@ -207,7 +207,7 @@ const Payos = ({ route, navigation }) => {
   const Payment = async () => {
     const amount = 5000;
     const cancelUrl = 'https://example.com/cancel'; // Placeholder URL for cancel
-    const description = 'đặt cọc ';
+    const description = 'Đặt cọc ';
     const newOrderCode = Date.now();
     const returnUrl = 'https://example.com/success'; // Placeholder URL for success
 
